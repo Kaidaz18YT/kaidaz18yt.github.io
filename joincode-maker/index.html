@@ -514,11 +514,22 @@
     <div class="panel">
       <h2>4. Preview &amp; download</h2>
       <div class="canvas-wrap">
-        <canvas id="previewCanvas" width="900" height="500"></canvas>
+        <canvas id="previewCanvas" width="1500" height="600"></canvas>
+      </div>
+
+      <div class="field" style="margin-top: 16px;">
+        <label for="qualityRange">Export quality: <span id="qualityVal">1500 × 600</span></label>
+        <input type="range" id="qualityRange" min="400" max="2500" step="10" value="1500">
+        <div class="file-hint">Drag to pick any resolution between 400×160 (low) and 2500×1000 (high) — the 2.5:1 ratio stays fixed.</div>
+      </div>
+
+      <div class="download-row">
+        <button class="btn ghost" id="downloadLQBtn" disabled>Download low (400×160)</button>
+        <button class="btn primary" id="downloadBtn" disabled>Download standard (1500×600)</button>
+        <button class="btn gold" id="downloadHQBtn" disabled>Download high-res (2500×1000)</button>
       </div>
       <div class="download-row">
-        <button class="btn primary" id="downloadBtn" disabled>Download PNG</button>
-        <button class="btn gold" id="downloadHQBtn" disabled>Download high-res PNG (2x)</button>
+        <button class="btn ghost" id="downloadCustomBtn" disabled>Download at slider quality</button>
       </div>
       <p class="badge-note">Images are generated entirely in your browser — nothing is uploaded anywhere.</p>
     </div>
@@ -718,8 +729,10 @@ document.getElementById("clearBtn").addEventListener("click", () => {
 
 function updateDownloadButtons() {
   const has = sequence.length >= 4;
+  document.getElementById("downloadLQBtn").disabled = !has;
   document.getElementById("downloadBtn").disabled = !has;
   document.getElementById("downloadHQBtn").disabled = !has;
+  document.getElementById("downloadCustomBtn").disabled = !has;
 }
 
 /* ---------------------------------------------------------
@@ -798,13 +811,27 @@ document.getElementById("titleText").addEventListener("input", (e) => {
 });
 
 /* ---------------------------------------------------------
-   CANVAS RENDERING
+   CANVAS RENDERING SETUP (must come before quality slider code below)
 --------------------------------------------------------- */
 const canvas = document.getElementById("previewCanvas");
 const ctx = canvas.getContext("2d");
 
-const BASE_W = 900;
-const BASE_H = 500;
+const BASE_W = 1500;
+const BASE_H = 600;
+
+const qualityRange = document.getElementById("qualityRange");
+const qualityVal = document.getElementById("qualityVal");
+function updateQualityLabel() {
+  const w = parseInt(qualityRange.value, 10);
+  const h = Math.round(w * (BASE_H / BASE_W));
+  qualityVal.textContent = `${w} × ${h}`;
+}
+qualityRange.addEventListener("input", updateQualityLabel);
+updateQualityLabel();
+
+/* ---------------------------------------------------------
+   CANVAS RENDERING
+--------------------------------------------------------- */
 
 async function renderPreview(exportScale = 1) {
   const W = BASE_W * exportScale;
@@ -955,17 +982,34 @@ function drawBorderStyle(style, W, H, scale) {
 /* ---------------------------------------------------------
    DOWNLOAD
 --------------------------------------------------------- */
+document.getElementById("downloadLQBtn").addEventListener("click", async () => {
+  await renderPreview(400 / BASE_W);
+  triggerDownload("join-code-low.png");
+  setTimeout(() => renderPreview(currentSliderScale()), 50);
+});
+
 document.getElementById("downloadBtn").addEventListener("click", async () => {
   await renderPreview(1);
   triggerDownload("join-code.png");
 });
 
 document.getElementById("downloadHQBtn").addEventListener("click", async () => {
-  await renderPreview(2.5);
+  await renderPreview(2500 / BASE_W);
   triggerDownload("join-code-highres.png");
-  // restore normal preview
-  setTimeout(() => renderPreview(1), 50);
+  setTimeout(() => renderPreview(currentSliderScale()), 50);
 });
+
+document.getElementById("downloadCustomBtn").addEventListener("click", async () => {
+  const scale = currentSliderScale();
+  await renderPreview(scale);
+  const w = Math.round(BASE_W * scale);
+  triggerDownload(`join-code-${w}w.png`);
+});
+
+function currentSliderScale() {
+  const w = parseInt(qualityRange.value, 10);
+  return w / BASE_W;
+}
 
 function triggerDownload(filename) {
   canvas.toBlob((blob) => {
