@@ -3,7 +3,41 @@
 <head>
 <meta charset="UTF-8">
 <meta name="viewport" content="width=device-width, initial-scale=1.0, viewport-fit=cover">
-<title>Join Code Maker</title>
+
+<title>Join Code Maker — Minecraft Education join code images</title>
+<meta name="description" content="Build a shareable picture of your Minecraft Education join code. Pick your icons, drop in a logo and title, drag everything where you want it, then download a PNG.">
+<meta name="author" content="Join Code Maker">
+<meta name="keywords" content="Minecraft Education, join code, world code, classroom, education edition, join code image">
+<meta name="theme-color" content="#0e1013">
+<meta name="color-scheme" content="dark">
+<meta name="robots" content="index, follow">
+
+<link rel="icon" href="images/favicon.ico" sizes="any">
+<link rel="shortcut icon" href="images/favicon.ico">
+<link rel="apple-touch-icon" href="images/banner.png">
+
+<!-- Open Graph (Discord, Facebook, LinkedIn, Teams) -->
+<meta property="og:type" content="website">
+<meta property="og:site_name" content="Join Code Maker">
+<meta property="og:title" content="Join Code Maker — Minecraft Education join code images">
+<meta property="og:description" content="Pick your icons, add a logo and title, drag everything into place, download a PNG. Runs entirely in your browser.">
+<meta property="og:image" content="images/banner.png">
+<meta property="og:image:width" content="1920">
+<meta property="og:image:height" content="1080">
+<meta property="og:image:alt" content="A Minecraft Education join code laid out as a shareable banner.">
+<meta property="og:locale" content="en_AU">
+
+<!-- Twitter / X -->
+<meta name="twitter:card" content="summary_large_image">
+<meta name="twitter:title" content="Join Code Maker — Minecraft Education join code images">
+<meta name="twitter:description" content="Pick your icons, add a logo and title, drag everything into place, download a PNG.">
+<meta name="twitter:image" content="images/banner.png">
+<meta name="twitter:image:alt" content="A Minecraft Education join code laid out as a shareable banner.">
+
+<!-- Mobile web app -->
+<meta name="apple-mobile-web-app-capable" content="yes">
+<meta name="apple-mobile-web-app-title" content="Join Code">
+<meta name="apple-mobile-web-app-status-bar-style" content="black-translucent">
 <style>
   @import url('https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700&display=swap');
 
@@ -343,23 +377,33 @@
       </div>
 
       <div class="alert info" id="startHint">Pick icons in the <strong>Icons</strong> tab, then drag things around the canvas. Everything is generated in your browser — nothing is uploaded.</div>
-      <div class="alert warn" id="offCanvasWarn" hidden></div>
+      <div class="alert warn" id="ratioWarn" hidden></div>
       <div class="alert warn" id="missingWarn" hidden>Icon images aren't loading. This page needs to sit in the same folder as <code>images/</code>.</div>
     </div>
 
     <div class="card">
       <div class="card-head">Export <span class="hint">PNG, generated in your browser</span></div>
       <div class="card-body">
+        <div class="field">
+          <label for="outQuality">Quality: <span id="outSizeLabel">1500 × 600</span></label>
+          <input type="range" id="outQuality" min="400" max="4000" step="10" value="1500">
+          <div class="note">Slide left for a small file, right for print-sharp. The shape stays the same.</div>
+        </div>
         <div class="row" style="margin-bottom:12px;">
           <div>
-            <label for="outW">Width (px)</label>
+            <label for="outW">Exact width (px)</label>
             <input type="number" id="outW" min="200" max="6000" step="10" value="1500">
           </div>
           <div>
             <label for="outHLabel">Height (px)</label>
             <input type="text" id="outHLabel" value="600" readonly>
-            <div class="note">Follows your canvas ratio.</div>
+            <div class="note">Follows your canvas shape.</div>
           </div>
+        </div>
+        <div class="row-3" style="margin-bottom:12px;">
+          <button class="btn sm quiet" data-quality="0.5">Half size</button>
+          <button class="btn sm quiet" data-quality="1">Actual size</button>
+          <button class="btn sm quiet" data-quality="2">Double size</button>
         </div>
         <label class="check" style="margin-bottom:12px;">
           <input type="checkbox" id="transparentBg"> Keep the background transparent
@@ -501,6 +545,11 @@
             <input type="range" id="bgDim" min="0" max="90" value="0">
             <div class="note">Handy when a busy background is fighting your text.</div>
           </div>
+          <div class="field">
+            <label for="bgBlur">Blur the image: <span id="bgBlurVal">0</span>px</label>
+            <input type="range" id="bgBlur" min="0" max="120" value="0">
+            <div class="note">Blur plus a little darkening makes icons and titles pop.</div>
+          </div>
         </div>
       </div>
 
@@ -565,12 +614,24 @@ const ICONS = [
   { file: "icon_llama.png",              name: "Llama" },
 ];
 
+/* Preset backgrounds live in images/background/.
+   They're drawn for this canvas shape — other shapes get a warning, not a block. */
+const PRESET_BG_W = 1500, PRESET_BG_H = 600;
+
 const BACKGROUNDS = [
-  { file: "background1.png", name: "Background 1" },
-  { file: "background2.png", name: "Background 2" },
-  { file: "background3.png", name: "Background 3" },
-  { file: "background4.png", name: "Background 4" },
+  { file: "Wilderness Bound Chaos Cubed.png",   name: "Wilderness Bound / Chaos Cubed" },
+  { file: "Tiny Takeover.png",                  name: "Tiny Takeover" },
+  { file: "Tricky Trials.png",                  name: "Tricky Trials" },
+  { file: "Trails & Tails.png",                 name: "Trails & Tails" },
+  { file: "The Wild Update.png",                name: "The Wild Update" },
+  { file: "Caves and cliffs.png",               name: "Caves and Cliffs" },
+  { file: "Update Aquatic.png",                 name: "Update Aquatic" },
+  { file: "The World of Color Update.png",      name: "The World of Color Update" },
+  { file: "The Exploration Update.png",         name: "The Exploration Update" },
 ];
+
+/* Filenames have spaces and & in them, so encode them for the URL. */
+function bgSrc(file) { return BG_BASE_PATH + encodeURIComponent(file); }
 
 const MAX_ICONS = 5;
 
@@ -600,7 +661,7 @@ function uid(p) { return p + Math.random().toString(36).slice(2, 9); }
 function blankDoc() {
   return {
     w: 1500, h: 600,
-    bg: { presetFile: "none", assetId: null, fit: "cover", color: "#1b1f27", colorOn: false, dim: 0 },
+    bg: { presetFile: "none", assetId: null, fit: "cover", color: "#1b1f27", colorOn: false, dim: 0, blur: 0 },
     border: { style: "none", color: "#6b4a2a", thickness: 20 },
     layers: [ makeIconsLayer() ],
   };
@@ -611,7 +672,7 @@ function makeIconsLayer() {
     id: "icons", type: "icons", name: "Join code", visible: true,
     items: [], x: 300, y: 200, tile: 180, gap: 26,
     tileMode: "color", tileColor: "#8a8f98", tileRadius: 12,
-    tileStroke: true, pixelated: true,
+    tileStroke: true, pixelated: true, blur: 0, opacity: 1,
   };
 }
 
@@ -754,11 +815,15 @@ function drawDoc(ctx, forExport, transparent) {
 
   // background image
   const bgImg = doc.bg.assetId ? assetImg(doc.bg.assetId)
-              : (doc.bg.presetFile !== "none" ? getImg(BG_BASE_PATH + doc.bg.presetFile) : null);
+              : (doc.bg.presetFile !== "none" ? getImg(bgSrc(doc.bg.presetFile)) : null);
   if (bgImg) {
     ctx.save();
     ctx.imageSmoothingEnabled = true;
-    drawFitted(ctx, bgImg, W, H, doc.bg.fit);
+    const blur = doc.bg.blur || 0;
+    if (blur > 0) ctx.filter = `blur(${blur}px)`;
+    // Oversize the draw so a blurred edge doesn't fade into transparency.
+    const m = blur * 3;
+    drawFitted(ctx, bgImg, -m, -m, W + m * 2, H + m * 2, doc.bg.fit);
     ctx.restore();
     if (doc.bg.dim > 0) {
       ctx.fillStyle = `rgba(0,0,0,${doc.bg.dim / 100})`;
@@ -771,28 +836,34 @@ function drawDoc(ctx, forExport, transparent) {
   drawFrame(ctx, W, H);
 }
 
-function drawFitted(ctx, img, W, H, fit) {
+function drawFitted(ctx, img, X, Y, W, H, fit) {
   const ir = img.width / img.height, br = W / H;
-  if (fit === "stretch") { ctx.drawImage(img, 0, 0, W, H); return; }
+  if (fit === "stretch") { ctx.drawImage(img, X, Y, W, H); return; }
   if (fit === "tile") {
     const p = ctx.createPattern(img, "repeat");
-    ctx.fillStyle = p; ctx.fillRect(0, 0, W, H); return;
+    ctx.save();
+    ctx.translate(X, Y);
+    ctx.fillStyle = p;
+    ctx.fillRect(0, 0, W, H);
+    ctx.restore();
+    return;
   }
   if (fit === "contain") {
     let w = W, h = W / ir;
     if (h > H) { h = H; w = H * ir; }
-    ctx.drawImage(img, (W - w) / 2, (H - h) / 2, w, h); return;
+    ctx.drawImage(img, X + (W - w) / 2, Y + (H - h) / 2, w, h); return;
   }
   // cover
   let sx, sy, sw, sh;
   if (ir > br) { sh = img.height; sw = sh * br; sx = (img.width - sw) / 2; sy = 0; }
   else { sw = img.width; sh = sw / br; sx = 0; sy = (img.height - sh) / 2; }
-  ctx.drawImage(img, sx, sy, sw, sh, 0, 0, W, H);
+  ctx.drawImage(img, sx, sy, sw, sh, X, Y, W, H);
 }
 
 function drawLayer(ctx, L) {
   ctx.save();
   if (L.opacity != null) ctx.globalAlpha = L.opacity;
+  if (L.blur > 0) ctx.filter = `blur(${L.blur}px)`;
 
   if (L.type === "image") {
     const img = assetImg(L.assetId);
@@ -1243,7 +1314,7 @@ function addTextLayer(text) {
     font: FONTS[0][0], weight: 700, size: Math.round(doc.h * 0.12),
     color: "#ffffff", align: "center",
     strokeColor: "#000000", strokeWidth: 0, shadow: true,
-    x: 0, y: doc.h * 0.08, opacity: 1,
+    x: 0, y: doc.h * 0.08, opacity: 1, blur: 0,
   };
   doc.layers.push(L);
   const b = boundsOf(L);
@@ -1262,7 +1333,7 @@ async function addImageLayer(file) {
   const L = {
     id: uid("i"), type: "image", visible: true, name: file.name.replace(/\.[^.]+$/, ""),
     assetId: id, x: (doc.w - w) / 2, y: doc.h * 0.06, w, h,
-    pixelated: false, shadow: false, opacity: 1,
+    pixelated: false, shadow: false, opacity: 1, blur: 0,
   };
   doc.layers.push(L);
   select(L.id); pushHistory(); render(); showTab("layers");
@@ -1506,6 +1577,15 @@ function syncInspector() {
     html += `<label class="check"><input type="checkbox" id="ins_pixel2" ${L.pixelated ? "checked" : ""}> Keep pixel edges crisp</label>`;
   }
 
+  html += field(`Blur: <span id="ins_blurVal">${Math.round(L.blur || 0)}</span>px`,
+    `<input type="range" id="ins_blur" min="0" max="120" step="1" value="${Math.round(L.blur || 0)}">`,
+    "Softens this layer only.");
+
+  if (L.type !== "image") {
+    html += field(`Fade: <span id="ins_opVal2">${Math.round((L.opacity ?? 1) * 100)}</span>%`,
+      `<input type="range" id="ins_opacity2" min="5" max="100" value="${Math.round((L.opacity ?? 1) * 100)}">`);
+  }
+
   html += `<div class="row" style="margin-top:14px;">
     ${field("X position", `<input type="number" id="ins_x" value="${Math.round(b.x)}">`)}
     ${field("Y position", `<input type="number" id="ins_y" value="${Math.round(b.y)}">`)}
@@ -1561,6 +1641,9 @@ function wireInspector(L) {
   on("ins_tileStroke", "change", e => { L.tileStroke = e.target.checked; render(); pushHistory(); });
   on("ins_pixel2", "change", e => { L.pixelated = e.target.checked; render(); pushHistory(); });
 
+  on("ins_blur", "input", e => { L.blur = +e.target.value; $("#ins_blurVal").textContent = L.blur; live(); });
+  on("ins_opacity2", "input", e => { L.opacity = +e.target.value / 100; $("#ins_opVal2").textContent = e.target.value; live(); });
+
   on("ins_x", "input", e => { const b = boundsOf(L); applyBounds(L, { ...b, x: +e.target.value || 0 }); live(); });
   on("ins_y", "input", e => { const b = boundsOf(L); applyBounds(L, { ...b, y: +e.target.value || 0 }); live(); });
 }
@@ -1580,6 +1663,8 @@ function syncCanvasPanel() {
   $("#bgColorOn").checked = doc.bg.colorOn;
   $("#bgDim").value = doc.bg.dim;
   $("#bgDimVal").textContent = doc.bg.dim;
+  $("#bgBlur").value = doc.bg.blur || 0;
+  $("#bgBlurVal").textContent = doc.bg.blur || 0;
   $("#borderStyle").value = doc.border.style;
   $("#borderColor").value = doc.border.color;
   $("#borderThickness").value = doc.border.thickness;
@@ -1590,15 +1675,25 @@ function syncCanvasPanel() {
 function setCanvasSize(w, h) {
   doc.w = Math.max(200, Math.min(6000, Math.round(w)));
   doc.h = Math.max(200, Math.min(6000, Math.round(h)));
+  setOutWidth(doc.w, false);
   sizeStage(); render(); syncCanvasPanel(); pushHistory();
 }
 
 /* =========================================================
    14. EXPORT
    ========================================================= */
+function setOutWidth(w, fromSlider) {
+  w = Math.max(200, Math.min(6000, Math.round(w)));
+  if (!fromSlider) $("#outQuality").value = Math.max(400, Math.min(4000, w));
+  $("#outW").value = w;
+  updateOutHeight();
+}
+
 function updateOutHeight() {
   const w = +$("#outW").value || doc.w;
-  $("#outHLabel").value = Math.round(w * doc.h / doc.w);
+  const h = Math.round(w * doc.h / doc.w);
+  $("#outHLabel").value = h;
+  $("#outSizeLabel").textContent = `${w} × ${h}`;
 }
 
 async function exportCanvas() {
@@ -1642,22 +1737,35 @@ async function copyImage() {
 /* =========================================================
    15. WARNINGS + TOAST
    ========================================================= */
+function ratioMismatch() {
+  if (doc.bg.presetFile === "none" || doc.bg.assetId) return false;
+  return Math.abs((doc.w / doc.h) - (PRESET_BG_W / PRESET_BG_H)) > 0.01;
+}
+
 function updateWarnings() {
-  const off = visibleLayers().filter(L => {
-    const b = boundsOf(L);
-    if (!b.w) return false;
-    return b.x < -1 || b.y < -1 || b.x + b.w > doc.w + 1 || b.y + b.h > doc.h + 1;
-  });
-  const el = $("#offCanvasWarn");
-  if (off.length) {
+  const el = $("#ratioWarn");
+  if (ratioMismatch()) {
     el.hidden = false;
-    el.innerHTML = `${off.length === 1 ? "One layer runs" : off.length + " layers run"} past the edge of the canvas and will be cut off. <button class="btn sm" id="warnFitBtn" style="margin-left:6px;">Fit everything</button>`;
-    const btn = $("#warnFitBtn");
-    if (btn) btn.onclick = fitEverything;
+    el.innerHTML = `The preset backgrounds are made for the ${PRESET_BG_W} × ${PRESET_BG_H} wide banner shape. At ${doc.w} × ${doc.h} this one gets cropped or stretched.
+      <button class="btn sm" id="warnRatioBtn" style="margin-left:6px;">Back to ${PRESET_BG_W} × ${PRESET_BG_H}</button>`;
+    const btn = $("#warnRatioBtn");
+    if (btn) btn.onclick = () => setCanvasSize(PRESET_BG_W, PRESET_BG_H);
   } else el.hidden = true;
 
-  const anyMissing = [...imgCache.entries()].some(([src, e]) => e.err && src.startsWith(ICON_BASE_PATH));
-  $("#missingWarn").hidden = !anyMissing;
+  const iconsMissing = [...imgCache.entries()].some(([src, e]) =>
+    e.err && src.startsWith(ICON_BASE_PATH) && !src.startsWith(BG_BASE_PATH));
+  const bgEntry = doc.bg.presetFile !== "none" ? imgCache.get(bgSrc(doc.bg.presetFile)) : null;
+  const bgMissing = !!(bgEntry && bgEntry.err);
+
+  const mw = $("#missingWarn");
+  if (iconsMissing) {
+    mw.hidden = false;
+    mw.innerHTML = `Icon images aren't loading. This page needs to sit in the same folder as <code>images/</code>.`;
+  } else if (bgMissing) {
+    mw.hidden = false;
+    mw.innerHTML = `Couldn't find <code>${escapeHtml(BG_BASE_PATH + doc.bg.presetFile)}</code> — check the filename matches exactly, including capitals.`;
+  } else mw.hidden = true;
+
   $("#startHint").hidden = iconsLayer().items.length > 0;
 }
 
@@ -1734,7 +1842,7 @@ $("#canvasH").addEventListener("change", () => setCanvasSize(doc.w, +$("#canvasH
 
 const bgSelect = $("#bgSelect");
 bgSelect.innerHTML = `<option value="none">None</option>` +
-  BACKGROUNDS.map(b => `<option value="${b.file}">${b.name}</option>`).join("");
+  BACKGROUNDS.map(b => `<option value="${escapeHtml(b.file)}">${escapeHtml(b.name)}</option>`).join("");
 bgSelect.addEventListener("change", () => {
   doc.bg.presetFile = bgSelect.value;
   doc.bg.assetId = null;
@@ -1758,12 +1866,16 @@ $("#bgFit").addEventListener("change", e => { doc.bg.fit = e.target.value; rende
 $("#bgColor").addEventListener("input", e => { doc.bg.color = e.target.value; doc.bg.colorOn = true; $("#bgColorOn").checked = true; render(); debouncedHistory(); });
 $("#bgColorOn").addEventListener("change", e => { doc.bg.colorOn = e.target.checked; render(); pushHistory(); });
 $("#bgDim").addEventListener("input", e => { doc.bg.dim = +e.target.value; $("#bgDimVal").textContent = e.target.value; render(); debouncedHistory(); });
+$("#bgBlur").addEventListener("input", e => { doc.bg.blur = +e.target.value; $("#bgBlurVal").textContent = e.target.value; render(); debouncedHistory(); });
 
 $("#borderStyle").addEventListener("change", e => { doc.border.style = e.target.value; render(); pushHistory(); });
 $("#borderColor").addEventListener("input", e => { doc.border.color = e.target.value; render(); debouncedHistory(); });
 $("#borderThickness").addEventListener("input", e => { doc.border.thickness = +e.target.value; $("#borderThicknessVal").textContent = e.target.value; render(); debouncedHistory(); });
 
-$("#outW").addEventListener("input", updateOutHeight);
+$("#outW").addEventListener("input", () => setOutWidth(+$("#outW").value || doc.w, false));
+$("#outQuality").addEventListener("input", e => setOutWidth(+e.target.value, true));
+document.querySelectorAll("[data-quality]").forEach(b =>
+  b.addEventListener("click", () => setOutWidth(doc.w * parseFloat(b.dataset.quality), false)));
 $("#downloadBtn").addEventListener("click", download);
 $("#copyBtn").addEventListener("click", copyImage);
 
