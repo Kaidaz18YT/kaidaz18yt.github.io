@@ -146,6 +146,7 @@
   .icon-btn img {
     width: 30px;
     height: 30px;
+    object-fit: contain;
     image-rendering: pixelated;
   }
 
@@ -223,6 +224,7 @@
   .seq-item img {
     width: 34px;
     height: 34px;
+    object-fit: contain;
     image-rendering: pixelated;
     display: block;
   }
@@ -489,7 +491,22 @@
           </select>
         </div>
         <div>
-          <label for="cardColor">Icon tile color</label>
+          <label for="borderColor">Border color</label>
+          <input type="color" id="borderColor" value="#6c6ff2">
+          <div class="file-hint">Used when border style isn't "None".</div>
+        </div>
+      </div>
+
+      <div class="field row-2">
+        <div>
+          <label for="tileColorEnabled">Icon tile background</label>
+          <select id="tileColorEnabled">
+            <option value="none">None (transparent)</option>
+            <option value="color">Solid color</option>
+          </select>
+        </div>
+        <div>
+          <label for="cardColor">Tile color</label>
           <input type="color" id="cardColor" value="#2c4025">
         </div>
       </div>
@@ -506,8 +523,9 @@
       </div>
 
       <div class="field">
-        <label for="scaleRange">Icon size: <span id="scaleVal">100</span>%</label>
-        <input type="range" id="scaleRange" min="60" max="160" value="100">
+        <label for="scaleRange">Icon size: <span id="scaleVal">100</span></label>
+        <input type="range" id="scaleRange" min="1" max="1000" value="100">
+        <div class="file-hint">1 is barely visible, 1000 fills the whole canvas — the full join code always stays on screen.</div>
       </div>
     </div>
 
@@ -530,6 +548,7 @@
       </div>
       <div class="download-row">
         <button class="btn ghost" id="downloadCustomBtn" disabled>Download at slider quality</button>
+        <button class="btn ghost" id="copyImageBtn" disabled>Copy image</button>
       </div>
       <p class="badge-note">Images are generated entirely in your browser — nothing is uploaded anywhere.</p>
     </div>
@@ -584,8 +603,10 @@ let customBgImage = null;   // Image object if user uploaded their own backgroun
 let selectedPresetBg = "none";
 let logoImage = null;       // Image object if user uploaded a logo
 let borderStyle = "none";
+let borderColor = "#6c6ff2";
+let tileColorMode = "none"; // "none" | "color"
 let tileColor = "#2c4025";
-let iconScalePct = 100;
+let iconScaleValue = 100;   // 1–1000, mapped to a pixel size in renderPreview
 let titleText = "";
 
 const iconImageCache = {}; // file -> Image
@@ -794,14 +815,24 @@ document.getElementById("borderSelect").addEventListener("change", (e) => {
   renderPreview();
 });
 
+document.getElementById("borderColor").addEventListener("input", (e) => {
+  borderColor = e.target.value;
+  renderPreview();
+});
+
+document.getElementById("tileColorEnabled").addEventListener("change", (e) => {
+  tileColorMode = e.target.value;
+  renderPreview();
+});
+
 document.getElementById("cardColor").addEventListener("input", (e) => {
   tileColor = e.target.value;
   renderPreview();
 });
 
 document.getElementById("scaleRange").addEventListener("input", (e) => {
-  iconScalePct = parseInt(e.target.value, 10);
-  document.getElementById("scaleVal").textContent = iconScalePct;
+  iconScaleValue = parseInt(e.target.value, 10);
+  document.getElementById("scaleVal").textContent = iconScaleValue;
   renderPreview();
 });
 
@@ -856,7 +887,7 @@ async function renderPreview(exportScale = 1) {
   }
 
   // 2. Border frame
-  drawBorderStyle(borderStyle, W, H, exportScale);
+  drawBorderStyle(borderStyle, W, H, exportScale, borderColor);
 
   let contentTop = 40 * exportScale;
 
@@ -886,24 +917,41 @@ async function renderPreview(exportScale = 1) {
   if (sequence.length > 0) {
     const iconImgs = await Promise.all(sequence.map(s => getIconImage(s.file)));
     const validImgs = iconImgs.map((img, i) => ({ img, item: sequence[i] })).filter(x => x.img);
+    const n = validImgs.length;
 
-    const tileSize = 110 * (iconScalePct / 100) * exportScale;
     const gap = 22 * exportScale;
-    const totalW = validImgs.length * tileSize + (validImgs.length - 1) * gap;
-    let x = (W - totalW) / 2;
     const availableH = H - contentTop - 40 * exportScale;
+    const availableW = W - 60 * exportScale; // side margin so tiles never touch the border
+
+    // Map the 1–1000 slider to a requested tile size:
+    // 1   -> a sliver (a few px), effectively "barely visible"
+    // 1000 -> big enough to fill the whole available area on its own
+    const maxPossibleTile = Math.min(availableW / n - gap, availableH);
+    const minTile = 2 * exportScale;
+    const requestedTile = minTile + (maxPossibleTile - minTile) * (iconScaleValue / 1000);
+
+    // Never let the row overflow the canvas — shrink to fit if needed,
+    // so the whole join code stays visible no matter the slider value or icon count.
+    const rowWidthAtRequested = n * requestedTile + (n - 1) * gap;
+    const fitScale = Math.min(1, availableW / rowWidthAtRequested);
+    const tileSize = Math.max(minTile, requestedTile * fitScale);
+
+    const totalW = n * tileSize + (n - 1) * gap;
+    let x = (W - totalW) / 2;
     const y = contentTop + Math.max(0, (availableH - tileSize) / 2);
 
     validImgs.forEach(({ img }) => {
-      // tile background
-      roundRect(ctx, x, y, tileSize, tileSize, 10 * exportScale);
-      ctx.fillStyle = tileColor;
-      ctx.fill();
-      ctx.lineWidth = 3 * exportScale;
-      ctx.strokeStyle = "rgba(0,0,0,0.55)";
-      ctx.stroke();
+      // tile background (skip fill entirely if "None")
+      if (tileColorMode === "color") {
+        roundRect(ctx, x, y, tileSize, tileSize, 10 * exportScale);
+        ctx.fillStyle = tileColor;
+        ctx.fill();
+        ctx.lineWidth = 3 * exportScale;
+        ctx.strokeStyle = "rgba(0,0,0,0.55)";
+        ctx.stroke();
+      }
 
-      // icon centered, padded
+      // icon centered, padded, aspect ratio preserved (never stretched)
       const pad = tileSize * 0.16;
       const iconSize = tileSize - pad * 2;
       const iconAspect = img.width / img.height;
@@ -955,28 +1003,37 @@ function roundRect(c, x, y, w, h, r) {
   c.closePath();
 }
 
-function drawBorderStyle(style, W, H, scale) {
+function drawBorderStyle(style, W, H, scale, color) {
   if (style === "none") return;
-  const thickness = 18 * scale;
 
-  const palettes = {
-    wood:  { a: "#8a5a30", b: "#6b4a2f" },
-    stone: { a: "#9c9c94", b: "#6f6f68" },
-    gold:  { a: "#c9a94e", b: "#9c8038" },
-    chalk: { a: "#2a2d38", b: "#14161c" },
-  };
-  const pal = palettes[style];
-  if (!pal) return;
+  // Different presets vary thickness/texture; color always comes from the picker.
+  const thicknessByStyle = { wood: 20, stone: 22, gold: 14, chalk: 16 };
+  const thickness = (thicknessByStyle[style] || 18) * scale;
 
-  ctx.fillStyle = pal.a;
+  const base = color || "#6c6ff2";
+  const shade = shadeColor(base, -25); // darker inner line, derived from chosen color
+
+  ctx.fillStyle = base;
   ctx.fillRect(0, 0, W, thickness); // top
   ctx.fillRect(0, H - thickness, W, thickness); // bottom
   ctx.fillRect(0, 0, thickness, H); // left
   ctx.fillRect(W - thickness, 0, thickness, H); // right
 
-  ctx.strokeStyle = pal.b;
+  ctx.strokeStyle = shade;
   ctx.lineWidth = 4 * scale;
   ctx.strokeRect(thickness / 2, thickness / 2, W - thickness, H - thickness);
+}
+
+function shadeColor(hex, percent) {
+  // Lighten (positive) or darken (negative) a #rrggbb color by percent.
+  const num = parseInt(hex.replace("#", ""), 16);
+  let r = (num >> 16) + Math.round(2.55 * percent);
+  let g = ((num >> 8) & 0x00ff) + Math.round(2.55 * percent);
+  let b = (num & 0x0000ff) + Math.round(2.55 * percent);
+  r = Math.max(0, Math.min(255, r));
+  g = Math.max(0, Math.min(255, g));
+  b = Math.max(0, Math.min(255, b));
+  return `#${(1 << 24 | r << 16 | g << 8 | b).toString(16).slice(1)}`;
 }
 
 /* ---------------------------------------------------------
