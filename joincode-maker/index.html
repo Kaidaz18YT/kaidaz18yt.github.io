@@ -398,7 +398,8 @@
     display: flex;
     justify-content: center;
     padding: 20px;
-    background: var(--bg-elevated);
+    background:
+      repeating-conic-gradient(var(--bg-elevated) 0% 25%, var(--surface) 0% 50%) 50% / 24px 24px;
     border: 1px solid var(--border-soft);
     border-radius: var(--radius-sm);
   }
@@ -938,29 +939,43 @@ async function renderPreview(exportScale = 1) {
   ctx.clearRect(0, 0, W, H);
   ctx.imageSmoothingEnabled = false;
 
-  // 1. Background
+  // 1. Background — leave fully transparent if nothing is selected/uploaded
   if (customBgImage) {
     drawCover(customBgImage, 0, 0, W, H);
   } else if (selectedPresetBg !== "none") {
     const img = await loadImage(BG_BASE_PATH + selectedPresetBg).catch(() => null);
     if (img) {
       drawCover(img, 0, 0, W, H);
-    } else {
-      fillFallbackBg(W, H);
     }
-  } else {
-    fillFallbackBg(W, H);
+    // else: no fallback fill — stays transparent if the preset image fails to load
   }
+  // else: no background chosen at all — canvas stays fully transparent
 
   // 2. Border frame
   drawBorderStyle(borderStyle, W, H, exportScale, borderColor);
 
   let contentTop = 40 * exportScale;
 
-  // 3. Logo
+  // --- Icon tile size is computed independently of the logo/title, using only
+  //     the canvas width and icon count, so growing the logo or title text
+  //     never shrinks the icons. Logo/title instead push contentTop down,
+  //     which moves the icon row lower (and, if there's no room left, it will
+  //     simply sit close to the bottom margin rather than shrink).
+  const iconGap = 22 * exportScale;
+  const iconAvailableW = W - 60 * exportScale; // side margin so tiles never touch the border
+  const nIcons = Math.max(sequence.length, 1);
+  const maxPossibleTileByWidth = iconAvailableW / nIcons - iconGap;
+  const maxPossibleTileByCanvas = H * 0.85; // never bigger than ~85% of full canvas height
+  const maxPossibleTile = Math.min(maxPossibleTileByWidth, maxPossibleTileByCanvas);
+  const minTile = 2 * exportScale;
+  const requestedTile = minTile + (maxPossibleTile - minTile) * (iconScaleValue / 1000);
+  const rowWidthAtRequested = nIcons * requestedTile + (nIcons - 1) * iconGap;
+  const fitScale = Math.min(1, iconAvailableW / rowWidthAtRequested);
+  const tileSize = Math.max(minTile, requestedTile * fitScale);
+
+  // 3. Logo — sized generously and independently; only pushes content down
   if (logoImage) {
-    // Map 1–1000 to a logo height, capped so it never crowds out the title/icons below.
-    const maxLogoH = (H - contentTop - 40 * exportScale) * 0.5;
+    const maxLogoH = H * 0.9; // logo can now get genuinely large if the slider is high
     const minLogoH = 2 * exportScale;
     const logoH = minLogoH + (maxLogoH - minLogoH) * (logoScaleValue / 1000);
     const logoW = logoImage.width * (logoH / logoImage.height);
@@ -968,7 +983,7 @@ async function renderPreview(exportScale = 1) {
     contentTop += logoH + 20 * exportScale;
   }
 
-  // 4. Title text
+  // 4. Title text — sized independently; only pushes content down
   if (titleText.trim()) {
     const fontPx = titleSize * exportScale;
     ctx.font = `700 ${fontPx}px ${titleFont}`;
@@ -983,32 +998,18 @@ async function renderPreview(exportScale = 1) {
     contentTop += fontPx + 32 * exportScale;
   }
 
-  // 5. Icon row
+  // 5. Icon row — size was already fixed above; just position it in whatever
+  //    vertical space remains after the logo/title (may sit lower on the canvas,
+  //    but its size stays constant regardless of logo/title size).
   if (sequence.length > 0) {
     const iconImgs = await Promise.all(sequence.map(s => getIconImage(s.file)));
     const validImgs = iconImgs.map((img, i) => ({ img, item: sequence[i] })).filter(x => x.img);
     const n = validImgs.length;
 
-    const gap = 22 * exportScale;
-    const availableH = H - contentTop - 40 * exportScale;
-    const availableW = W - 60 * exportScale; // side margin so tiles never touch the border
-
-    // Map the 1–1000 slider to a requested tile size:
-    // 1   -> a sliver (a few px), effectively "barely visible"
-    // 1000 -> big enough to fill the whole available area on its own
-    const maxPossibleTile = Math.min(availableW / n - gap, availableH);
-    const minTile = 2 * exportScale;
-    const requestedTile = minTile + (maxPossibleTile - minTile) * (iconScaleValue / 1000);
-
-    // Never let the row overflow the canvas — shrink to fit if needed,
-    // so the whole join code stays visible no matter the slider value or icon count.
-    const rowWidthAtRequested = n * requestedTile + (n - 1) * gap;
-    const fitScale = Math.min(1, availableW / rowWidthAtRequested);
-    const tileSize = Math.max(minTile, requestedTile * fitScale);
-
-    const totalW = n * tileSize + (n - 1) * gap;
+    const totalW = n * tileSize + (n - 1) * iconGap;
     let x = (W - totalW) / 2;
-    const y = contentTop + Math.max(0, (availableH - tileSize) / 2);
+    const remainingH = H - contentTop - 20 * exportScale;
+    const y = contentTop + Math.max(0, (remainingH - tileSize) / 2);
 
     validImgs.forEach(({ img }) => {
       // tile background (skip fill entirely if "None")
@@ -1032,17 +1033,9 @@ async function renderPreview(exportScale = 1) {
       const dy = y + (tileSize - dh) / 2;
       ctx.drawImage(img, dx, dy, dw, dh);
 
-      x += tileSize + gap;
+      x += tileSize + iconGap;
     });
   }
-}
-
-function fillFallbackBg(W, H) {
-  const grad = ctx.createLinearGradient(0, 0, 0, H);
-  grad.addColorStop(0, "#1a1d27");
-  grad.addColorStop(1, "#0f1115");
-  ctx.fillStyle = grad;
-  ctx.fillRect(0, 0, W, H);
 }
 
 function drawCover(img, x, y, w, h) {
