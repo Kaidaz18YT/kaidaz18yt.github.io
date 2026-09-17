@@ -476,7 +476,10 @@
 
       <div class="field">
         <label for="bgUpload">Or upload your own background</label>
-        <input type="file" id="bgUpload" accept="image/*" class="upload-btn">
+        <div class="row-2">
+          <input type="file" id="bgUpload" accept="image/*" class="upload-btn">
+          <button class="btn ghost" id="removeBgBtn" type="button">Remove</button>
+        </div>
       </div>
 
       <div class="field row-2">
@@ -502,19 +505,28 @@
           <label for="tileColorEnabled">Icon tile background</label>
           <select id="tileColorEnabled">
             <option value="none">None (transparent)</option>
-            <option value="color">Solid color</option>
+            <option value="color" selected>Solid color</option>
           </select>
         </div>
         <div>
           <label for="cardColor">Tile color</label>
-          <input type="color" id="cardColor" value="#2c4025">
+          <input type="color" id="cardColor" value="#8a8f98">
         </div>
       </div>
 
       <div class="field">
         <label for="logoUpload">Server logo (shown at top)</label>
-        <input type="file" id="logoUpload" accept="image/*" class="upload-btn">
+        <div class="row-2">
+          <input type="file" id="logoUpload" accept="image/*" class="upload-btn">
+          <button class="btn ghost" id="removeLogoBtn" type="button">Remove</button>
+        </div>
         <div class="file-hint">Optional — appears centered above the join code.</div>
+      </div>
+
+      <div class="field">
+        <label for="logoSizeRange">Logo size: <span id="logoSizeVal">600</span></label>
+        <input type="range" id="logoSizeRange" min="1" max="1000" value="600">
+        <div class="file-hint">Only applies once a logo is uploaded.</div>
       </div>
 
       <div class="field">
@@ -522,9 +534,28 @@
         <input type="text" id="titleText" placeholder="e.g. AllForOne SMP — Join Code">
       </div>
 
+      <div class="field row-2">
+        <div>
+          <label for="titleFont">Title font</label>
+          <select id="titleFont">
+            <option value="'Inter', -apple-system, BlinkMacSystemFont, 'Segoe UI', sans-serif">Inter (default)</option>
+            <option value="'Georgia', 'Times New Roman', serif">Georgia (serif)</option>
+            <option value="'Courier New', 'Consolas', monospace">Courier (mono)</option>
+            <option value="'Verdana', 'Segoe UI', sans-serif">Verdana</option>
+            <option value="'Trebuchet MS', sans-serif">Trebuchet MS</option>
+            <option value="'Impact', 'Arial Narrow', sans-serif">Impact</option>
+            <option value="'Comic Sans MS', cursive">Comic Sans</option>
+          </select>
+        </div>
+        <div>
+          <label for="titleSizeRange">Title size: <span id="titleSizeVal">28</span>px</label>
+          <input type="range" id="titleSizeRange" min="10" max="80" value="28">
+        </div>
+      </div>
+
       <div class="field">
-        <label for="scaleRange">Icon size: <span id="scaleVal">100</span></label>
-        <input type="range" id="scaleRange" min="1" max="1000" value="100">
+        <label for="scaleRange">Icon size: <span id="scaleVal">600</span></label>
+        <input type="range" id="scaleRange" min="1" max="1000" value="600">
         <div class="file-hint">1 is barely visible, 1000 fills the whole canvas — the full join code always stays on screen.</div>
       </div>
     </div>
@@ -602,12 +633,15 @@ let sequence = []; // array of icon objects (in chosen order), duplicates allowe
 let customBgImage = null;   // Image object if user uploaded their own background
 let selectedPresetBg = "none";
 let logoImage = null;       // Image object if user uploaded a logo
+let logoScaleValue = 600;   // 1–1000, same style as icon size slider
 let borderStyle = "none";
 let borderColor = "#6c6ff2";
-let tileColorMode = "none"; // "none" | "color"
-let tileColor = "#2c4025";
-let iconScaleValue = 100;   // 1–1000, mapped to a pixel size in renderPreview
+let tileColorMode = "color"; // "none" | "color"
+let tileColor = "#8a8f98";   // mid gray default
+let iconScaleValue = 600;    // 1–1000, mapped to a pixel size in renderPreview
 let titleText = "";
+let titleFont = "'Inter', -apple-system, BlinkMacSystemFont, 'Segoe UI', sans-serif";
+let titleSize = 28;
 
 const iconImageCache = {}; // file -> Image
 
@@ -754,6 +788,7 @@ function updateDownloadButtons() {
   document.getElementById("downloadBtn").disabled = !has;
   document.getElementById("downloadHQBtn").disabled = !has;
   document.getElementById("downloadCustomBtn").disabled = !has;
+  document.getElementById("copyImageBtn").disabled = !has;
 }
 
 /* ---------------------------------------------------------
@@ -795,6 +830,14 @@ document.getElementById("bgUpload").addEventListener("change", (e) => {
   reader.readAsDataURL(file);
 });
 
+document.getElementById("removeBgBtn").addEventListener("click", () => {
+  customBgImage = null;
+  selectedPresetBg = "none";
+  bgSelect.value = "none";
+  document.getElementById("bgUpload").value = "";
+  renderPreview();
+});
+
 document.getElementById("logoUpload").addEventListener("change", (e) => {
   const file = e.target.files[0];
   if (!file) return;
@@ -808,6 +851,18 @@ document.getElementById("logoUpload").addEventListener("change", (e) => {
     img.src = ev.target.result;
   };
   reader.readAsDataURL(file);
+});
+
+document.getElementById("removeLogoBtn").addEventListener("click", () => {
+  logoImage = null;
+  document.getElementById("logoUpload").value = "";
+  renderPreview();
+});
+
+document.getElementById("logoSizeRange").addEventListener("input", (e) => {
+  logoScaleValue = parseInt(e.target.value, 10);
+  document.getElementById("logoSizeVal").textContent = logoScaleValue;
+  renderPreview();
 });
 
 document.getElementById("borderSelect").addEventListener("change", (e) => {
@@ -838,6 +893,17 @@ document.getElementById("scaleRange").addEventListener("input", (e) => {
 
 document.getElementById("titleText").addEventListener("input", (e) => {
   titleText = e.target.value;
+  renderPreview();
+});
+
+document.getElementById("titleFont").addEventListener("change", (e) => {
+  titleFont = e.target.value;
+  renderPreview();
+});
+
+document.getElementById("titleSizeRange").addEventListener("input", (e) => {
+  titleSize = parseInt(e.target.value, 10);
+  document.getElementById("titleSizeVal").textContent = titleSize;
   renderPreview();
 });
 
@@ -893,7 +959,10 @@ async function renderPreview(exportScale = 1) {
 
   // 3. Logo
   if (logoImage) {
-    const logoH = 90 * exportScale;
+    // Map 1–1000 to a logo height, capped so it never crowds out the title/icons below.
+    const maxLogoH = (H - contentTop - 40 * exportScale) * 0.5;
+    const minLogoH = 2 * exportScale;
+    const logoH = minLogoH + (maxLogoH - minLogoH) * (logoScaleValue / 1000);
     const logoW = logoImage.width * (logoH / logoImage.height);
     ctx.drawImage(logoImage, (W - logoW) / 2, contentTop, logoW, logoH);
     contentTop += logoH + 20 * exportScale;
@@ -901,16 +970,17 @@ async function renderPreview(exportScale = 1) {
 
   // 4. Title text
   if (titleText.trim()) {
-    ctx.font = `700 ${28 * exportScale}px 'Segoe UI', sans-serif`;
+    const fontPx = titleSize * exportScale;
+    ctx.font = `700 ${fontPx}px ${titleFont}`;
     ctx.fillStyle = "#ffffff";
     ctx.textAlign = "center";
     ctx.shadowColor = "rgba(0,0,0,0.6)";
     ctx.shadowBlur = 4 * exportScale;
     ctx.shadowOffsetY = 2 * exportScale;
-    ctx.fillText(titleText, W / 2, contentTop + 28 * exportScale);
+    ctx.fillText(titleText, W / 2, contentTop + fontPx);
     ctx.shadowBlur = 0;
     ctx.shadowOffsetY = 0;
-    contentTop += 60 * exportScale;
+    contentTop += fontPx + 32 * exportScale;
   }
 
   // 5. Icon row
@@ -1061,6 +1131,30 @@ document.getElementById("downloadCustomBtn").addEventListener("click", async () 
   await renderPreview(scale);
   const w = Math.round(BASE_W * scale);
   triggerDownload(`join-code-${w}w.png`);
+});
+
+document.getElementById("copyImageBtn").addEventListener("click", async () => {
+  const btn = document.getElementById("copyImageBtn");
+  const originalLabel = btn.textContent;
+
+  if (!navigator.clipboard || !window.ClipboardItem) {
+    btn.textContent = "Copy not supported";
+    setTimeout(() => (btn.textContent = originalLabel), 1800);
+    return;
+  }
+
+  try {
+    // Copy at the current preview resolution (full BASE_W x BASE_H).
+    await renderPreview(1);
+    const blob = await new Promise(resolve => canvas.toBlob(resolve, "image/png"));
+    await navigator.clipboard.write([
+      new ClipboardItem({ "image/png": blob })
+    ]);
+    btn.textContent = "Copied!";
+  } catch (err) {
+    btn.textContent = "Copy failed";
+  }
+  setTimeout(() => (btn.textContent = originalLabel), 1800);
 });
 
 function currentSliderScale() {
