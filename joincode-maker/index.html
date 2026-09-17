@@ -2,1061 +2,871 @@
 <html lang="en">
 <head>
 <meta charset="UTF-8">
-<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<meta name="viewport" content="width=device-width, initial-scale=1.0, viewport-fit=cover">
 <title>Join Code Maker</title>
 <style>
-  @import url('https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700;800&display=swap');
+  @import url('https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700&display=swap');
 
   :root {
-    --bg: #0b0d12;
-    --bg-elevated: #12151c;
-    --surface: #171b24;
-    --surface-hover: #1e2330;
-    --border: #262b38;
-    --border-soft: #1d212c;
-    --text: #eef0f4;
-    --text-dim: #a4abbd;
-    --text-faint: #6b7284;
-    --accent: #6c6ff2;
-    --accent-hover: #5a5de0;
-    --accent-soft: rgba(108, 111, 242, 0.14);
-    --danger: #f2555a;
-    --focus: #8b8ef7;
-    --radius: 12px;
-    --radius-sm: 8px;
+    --bg: #0e1013;
+    --panel: #171a20;
+    --panel-2: #1d2128;
+    --line: #2a2f38;
+    --line-soft: #22262e;
+    --ink: #eceff4;
+    --ink-2: #a8b0bf;
+    --ink-3: #6f7889;
+    --accent: #58c07a;
+    --accent-ink: #0d1a12;
+    --warn: #e0a33a;
+    --danger: #e0625f;
+    --r: 10px;
+    --r-sm: 7px;
   }
 
   * { box-sizing: border-box; }
-
-  html, body {
-    margin: 0;
-    padding: 0;
-    background: var(--bg);
-    color: var(--text);
-    font-family: 'Inter', -apple-system, BlinkMacSystemFont, 'Segoe UI', sans-serif;
-    min-height: 100vh;
-    -webkit-font-smoothing: antialiased;
-  }
+  html, body { margin: 0; padding: 0; }
 
   body {
-    background-image:
-      radial-gradient(circle at 15% 0%, rgba(108,111,242,0.10), transparent 45%),
-      radial-gradient(circle at 90% 15%, rgba(108,111,242,0.05), transparent 40%);
-    background-attachment: fixed;
+    background: var(--bg);
+    color: var(--ink);
+    font-family: 'Inter', -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, sans-serif;
+    -webkit-font-smoothing: antialiased;
+    min-height: 100vh;
+    overscroll-behavior-y: none;
   }
 
-  header {
-    padding: 56px 20px 28px;
-    text-align: center;
-  }
+  button, input, select, textarea { font-family: inherit; }
 
-  header .eyebrow {
-    display: inline-block;
-    font-size: 12px;
+  /* ---------- top bar ---------- */
+  .topbar {
+    display: flex;
+    align-items: center;
+    gap: 14px;
+    padding: 12px 18px;
+    border-bottom: 1px solid var(--line-soft);
+    background: #111418;
+    position: sticky;
+    top: 0;
+    z-index: 30;
+  }
+  .brand { font-weight: 700; font-size: 15px; letter-spacing: -0.01em; white-space: nowrap; }
+  .brand span { color: var(--ink-3); font-weight: 500; }
+  .topbar .spacer { flex: 1; }
+  .topbar .tools { display: flex; gap: 6px; flex-wrap: wrap; justify-content: flex-end; }
+
+  /* ---------- buttons ---------- */
+  .btn {
     font-weight: 600;
-    letter-spacing: 0.06em;
-    color: var(--accent);
-    background: var(--accent-soft);
-    padding: 5px 12px;
-    border-radius: 999px;
-    margin-bottom: 18px;
+    font-size: 13px;
+    padding: 8px 12px;
+    border-radius: var(--r-sm);
+    border: 1px solid var(--line);
+    background: var(--panel-2);
+    color: var(--ink);
+    cursor: pointer;
+    line-height: 1.2;
   }
+  .btn:hover:not(:disabled) { border-color: #3a414e; background: #232833; }
+  .btn:focus-visible { outline: 2px solid var(--accent); outline-offset: 2px; }
+  .btn:disabled { opacity: 0.38; cursor: not-allowed; }
+  .btn.primary { background: var(--accent); border-color: var(--accent); color: var(--accent-ink); }
+  .btn.primary:hover:not(:disabled) { background: #67cf89; border-color: #67cf89; }
+  .btn.quiet { background: transparent; color: var(--ink-2); }
+  .btn.sm { padding: 5px 9px; font-size: 12px; }
+  .btn.icon { padding: 6px 8px; min-width: 32px; }
 
-  header h1 {
-    font-weight: 800;
-    font-size: clamp(28px, 4.2vw, 42px);
-    margin: 0 0 12px;
-    letter-spacing: -0.02em;
-    color: var(--text);
-    line-height: 1.1;
-  }
-
-  header p {
-    margin: 0 auto;
-    max-width: 520px;
-    color: var(--text-dim);
-    font-size: 16px;
-    line-height: 1.6;
-  }
-
-  .layout {
-    max-width: 1180px;
-    margin: 0 auto;
-    padding: 10px 20px 80px;
+  /* ---------- app layout ---------- */
+  .app {
     display: grid;
-    grid-template-columns: 1.15fr 0.85fr;
-    gap: 20px;
+    grid-template-columns: minmax(0, 1fr) 340px;
+    gap: 16px;
+    padding: 16px;
+    max-width: 1500px;
+    margin: 0 auto;
+    align-items: start;
+  }
+  @media (max-width: 1000px) {
+    .app { grid-template-columns: minmax(0, 1fr); padding: 12px; gap: 12px; }
   }
 
-  @media (max-width: 900px) {
-    .layout { grid-template-columns: 1fr; }
+  .card {
+    background: var(--panel);
+    border: 1px solid var(--line-soft);
+    border-radius: var(--r);
   }
-
-  .panel {
-    background: var(--surface);
-    border: 1px solid var(--border-soft);
-    border-radius: var(--radius);
-    padding: 24px;
-    box-shadow: 0 1px 2px rgba(0,0,0,0.4), 0 12px 32px -16px rgba(0,0,0,0.5);
-  }
-
-  .panel + .panel { margin-top: 20px; }
-
-  .panel h2 {
-    margin: 0 0 4px;
-    font-size: 16px;
-    font-weight: 700;
-    color: var(--text);
+  .card + .card { margin-top: 12px; }
+  .card-head {
+    padding: 12px 14px;
+    border-bottom: 1px solid var(--line-soft);
+    font-size: 13px;
+    font-weight: 600;
     display: flex;
     align-items: center;
     gap: 8px;
-    letter-spacing: -0.01em;
   }
+  .card-head .hint { font-weight: 400; color: var(--ink-3); font-size: 12px; }
+  .card-body { padding: 14px; }
 
-  .panel .sub {
-    margin: 0 0 18px;
-    font-size: 13px;
-    color: var(--text-faint);
+  /* ---------- stage ---------- */
+  .stage-card { position: sticky; top: 64px; }
+  @media (max-width: 1000px) { .stage-card { position: static; } }
+
+  .stage-toolbar {
+    display: flex;
+    gap: 6px;
+    padding: 10px 12px;
+    border-bottom: 1px solid var(--line-soft);
+    flex-wrap: wrap;
+    align-items: center;
+  }
+  .stage-toolbar .divider { width: 1px; height: 22px; background: var(--line); margin: 0 3px; }
+
+  #stageWrap {
+    padding: 14px;
+    display: flex;
+    justify-content: center;
+  }
+  #stageBox {
+    position: relative;
+    width: 100%;
+    background:
+      repeating-conic-gradient(#1a1d23 0% 25%, #15181d 0% 50%) 50% / 22px 22px;
+    border-radius: var(--r-sm);
+    overflow: hidden;
+    touch-action: none;
+    cursor: default;
+  }
+  #stage, #overlay { position: absolute; inset: 0; width: 100%; height: 100%; display: block; }
+  #overlay { cursor: default; }
+
+  .stage-foot {
+    display: flex;
+    justify-content: space-between;
+    gap: 10px;
+    padding: 0 14px 14px;
+    font-size: 12px;
+    color: var(--ink-3);
+    flex-wrap: wrap;
+  }
+  .alert {
+    margin: 0 14px 14px;
+    padding: 9px 11px;
+    border-radius: var(--r-sm);
+    font-size: 12.5px;
     line-height: 1.5;
+    border: 1px solid;
   }
+  .alert.warn { color: #f3d19a; border-color: #4d3c1c; background: #221c0f; }
+  .alert.info { color: #a9d8ba; border-color: #24402f; background: #12201a; }
+  .alert code { background: rgba(255,255,255,0.07); padding: 1px 4px; border-radius: 4px; }
 
-  /* Icon grid */
+  /* ---------- tabs ---------- */
+  .tabs { display: flex; gap: 4px; padding: 6px; background: var(--panel-2); border-radius: var(--r); border: 1px solid var(--line-soft); }
+  .tab {
+    flex: 1;
+    padding: 8px 6px;
+    border: 0;
+    background: transparent;
+    color: var(--ink-2);
+    font-size: 13px;
+    font-weight: 600;
+    border-radius: var(--r-sm);
+    cursor: pointer;
+  }
+  .tab[aria-selected="true"] { background: var(--panel); color: var(--ink); box-shadow: inset 0 0 0 1px var(--line); }
+  .tab:focus-visible { outline: 2px solid var(--accent); outline-offset: -2px; }
+  .tabpanel[hidden] { display: none; }
+
+  /* ---------- fields ---------- */
+  .field { margin-bottom: 14px; }
+  .field:last-child { margin-bottom: 0; }
+  .field > label, .field-label {
+    display: block;
+    font-size: 12px;
+    font-weight: 600;
+    color: var(--ink-2);
+    margin-bottom: 6px;
+  }
+  .row { display: grid; grid-template-columns: 1fr 1fr; gap: 10px; }
+  .row-3 { display: grid; grid-template-columns: repeat(3, 1fr); gap: 8px; }
+  .inline { display: flex; gap: 8px; align-items: center; }
+
+  input[type="text"], input[type="number"], select, textarea {
+    width: 100%;
+    padding: 8px 10px;
+    border-radius: var(--r-sm);
+    border: 1px solid var(--line);
+    background: #12151a;
+    color: var(--ink);
+    font-size: 13px;
+  }
+  textarea { resize: vertical; min-height: 62px; line-height: 1.4; }
+  input:focus, select:focus, textarea:focus { outline: none; border-color: var(--accent); }
+  input[type="color"] {
+    width: 100%; height: 34px; padding: 3px;
+    background: #12151a; border: 1px solid var(--line); border-radius: var(--r-sm); cursor: pointer;
+  }
+  input[type="range"] { width: 100%; accent-color: var(--accent); }
+  input[type="file"] { font-size: 12px; color: var(--ink-2); max-width: 100%; }
+  .check { display: flex; align-items: center; gap: 8px; font-size: 13px; color: var(--ink-2); cursor: pointer; }
+  .check input { accent-color: var(--accent); width: 16px; height: 16px; }
+  .note { font-size: 11.5px; color: var(--ink-3); margin-top: 5px; line-height: 1.45; }
+
+  /* ---------- icon picker ---------- */
+  .picker-head { display: flex; gap: 8px; margin-bottom: 10px; }
   .icon-grid {
     display: grid;
-    grid-template-columns: repeat(auto-fill, minmax(64px, 1fr));
-    gap: 8px;
+    grid-template-columns: repeat(auto-fill, minmax(62px, 1fr));
+    gap: 7px;
+    max-height: 290px;
+    overflow: auto;
+    padding-right: 2px;
   }
-
   .icon-btn {
     position: relative;
-    background: var(--bg-elevated);
-    border: 1px solid var(--border);
-    border-radius: var(--radius-sm);
-    padding: 10px 4px 8px;
+    background: #12151a;
+    border: 1px solid var(--line);
+    border-radius: var(--r-sm);
+    padding: 8px 3px 6px;
     cursor: pointer;
     display: flex;
     flex-direction: column;
     align-items: center;
-    gap: 6px;
-    color: var(--text);
-    font-size: 10px;
-    transition: transform 0.12s ease, border-color 0.12s ease, background 0.12s ease;
-  }
-
-  .icon-btn img {
-    width: 30px;
-    height: 30px;
-    object-fit: contain;
-    image-rendering: pixelated;
-  }
-
-  .icon-btn:hover {
-    border-color: var(--accent);
-    background: var(--surface-hover);
-    transform: translateY(-2px);
-  }
-
-  .icon-btn:focus-visible {
-    outline: 2px solid var(--focus);
-    outline-offset: 2px;
-  }
-
-  .icon-btn.selected {
-    border-color: var(--accent);
-    background: var(--accent-soft);
-  }
-
-  .icon-btn .count-badge {
-    position: absolute;
-    top: -7px;
-    right: -7px;
-    background: var(--accent);
-    color: white;
-    font-weight: 700;
-    font-size: 11px;
-    min-width: 18px;
-    height: 18px;
-    border-radius: 50%;
-    display: flex;
-    align-items: center;
-    justify-content: center;
-    border: 2px solid var(--surface);
-  }
-
-  .icon-name {
-    line-height: 1.15;
-    text-align: center;
-    color: var(--text-dim);
+    gap: 5px;
+    color: var(--ink-2);
+    font-size: 9.5px;
     font-weight: 500;
   }
-
-  /* Selected sequence strip */
-  .sequence {
-    display: flex;
-    flex-wrap: wrap;
-    gap: 8px;
-    min-height: 56px;
-    padding: 12px;
-    background: var(--bg-elevated);
-    border: 1px dashed var(--border);
-    border-radius: var(--radius-sm);
-    align-items: center;
+  .icon-btn img { width: 28px; height: 28px; object-fit: contain; image-rendering: pixelated; }
+  .icon-btn:hover { border-color: var(--accent); }
+  .icon-btn:focus-visible { outline: 2px solid var(--accent); outline-offset: 1px; }
+  .icon-btn.used { border-color: var(--accent); background: rgba(88,192,122,0.1); }
+  .icon-btn .badge {
+    position: absolute; top: -6px; right: -6px;
+    background: var(--accent); color: var(--accent-ink);
+    font-weight: 700; font-size: 10px;
+    min-width: 17px; height: 17px; border-radius: 999px;
+    display: flex; align-items: center; justify-content: center;
+    border: 2px solid var(--panel);
   }
+  .icon-name { text-align: center; line-height: 1.15; }
 
-  .sequence .empty-msg {
-    color: var(--text-faint);
-    font-size: 13px;
+  .seq {
+    display: flex; gap: 8px; flex-wrap: wrap; align-items: center;
+    min-height: 54px; padding: 10px;
+    background: #12151a; border: 1px dashed var(--line); border-radius: var(--r-sm);
   }
-
+  .seq .empty { color: var(--ink-3); font-size: 12.5px; }
   .seq-item {
-    position: relative;
-    background: var(--surface);
-    border: 1px solid var(--border);
-    border-radius: var(--radius-sm);
-    padding: 5px;
-    cursor: grab;
+    position: relative; background: var(--panel-2); border: 1px solid var(--line);
+    border-radius: var(--r-sm); padding: 5px; cursor: grab;
+  }
+  .seq-item.dragging { opacity: 0.35; }
+  .seq-item img { width: 32px; height: 32px; object-fit: contain; image-rendering: pixelated; display: block; }
+  .seq-item .x {
+    position: absolute; top: -7px; right: -7px;
+    width: 17px; height: 17px; border-radius: 999px;
+    background: var(--danger); color: #fff; border: 2px solid var(--panel);
+    font-size: 11px; line-height: 1; display: flex; align-items: center; justify-content: center; cursor: pointer;
   }
 
-  .seq-item.dragging {
-    opacity: 0.4;
+  /* ---------- layer list ---------- */
+  .layer {
+    display: flex; align-items: center; gap: 8px;
+    padding: 8px 9px; border: 1px solid var(--line-soft); border-radius: var(--r-sm);
+    background: #12151a; margin-bottom: 7px; font-size: 13px;
   }
+  .layer.sel { border-color: var(--accent); background: rgba(88,192,122,0.08); }
+  .layer .name { flex: 1; min-width: 0; overflow: hidden; text-overflow: ellipsis; white-space: nowrap; cursor: pointer; }
+  .layer .off { color: var(--ink-3); text-decoration: line-through; }
+  .layer-actions { display: flex; gap: 3px; }
 
-  .seq-item img {
-    width: 34px;
-    height: 34px;
-    object-fit: contain;
-    image-rendering: pixelated;
-    display: block;
+  .empty-state { color: var(--ink-3); font-size: 12.5px; line-height: 1.5; }
+
+  /* ---------- export ---------- */
+  .export-grid { display: grid; grid-template-columns: repeat(auto-fit, minmax(120px, 1fr)); gap: 8px; }
+  .toast {
+    position: fixed; left: 50%; bottom: 22px; transform: translateX(-50%) translateY(20px);
+    background: #1f242d; border: 1px solid var(--line); color: var(--ink);
+    padding: 10px 16px; border-radius: 999px; font-size: 13px; font-weight: 500;
+    opacity: 0; pointer-events: none; transition: opacity .18s ease, transform .18s ease; z-index: 100;
   }
+  .toast.show { opacity: 1; transform: translateX(-50%) translateY(0); }
 
-  .seq-item .remove-x {
-    position: absolute;
-    top: -7px;
-    right: -7px;
-    background: var(--danger);
-    color: white;
-    border: 2px solid var(--bg);
-    border-radius: 50%;
-    width: 17px;
-    height: 17px;
-    font-size: 11px;
-    line-height: 1;
-    display: flex;
-    align-items: center;
-    justify-content: center;
-    cursor: pointer;
-  }
+  footer { text-align: center; padding: 22px 16px 40px; color: var(--ink-3); font-size: 11.5px; }
 
-  .seq-actions {
-    margin-top: 12px;
-    display: flex;
-    gap: 10px;
-    flex-wrap: wrap;
-  }
-
-  button.btn {
-    font-family: inherit;
-    font-weight: 600;
-    font-size: 13px;
-    padding: 9px 16px;
-    border-radius: var(--radius-sm);
-    border: 1px solid var(--border);
-    cursor: pointer;
-    background: var(--surface-hover);
-    color: var(--text);
-    transition: transform 0.08s ease, background 0.12s ease, border-color 0.12s ease;
-  }
-
-  button.btn:hover { transform: translateY(-1px); border-color: var(--accent); }
-  button.btn:active { transform: translateY(0); }
-
-  button.btn.primary {
-    background: var(--accent);
-    color: white;
-    border-color: var(--accent);
-  }
-
-  button.btn.primary:hover {
-    background: var(--accent-hover);
-    border-color: var(--accent-hover);
-  }
-
-  button.btn.gold {
-    background: transparent;
-    color: var(--accent);
-    border-color: var(--accent);
-  }
-
-  button.btn.gold:hover {
-    background: var(--accent-soft);
-  }
-
-  button.btn.ghost {
-    background: transparent;
-    color: var(--text-dim);
-    border-color: var(--border);
-  }
-
-  button.btn:disabled {
-    opacity: 0.4;
-    cursor: not-allowed;
-    transform: none;
-  }
-
-  /* Customisation controls */
-  .field {
-    margin-bottom: 18px;
-  }
-
-  .field label {
-    display: block;
-    font-size: 13px;
-    font-weight: 600;
-    margin-bottom: 7px;
-    color: var(--text-dim);
-  }
-
-  .swatch-row {
-    display: flex;
-    gap: 8px;
-    flex-wrap: wrap;
-  }
-
-  .swatch {
-    width: 40px;
-    height: 40px;
-    border-radius: var(--radius-sm);
-    border: 2px solid transparent;
-    cursor: pointer;
-    background-size: cover;
-    background-position: center;
-    position: relative;
-  }
-
-  .swatch.active {
-    border-color: var(--accent);
-  }
-
-  .swatch.none-swatch {
-    background: repeating-conic-gradient(#2a2f3c 0% 25%, #1c202a 0% 50%) 50% / 12px 12px;
-  }
-
-  select, input[type="text"], input[type="color"] {
-    width: 100%;
-    padding: 9px 12px;
-    border-radius: var(--radius-sm);
-    border: 1px solid var(--border);
-    background: var(--bg-elevated);
-    color: var(--text);
-    font-family: inherit;
-    font-size: 13px;
-    transition: border-color 0.12s ease;
-  }
-
-  select:focus, input[type="text"]:focus {
-    outline: none;
-    border-color: var(--accent);
-  }
-
-  input[type="range"] {
-    width: 100%;
-    accent-color: var(--accent);
-  }
-
-  input[type="color"] {
-    padding: 4px;
-    height: 40px;
-    cursor: pointer;
-  }
-
-  input[type="file"] {
-    color: var(--text-dim);
-    font-size: 13px;
-  }
-
-  .row-2 {
-    display: grid;
-    grid-template-columns: 1fr 1fr;
-    gap: 12px;
-  }
-
-  .upload-btn {
-    display: inline-flex;
-    align-items: center;
-    gap: 8px;
-    font-size: 13px;
-  }
-
-  .file-hint {
-    font-size: 12px;
-    color: var(--text-faint);
-    margin-top: 5px;
-  }
-
-  /* Preview / canvas */
-  .canvas-wrap {
-    display: flex;
-    justify-content: center;
-    padding: 20px;
-    background:
-      repeating-conic-gradient(var(--bg-elevated) 0% 25%, var(--surface) 0% 50%) 50% / 24px 24px;
-    border: 1px solid var(--border-soft);
-    border-radius: var(--radius-sm);
-  }
-
-  #previewCanvas {
-    max-width: 100%;
-    height: auto;
-    image-rendering: pixelated;
-    background: transparent;
-    border-radius: 6px;
-  }
-
-  .download-row {
-    display: flex;
-    gap: 10px;
-    margin-top: 18px;
-    flex-wrap: wrap;
-  }
-
-  footer {
-    text-align: center;
-    padding: 32px 20px;
-    color: var(--text-faint);
-    font-size: 12px;
-    border-top: 1px solid var(--border-soft);
-    margin-top: 20px;
-  }
-
-  .badge-note {
-    font-size: 12px;
-    color: var(--text-faint);
-    margin-top: 10px;
+  @media (prefers-reduced-motion: reduce) {
+    * { transition: none !important; animation: none !important; }
   }
 </style>
 </head>
 <body>
 
-<header>
-  <span class="eyebrow">Minecraft Education Edition</span>
-  <h1>Join Code Maker</h1>
-  <p>Pick 4–5 icons in order, style it up, then download a shareable image of your world's join code.</p>
-</header>
+<div class="topbar">
+  <div class="brand">Join Code Maker <span>· Minecraft Education</span></div>
+  <div class="spacer"></div>
+  <div class="tools">
+    <button class="btn sm" id="saveProjectBtn">Save project</button>
+    <label class="btn sm" for="loadProjectInput" style="display:inline-flex;align-items:center;">Open project</label>
+    <input type="file" id="loadProjectInput" accept="application/json" hidden>
+    <button class="btn sm quiet" id="resetBtn">Start over</button>
+  </div>
+</div>
 
-<div class="layout">
-  <!-- LEFT: Icon picker + sequence -->
+<div class="app">
+  <!-- ============ STAGE ============ -->
   <div>
-    <div class="panel">
-      <h2>1. Pick your icons</h2>
-      <p class="sub">Click icons in order — first click is position 1, and so on. Click a selected icon again to remove it.</p>
-      <div class="icon-grid" id="iconGrid"></div>
+    <div class="card stage-card">
+      <div class="stage-toolbar">
+        <button class="btn sm icon" id="undoBtn" title="Undo (Ctrl+Z)" aria-label="Undo">↶</button>
+        <button class="btn sm icon" id="redoBtn" title="Redo (Ctrl+Shift+Z)" aria-label="Redo">↷</button>
+        <div class="divider"></div>
+        <button class="btn sm" id="centerHBtn" title="Center the selected layer left-to-right">Center across</button>
+        <button class="btn sm" id="centerVBtn" title="Center the selected layer top-to-bottom">Center down</button>
+        <button class="btn sm" id="fitBtn" title="Scale and centre everything to fit inside the canvas">Fit everything</button>
+        <div class="divider"></div>
+        <button class="btn sm" id="dupBtn" title="Duplicate (Ctrl+D)">Duplicate</button>
+        <button class="btn sm" id="delBtn" title="Delete (Del)">Delete</button>
+      </div>
+
+      <div id="stageWrap">
+        <div id="stageBox">
+          <canvas id="stage"></canvas>
+          <canvas id="overlay" tabindex="0" aria-label="Join code canvas. Drag layers to move them, drag corners to resize."></canvas>
+        </div>
+      </div>
+
+      <div class="stage-foot">
+        <span id="selInfo">Nothing selected</span>
+        <span>Drag to move · corners to resize · arrows to nudge</span>
+      </div>
+
+      <div class="alert info" id="startHint">Pick icons in the <strong>Icons</strong> tab, then drag things around the canvas. Everything is generated in your browser — nothing is uploaded.</div>
+      <div class="alert warn" id="offCanvasWarn" hidden></div>
+      <div class="alert warn" id="missingWarn" hidden>Icon images aren't loading. This page needs to sit in the same folder as <code>images/</code>.</div>
     </div>
 
-    <div class="panel">
-      <h2>2. Your join code</h2>
-      <p class="sub">Drag to reorder, or use the × to remove one.</p>
-      <div class="sequence" id="sequenceStrip">
-        <span class="empty-msg">No icons selected yet — click some above.</span>
-      </div>
-      <div class="seq-actions">
-        <button class="btn ghost" id="clearBtn">Clear all</button>
+    <div class="card">
+      <div class="card-head">Export <span class="hint">PNG, generated in your browser</span></div>
+      <div class="card-body">
+        <div class="row" style="margin-bottom:12px;">
+          <div>
+            <label for="outW">Width (px)</label>
+            <input type="number" id="outW" min="200" max="6000" step="10" value="1500">
+          </div>
+          <div>
+            <label for="outHLabel">Height (px)</label>
+            <input type="text" id="outHLabel" value="600" readonly>
+            <div class="note">Follows your canvas ratio.</div>
+          </div>
+        </div>
+        <label class="check" style="margin-bottom:12px;">
+          <input type="checkbox" id="transparentBg"> Keep the background transparent
+        </label>
+        <div class="export-grid">
+          <button class="btn primary" id="downloadBtn">Download PNG</button>
+          <button class="btn" id="copyBtn">Copy image</button>
+        </div>
       </div>
     </div>
   </div>
 
-  <!-- RIGHT: Customisation -->
+  <!-- ============ SIDEBAR ============ -->
   <div>
-    <div class="panel">
-      <h2>3. Style it</h2>
+    <div class="tabs" role="tablist">
+      <button class="tab" role="tab" id="tab-icons" aria-controls="panel-icons" aria-selected="true">Icons</button>
+      <button class="tab" role="tab" id="tab-layers" aria-controls="panel-layers" aria-selected="false">Layers</button>
+      <button class="tab" role="tab" id="tab-canvas" aria-controls="panel-canvas" aria-selected="false">Canvas</button>
+    </div>
 
-      <div class="field">
-        <label for="bgSelect">Background</label>
-        <select id="bgSelect"></select>
-        <div class="file-hint">Premade backgrounds load from <code>images/background/</code>.</div>
-      </div>
-
-      <div class="field">
-        <label for="bgUpload">Or upload your own background</label>
-        <div class="row-2">
-          <input type="file" id="bgUpload" accept="image/*" class="upload-btn">
-          <button class="btn ghost" id="removeBgBtn" type="button">Remove</button>
+    <!-- ICONS -->
+    <div class="tabpanel" id="panel-icons" role="tabpanel" aria-labelledby="tab-icons">
+      <div class="card">
+        <div class="card-head">Pick your icons <span class="hint" id="seqCount">0 of 5</span></div>
+        <div class="card-body">
+          <div class="picker-head">
+            <input type="text" id="iconSearch" placeholder="Search icons" aria-label="Search icons">
+            <label class="btn sm" for="customIconInput" style="white-space:nowrap;display:inline-flex;align-items:center;">Add own</label>
+            <input type="file" id="customIconInput" accept="image/*" multiple hidden>
+          </div>
+          <div class="icon-grid" id="iconGrid"></div>
         </div>
       </div>
 
-      <div class="field row-2">
-        <div>
-          <label for="borderSelect">Border style</label>
-          <select id="borderSelect">
-            <option value="none">None</option>
-            <option value="wood">Wood plank</option>
-            <option value="stone">Stone block</option>
-            <option value="gold">Gold trim</option>
-            <option value="chalk">Chalkboard</option>
-          </select>
-        </div>
-        <div>
-          <label for="borderColor">Border color</label>
-          <input type="color" id="borderColor" value="#6c6ff2">
-          <div class="file-hint">Used when border style isn't "None".</div>
+      <div class="card">
+        <div class="card-head">Your code <span class="hint">drag to reorder</span></div>
+        <div class="card-body">
+          <div class="seq" id="seqStrip"></div>
+          <div class="inline" style="margin-top:10px;">
+            <button class="btn sm quiet" id="clearSeqBtn">Clear all</button>
+            <button class="btn sm quiet" id="selectIconsBtn">Select row on canvas</button>
+          </div>
         </div>
       </div>
 
-      <div class="field row-2">
-        <div>
-          <label for="tileColorEnabled">Icon tile background</label>
-          <select id="tileColorEnabled">
-            <option value="none">None (transparent)</option>
-            <option value="color" selected>Solid color</option>
-          </select>
+      <div class="card">
+        <div class="card-head">Add to the canvas</div>
+        <div class="card-body">
+          <div class="row">
+            <button class="btn" id="addTextBtn">Add text</button>
+            <label class="btn" for="addImageInput" style="display:inline-flex;align-items:center;justify-content:center;">Add image</label>
+            <input type="file" id="addImageInput" accept="image/*" hidden>
+          </div>
+          <div class="note">Logos, screenshots, decorations — anything you drop in becomes a layer you can drag and resize.</div>
         </div>
-        <div>
-          <label for="cardColor">Tile color</label>
-          <input type="color" id="cardColor" value="#8a8f98">
-        </div>
-      </div>
-
-      <div class="field">
-        <label for="logoUpload">Server logo (shown at top)</label>
-        <div class="row-2">
-          <input type="file" id="logoUpload" accept="image/*" class="upload-btn">
-          <button class="btn ghost" id="removeLogoBtn" type="button">Remove</button>
-        </div>
-        <div class="file-hint">Optional — appears centered above the join code.</div>
-      </div>
-
-      <div class="field">
-        <label for="logoSizeRange">Logo size: <span id="logoSizeVal">600</span></label>
-        <input type="range" id="logoSizeRange" min="1" max="1000" value="600">
-        <div class="file-hint">Only applies once a logo is uploaded.</div>
-      </div>
-
-      <div class="field">
-        <label for="titleText">Title text (optional)</label>
-        <input type="text" id="titleText" placeholder="e.g. AllForOne SMP — Join Code">
-      </div>
-
-      <div class="field row-2">
-        <div>
-          <label for="titleFont">Title font</label>
-          <select id="titleFont">
-            <option value="'Inter', -apple-system, BlinkMacSystemFont, 'Segoe UI', sans-serif">Inter (default)</option>
-            <option value="'Georgia', 'Times New Roman', serif">Georgia (serif)</option>
-            <option value="'Courier New', 'Consolas', monospace">Courier (mono)</option>
-            <option value="'Verdana', 'Segoe UI', sans-serif">Verdana</option>
-            <option value="'Trebuchet MS', sans-serif">Trebuchet MS</option>
-            <option value="'Impact', 'Arial Narrow', sans-serif">Impact</option>
-            <option value="'Comic Sans MS', cursive">Comic Sans</option>
-          </select>
-        </div>
-        <div>
-          <label for="titleSizeRange">Title size: <span id="titleSizeVal">28</span>px</label>
-          <input type="range" id="titleSizeRange" min="10" max="80" value="28">
-        </div>
-      </div>
-
-      <div class="field">
-        <label for="scaleRange">Icon size: <span id="scaleVal">600</span></label>
-        <input type="range" id="scaleRange" min="1" max="1000" value="600">
-        <div class="file-hint">1 is barely visible, 1000 fills the whole canvas — the full join code always stays on screen.</div>
       </div>
     </div>
 
-    <div class="panel">
-      <h2>4. Preview &amp; download</h2>
-      <div class="canvas-wrap">
-        <canvas id="previewCanvas" width="1500" height="600"></canvas>
+    <!-- LAYERS -->
+    <div class="tabpanel" id="panel-layers" role="tabpanel" aria-labelledby="tab-layers" hidden>
+      <div class="card">
+        <div class="card-head">Layers <span class="hint">top of list is in front</span></div>
+        <div class="card-body">
+          <div id="layerList"></div>
+        </div>
+      </div>
+      <div class="card" id="inspectorCard">
+        <div class="card-head" id="inspectorTitle">Nothing selected</div>
+        <div class="card-body" id="inspector">
+          <p class="empty-state">Click something on the canvas, or pick a layer above, to change it here.</p>
+        </div>
+      </div>
+    </div>
+
+    <!-- CANVAS -->
+    <div class="tabpanel" id="panel-canvas" role="tabpanel" aria-labelledby="tab-canvas" hidden>
+      <div class="card">
+        <div class="card-head">Canvas size</div>
+        <div class="card-body">
+          <div class="field">
+            <label for="sizePreset">Shape</label>
+            <select id="sizePreset">
+              <option value="1500x600">Wide banner — 1500 × 600</option>
+              <option value="1920x1080">Widescreen — 1920 × 1080</option>
+              <option value="1080x1080">Square — 1080 × 1080</option>
+              <option value="1080x1920">Portrait / story — 1080 × 1920</option>
+              <option value="2480x3508">A4 poster — 2480 × 3508</option>
+              <option value="custom">Custom</option>
+            </select>
+          </div>
+          <div class="row">
+            <div>
+              <label for="canvasW">Width</label>
+              <input type="number" id="canvasW" min="200" max="6000" step="10" value="1500">
+            </div>
+            <div>
+              <label for="canvasH">Height</label>
+              <input type="number" id="canvasH" min="200" max="6000" step="10" value="600">
+            </div>
+          </div>
+          <div class="note">Changing the shape keeps your layers where they are — hit “Fit everything” if they end up off the edge.</div>
+        </div>
       </div>
 
-      <div class="field" style="margin-top: 16px;">
-        <label for="qualityRange">Export quality: <span id="qualityVal">1500 × 600</span></label>
-        <input type="range" id="qualityRange" min="400" max="2500" step="10" value="1500">
-        <div class="file-hint">Drag to pick any resolution between 400×160 (low) and 2500×1000 (high) — the 2.5:1 ratio stays fixed.</div>
+      <div class="card">
+        <div class="card-head">Background</div>
+        <div class="card-body">
+          <div class="field">
+            <label for="bgSelect">Preset</label>
+            <select id="bgSelect"></select>
+          </div>
+          <div class="field">
+            <label for="bgUpload">Your own image</label>
+            <div class="inline">
+              <input type="file" id="bgUpload" accept="image/*">
+              <button class="btn sm quiet" id="clearBgBtn">Clear</button>
+            </div>
+          </div>
+          <div class="row">
+            <div>
+              <label for="bgFit">Fit</label>
+              <select id="bgFit">
+                <option value="cover">Fill the canvas</option>
+                <option value="contain">Fit inside</option>
+                <option value="stretch">Stretch</option>
+                <option value="tile">Tile</option>
+              </select>
+            </div>
+            <div>
+              <label for="bgColor">Colour behind</label>
+              <input type="color" id="bgColor" value="#1b1f27">
+            </div>
+          </div>
+          <label class="check" style="margin-top:10px;">
+            <input type="checkbox" id="bgColorOn"> Use that colour
+          </label>
+          <div class="field" style="margin-top:12px;">
+            <label for="bgDim">Darken the image: <span id="bgDimVal">0</span>%</label>
+            <input type="range" id="bgDim" min="0" max="90" value="0">
+            <div class="note">Handy when a busy background is fighting your text.</div>
+          </div>
+        </div>
       </div>
 
-      <div class="download-row">
-        <button class="btn ghost" id="downloadLQBtn" disabled>Download low (400×160)</button>
-        <button class="btn primary" id="downloadBtn" disabled>Download standard (1500×600)</button>
-        <button class="btn gold" id="downloadHQBtn" disabled>Download high-res (2500×1000)</button>
+      <div class="card">
+        <div class="card-head">Frame</div>
+        <div class="card-body">
+          <div class="row">
+            <div>
+              <label for="borderStyle">Style</label>
+              <select id="borderStyle">
+                <option value="none">None</option>
+                <option value="solid">Solid</option>
+                <option value="wood">Wood planks</option>
+                <option value="stone">Stone bricks</option>
+                <option value="gold">Gold trim</option>
+                <option value="chalk">Chalkboard</option>
+              </select>
+            </div>
+            <div>
+              <label for="borderColor">Colour</label>
+              <input type="color" id="borderColor" value="#6b4a2a">
+            </div>
+          </div>
+          <div class="field" style="margin-top:12px;">
+            <label for="borderThickness">Thickness: <span id="borderThicknessVal">20</span>px</label>
+            <input type="range" id="borderThickness" min="4" max="120" value="20">
+          </div>
+        </div>
       </div>
-      <div class="download-row">
-        <button class="btn ghost" id="downloadCustomBtn" disabled>Download at slider quality</button>
-        <button class="btn ghost" id="copyImageBtn" disabled>Copy image</button>
-      </div>
-      <p class="badge-note">Images are generated entirely in your browser — nothing is uploaded anywhere.</p>
     </div>
   </div>
 </div>
 
-<footer>Built for Minecraft Education Edition join codes. Icon art © Mojang / Microsoft.</footer>
+<footer>Icon art © Mojang / Microsoft. Everything you make here stays on your device.</footer>
+<div class="toast" id="toast" role="status" aria-live="polite"></div>
 
 <script>
-/* ---------------------------------------------------------
-   CONFIG: Icon list — filenames unchanged from resource pack
---------------------------------------------------------- */
-const ICONS = [
-  { file: "icon_book_writable.png", name: "Book & Quill" },
-  { file: "icon_balloon.png",       name: "Balloon" },
-  { file: "icon_rail_normal.png",   name: "Rail" },
-  { file: "icon_alex.png",          name: "Alex" },
-  { file: "icon_cookie.png",        name: "Cookie" },
-  { file: "icon_fish_clownfish_raw.png", name: "Fish" },
-  { file: "icon_agent.png",         name: "Agent" },
-  { file: "icon_cake.png",          name: "Cake" },
-  { file: "icon_iron_pickaxe.png",  name: "Pickaxe" },
-  { file: "icon_water_bucket.png",  name: "Water Bucket" },
-  { file: "icon_steve.png",         name: "Steve" },
-  { file: "icon_apple.png",         name: "Apple" },
-  { file: "icon_carrot.png",        name: "Carrot" },
-  { file: "icon_panda.png",         name: "Panda" },
-  { file: "icon_sign.png",          name: "Sign" },
-  { file: "icon_potion.png",        name: "Potion" },
-  { file: "icon_map.png",           name: "Map" },
-  { file: "icon_llama.png",         name: "Llama" },
-];
+/* =========================================================
+   1. CONFIG — edit these to match your images/ folder
+   ========================================================= */
 const ICON_BASE_PATH = "images/";
+const BG_BASE_PATH   = "images/background/";
 
-/* ---------------------------------------------------------
-   CONFIG: Premade backgrounds — EDIT THESE FILENAMES
-   to match whatever you put in images/background/
---------------------------------------------------------- */
+const ICONS = [
+  { file: "icon_book_writable.png",      name: "Book & Quill" },
+  { file: "icon_balloon.png",            name: "Balloon" },
+  { file: "icon_rail_normal.png",        name: "Rail" },
+  { file: "icon_alex.png",               name: "Alex" },
+  { file: "icon_cookie.png",             name: "Cookie" },
+  { file: "icon_fish_clownfish_raw.png", name: "Fish" },
+  { file: "icon_agent.png",              name: "Agent" },
+  { file: "icon_cake.png",               name: "Cake" },
+  { file: "icon_iron_pickaxe.png",       name: "Pickaxe" },
+  { file: "icon_water_bucket.png",       name: "Water Bucket" },
+  { file: "icon_steve.png",              name: "Steve" },
+  { file: "icon_apple.png",              name: "Apple" },
+  { file: "icon_carrot.png",             name: "Carrot" },
+  { file: "icon_panda.png",              name: "Panda" },
+  { file: "icon_sign.png",               name: "Sign" },
+  { file: "icon_potion.png",             name: "Potion" },
+  { file: "icon_map.png",                name: "Map" },
+  { file: "icon_llama.png",              name: "Llama" },
+];
+
 const BACKGROUNDS = [
   { file: "background1.png", name: "Background 1" },
   { file: "background2.png", name: "Background 2" },
   { file: "background3.png", name: "Background 3" },
   { file: "background4.png", name: "Background 4" },
 ];
-const BG_BASE_PATH = "images/background/";
 
-/* ---------------------------------------------------------
-   STATE
---------------------------------------------------------- */
-let sequence = []; // array of icon objects (in chosen order), duplicates allowed
-let customBgImage = null;   // Image object if user uploaded their own background
-let selectedPresetBg = "none";
-let logoImage = null;       // Image object if user uploaded a logo
-let logoScaleValue = 600;   // 1–1000, same style as icon size slider
-let borderStyle = "none";
-let borderColor = "#6c6ff2";
-let tileColorMode = "color"; // "none" | "color"
-let tileColor = "#8a8f98";   // mid gray default
-let iconScaleValue = 600;    // 1–1000, mapped to a pixel size in renderPreview
-let titleText = "";
-let titleFont = "'Inter', -apple-system, BlinkMacSystemFont, 'Segoe UI', sans-serif";
-let titleSize = 28;
+const MAX_ICONS = 5;
 
-const iconImageCache = {}; // file -> Image
+const FONTS = [
+  ["'Inter', system-ui, sans-serif", "Inter"],
+  ["'Trebuchet MS', sans-serif", "Trebuchet"],
+  ["'Verdana', sans-serif", "Verdana"],
+  ["Georgia, 'Times New Roman', serif", "Georgia"],
+  ["'Courier New', monospace", "Courier"],
+  ["Impact, 'Arial Narrow', sans-serif", "Impact"],
+  ["'Comic Sans MS', cursive", "Comic Sans"],
+];
 
-function loadImage(src) {
-  return new Promise((resolve, reject) => {
+/* =========================================================
+   2. STATE
+   ========================================================= */
+const $ = (s) => document.querySelector(s);
+
+let doc = null;        // { w, h, bg, border, layers }
+let selectedId = null;
+let assetSeq = 0;
+const assets = {};     // id -> { src, img }
+const imgCache = new Map(); // src -> { img, ok, err, promise }
+
+function uid(p) { return p + Math.random().toString(36).slice(2, 9); }
+
+function blankDoc() {
+  return {
+    w: 1500, h: 600,
+    bg: { presetFile: "none", assetId: null, fit: "cover", color: "#1b1f27", colorOn: false, dim: 0 },
+    border: { style: "none", color: "#6b4a2a", thickness: 20 },
+    layers: [ makeIconsLayer() ],
+  };
+}
+
+function makeIconsLayer() {
+  return {
+    id: "icons", type: "icons", name: "Join code", visible: true,
+    items: [], x: 300, y: 200, tile: 180, gap: 26,
+    tileMode: "color", tileColor: "#8a8f98", tileRadius: 12,
+    tileStroke: true, pixelated: true,
+  };
+}
+
+function iconsLayer() { return doc.layers.find(l => l.type === "icons"); }
+
+/* =========================================================
+   3. IMAGE LOADING (sync-ish cache + render on load)
+   ========================================================= */
+function getImg(src) {
+  if (!src) return null;
+  let e = imgCache.get(src);
+  if (!e) {
+    e = { ok: false, err: false };
     const img = new Image();
-    img.crossOrigin = "anonymous";
-    img.onload = () => resolve(img);
-    img.onerror = reject;
+    e.img = img;
+    e.promise = new Promise((res) => {
+      img.onload = () => { e.ok = true; res(); render(); };
+      img.onerror = () => { e.err = true; res(); render(); updateWarnings(); };
+    });
     img.src = src;
+    imgCache.set(src, e);
+  }
+  return e.ok ? e.img : null;
+}
+
+function imagesReady() {
+  return Promise.all([...imgCache.values()].map(e => e.promise || Promise.resolve()));
+}
+
+function addAsset(src) {
+  const id = "a" + (++assetSeq);
+  assets[id] = { src };
+  getImg(src);
+  return id;
+}
+
+function assetImg(id) { return id && assets[id] ? getImg(assets[id].src) : null; }
+
+function readFileAsDataURL(file) {
+  return new Promise((res, rej) => {
+    const r = new FileReader();
+    r.onload = () => res(r.result);
+    r.onerror = rej;
+    r.readAsDataURL(file);
   });
 }
 
-function getIconImage(file) {
-  if (iconImageCache[file]) return iconImageCache[file];
-  const p = loadImage(ICON_BASE_PATH + file).catch(() => null);
-  iconImageCache[file] = p;
-  return p;
+function iconSrc(item) {
+  return item.assetId ? (assets[item.assetId] && assets[item.assetId].src) : ICON_BASE_PATH + item.file;
 }
 
-/* ---------------------------------------------------------
-   BUILD ICON GRID
---------------------------------------------------------- */
-const iconGrid = document.getElementById("iconGrid");
+/* =========================================================
+   4. GEOMETRY
+   ========================================================= */
+const measure = document.createElement("canvas").getContext("2d");
 
-ICONS.forEach((icon, idx) => {
-  const btn = document.createElement("button");
-  btn.className = "icon-btn";
-  btn.type = "button";
-  btn.dataset.file = icon.file;
-  btn.innerHTML = `
-    <img src="${ICON_BASE_PATH}${icon.file}" alt="${icon.name}" onerror="this.style.opacity=0.15;this.title='Missing: ${icon.file}'">
-    <span class="icon-name">${icon.name}</span>
-  `;
-  btn.addEventListener("click", () => toggleIcon(icon));
-  iconGrid.appendChild(btn);
-});
+function fontString(L) { return `${L.weight || 700} ${L.size}px ${L.font}`; }
+function textLines(L) { return String(L.text || "").split("\n"); }
 
-function toggleIcon(icon) {
-  // If clicking an icon that's already the LAST occurrence, treat as "add another"
-  // Simple rule: clicking always adds, unless we're at 5. Use badge counts to show usage.
-  if (sequence.length >= 5) {
-    flashMax();
-    return;
+function boundsOf(L) {
+  if (L.type === "text") {
+    const lines = textLines(L);
+    measure.font = fontString(L);
+    let w = 0;
+    for (const ln of lines) w = Math.max(w, measure.measureText(ln || " ").width);
+    const h = lines.length * L.size * 1.22;
+    return { x: L.x, y: L.y, w: Math.max(w, L.size * 0.4), h };
   }
-  sequence.push({ ...icon, uid: crypto.randomUUID() });
-  renderSequence();
-  renderGridState();
-  renderPreview();
+  if (L.type === "image") return { x: L.x, y: L.y, w: L.w, h: L.h };
+  if (L.type === "icons") {
+    const n = L.items.length;
+    if (!n) return { x: L.x, y: L.y, w: 0, h: 0 };
+    return { x: L.x, y: L.y, w: n * L.tile + (n - 1) * L.gap, h: L.tile };
+  }
+  return { x: 0, y: 0, w: 0, h: 0 };
 }
 
-function flashMax() {
-  const strip = document.getElementById("sequenceStrip");
-  strip.style.outline = "2px solid var(--danger)";
-  setTimeout(() => strip.style.outline = "none", 350);
+function applyBounds(L, b) {
+  if (L.type === "text") {
+    const lines = textLines(L).length;
+    L.size = Math.max(6, b.h / (lines * 1.22));
+    L.x = b.x; L.y = b.y;
+  } else if (L.type === "image") {
+    L.x = b.x; L.y = b.y; L.w = Math.max(8, b.w); L.h = Math.max(8, b.h);
+  } else if (L.type === "icons") {
+    const n = Math.max(L.items.length, 1);
+    L.tile = Math.max(8, (b.w - (n - 1) * L.gap) / n);
+    L.x = b.x; L.y = b.y;
+  }
 }
 
-function renderGridState() {
-  const counts = {};
-  sequence.forEach(s => counts[s.file] = (counts[s.file] || 0) + 1);
-  document.querySelectorAll(".icon-btn").forEach(btn => {
-    const file = btn.dataset.file;
-    const existingBadge = btn.querySelector(".count-badge");
-    if (existingBadge) existingBadge.remove();
-    if (counts[file]) {
-      btn.classList.add("selected");
-      const badge = document.createElement("span");
-      badge.className = "count-badge";
-      badge.textContent = counts[file];
-      btn.appendChild(badge);
-    } else {
-      btn.classList.remove("selected");
+function visibleLayers() { return doc.layers.filter(l => l.visible && !(l.type === "icons" && !l.items.length)); }
+function layerById(id) { return doc.layers.find(l => l.id === id); }
+
+/* =========================================================
+   5. RENDERING
+   ========================================================= */
+const stage = $("#stage"), sctx = stage.getContext("2d");
+const overlay = $("#overlay"), octx = overlay.getContext("2d");
+const stageBox = $("#stageBox");
+let viewScale = 1; // doc px -> css px
+
+function sizeStage() {
+  stageBox.style.aspectRatio = `${doc.w} / ${doc.h}`;
+  const rect = stageBox.getBoundingClientRect();
+  if (!rect.width) return;
+  const dpr = Math.min(window.devicePixelRatio || 1, 2.5);
+  for (const c of [stage, overlay]) {
+    c.width = Math.round(rect.width * dpr);
+    c.height = Math.round(rect.height * dpr);
+  }
+  viewScale = rect.width / doc.w;
+  sctx.setTransform(dpr, 0, 0, dpr, 0, 0);
+  octx.setTransform(dpr, 0, 0, dpr, 0, 0);
+}
+
+function render() {
+  if (!doc) return;
+  const rect = stageBox.getBoundingClientRect();
+  if (!rect.width) return;
+  sctx.save();
+  sctx.setTransform(1, 0, 0, 1, 0, 0);
+  sctx.clearRect(0, 0, stage.width, stage.height);
+  sctx.restore();
+  const dpr = stage.width / rect.width;
+  sctx.setTransform(dpr * viewScale, 0, 0, dpr * viewScale, 0, 0);
+  drawDoc(sctx, false);
+  drawOverlay();
+  updateWarnings();
+}
+
+function drawDoc(ctx, forExport, transparent) {
+  const W = doc.w, H = doc.h;
+
+  // background colour
+  if (doc.bg.colorOn && !(forExport && transparent)) {
+    ctx.fillStyle = doc.bg.color;
+    ctx.fillRect(0, 0, W, H);
+  }
+
+  // background image
+  const bgImg = doc.bg.assetId ? assetImg(doc.bg.assetId)
+              : (doc.bg.presetFile !== "none" ? getImg(BG_BASE_PATH + doc.bg.presetFile) : null);
+  if (bgImg) {
+    ctx.save();
+    ctx.imageSmoothingEnabled = true;
+    drawFitted(ctx, bgImg, W, H, doc.bg.fit);
+    ctx.restore();
+    if (doc.bg.dim > 0) {
+      ctx.fillStyle = `rgba(0,0,0,${doc.bg.dim / 100})`;
+      ctx.fillRect(0, 0, W, H);
     }
-  });
-}
-
-/* ---------------------------------------------------------
-   SEQUENCE STRIP (with drag reorder)
---------------------------------------------------------- */
-const sequenceStrip = document.getElementById("sequenceStrip");
-let dragUid = null;
-
-function renderSequence() {
-  sequenceStrip.innerHTML = "";
-  if (sequence.length === 0) {
-    sequenceStrip.innerHTML = `<span class="empty-msg">No icons selected yet — click some above.</span>`;
-    updateDownloadButtons();
-    return;
-  }
-  sequence.forEach((item) => {
-    const el = document.createElement("div");
-    el.className = "seq-item";
-    el.draggable = true;
-    el.dataset.uid = item.uid;
-    el.innerHTML = `
-      <img src="${ICON_BASE_PATH}${item.file}" alt="${item.name}">
-      <span class="remove-x" title="Remove">×</span>
-    `;
-    el.querySelector(".remove-x").addEventListener("click", (e) => {
-      e.stopPropagation();
-      sequence = sequence.filter(s => s.uid !== item.uid);
-      renderSequence();
-      renderGridState();
-      renderPreview();
-    });
-    el.addEventListener("dragstart", () => {
-      dragUid = item.uid;
-      el.classList.add("dragging");
-    });
-    el.addEventListener("dragend", () => {
-      el.classList.remove("dragging");
-      renderPreview();
-    });
-    el.addEventListener("dragover", (e) => {
-      e.preventDefault();
-      const dragging = sequenceStrip.querySelector(".dragging");
-      if (dragging && dragging !== el) {
-        const rect = el.getBoundingClientRect();
-        const before = (e.clientX - rect.left) < rect.width / 2;
-        sequenceStrip.insertBefore(dragging, before ? el : el.nextSibling);
-      }
-    });
-    el.addEventListener("drop", () => {
-      // Recompute sequence order from DOM
-      const uids = [...sequenceStrip.querySelectorAll(".seq-item")].map(n => n.dataset.uid);
-      sequence.sort((a, b) => uids.indexOf(a.uid) - uids.indexOf(b.uid));
-      renderPreview();
-    });
-    sequenceStrip.appendChild(el);
-  });
-  updateDownloadButtons();
-}
-
-document.getElementById("clearBtn").addEventListener("click", () => {
-  sequence = [];
-  renderSequence();
-  renderGridState();
-  renderPreview();
-});
-
-function updateDownloadButtons() {
-  const has = sequence.length >= 4;
-  document.getElementById("downloadLQBtn").disabled = !has;
-  document.getElementById("downloadBtn").disabled = !has;
-  document.getElementById("downloadHQBtn").disabled = !has;
-  document.getElementById("downloadCustomBtn").disabled = !has;
-  document.getElementById("copyImageBtn").disabled = !has;
-}
-
-/* ---------------------------------------------------------
-   BACKGROUND SELECT
---------------------------------------------------------- */
-const bgSelect = document.getElementById("bgSelect");
-const noneOpt = document.createElement("option");
-noneOpt.value = "none";
-noneOpt.textContent = "None (plain)";
-bgSelect.appendChild(noneOpt);
-
-BACKGROUNDS.forEach(bg => {
-  const opt = document.createElement("option");
-  opt.value = bg.file;
-  opt.textContent = bg.name;
-  bgSelect.appendChild(opt);
-});
-
-bgSelect.addEventListener("change", () => {
-  selectedPresetBg = bgSelect.value;
-  customBgImage = null; // preset overrides custom upload
-  renderPreview();
-});
-
-document.getElementById("bgUpload").addEventListener("change", (e) => {
-  const file = e.target.files[0];
-  if (!file) return;
-  const reader = new FileReader();
-  reader.onload = (ev) => {
-    const img = new Image();
-    img.onload = () => {
-      customBgImage = img;
-      selectedPresetBg = "none";
-      bgSelect.value = "none";
-      renderPreview();
-    };
-    img.src = ev.target.result;
-  };
-  reader.readAsDataURL(file);
-});
-
-document.getElementById("removeBgBtn").addEventListener("click", () => {
-  customBgImage = null;
-  selectedPresetBg = "none";
-  bgSelect.value = "none";
-  document.getElementById("bgUpload").value = "";
-  renderPreview();
-});
-
-document.getElementById("logoUpload").addEventListener("change", (e) => {
-  const file = e.target.files[0];
-  if (!file) return;
-  const reader = new FileReader();
-  reader.onload = (ev) => {
-    const img = new Image();
-    img.onload = () => {
-      logoImage = img;
-      renderPreview();
-    };
-    img.src = ev.target.result;
-  };
-  reader.readAsDataURL(file);
-});
-
-document.getElementById("removeLogoBtn").addEventListener("click", () => {
-  logoImage = null;
-  document.getElementById("logoUpload").value = "";
-  renderPreview();
-});
-
-document.getElementById("logoSizeRange").addEventListener("input", (e) => {
-  logoScaleValue = parseInt(e.target.value, 10);
-  document.getElementById("logoSizeVal").textContent = logoScaleValue;
-  renderPreview();
-});
-
-document.getElementById("borderSelect").addEventListener("change", (e) => {
-  borderStyle = e.target.value;
-  renderPreview();
-});
-
-document.getElementById("borderColor").addEventListener("input", (e) => {
-  borderColor = e.target.value;
-  renderPreview();
-});
-
-document.getElementById("tileColorEnabled").addEventListener("change", (e) => {
-  tileColorMode = e.target.value;
-  renderPreview();
-});
-
-document.getElementById("cardColor").addEventListener("input", (e) => {
-  tileColor = e.target.value;
-  renderPreview();
-});
-
-document.getElementById("scaleRange").addEventListener("input", (e) => {
-  iconScaleValue = parseInt(e.target.value, 10);
-  document.getElementById("scaleVal").textContent = iconScaleValue;
-  renderPreview();
-});
-
-document.getElementById("titleText").addEventListener("input", (e) => {
-  titleText = e.target.value;
-  renderPreview();
-});
-
-document.getElementById("titleFont").addEventListener("change", (e) => {
-  titleFont = e.target.value;
-  renderPreview();
-});
-
-document.getElementById("titleSizeRange").addEventListener("input", (e) => {
-  titleSize = parseInt(e.target.value, 10);
-  document.getElementById("titleSizeVal").textContent = titleSize;
-  renderPreview();
-});
-
-/* ---------------------------------------------------------
-   CANVAS RENDERING SETUP (must come before quality slider code below)
---------------------------------------------------------- */
-const canvas = document.getElementById("previewCanvas");
-const ctx = canvas.getContext("2d");
-
-const BASE_W = 1500;
-const BASE_H = 600;
-
-const qualityRange = document.getElementById("qualityRange");
-const qualityVal = document.getElementById("qualityVal");
-function updateQualityLabel() {
-  const w = parseInt(qualityRange.value, 10);
-  const h = Math.round(w * (BASE_H / BASE_W));
-  qualityVal.textContent = `${w} × ${h}`;
-}
-qualityRange.addEventListener("input", updateQualityLabel);
-updateQualityLabel();
-
-/* ---------------------------------------------------------
-   CANVAS RENDERING
---------------------------------------------------------- */
-
-async function renderPreview(exportScale = 1) {
-  const W = BASE_W * exportScale;
-  const H = BASE_H * exportScale;
-  canvas.width = W;
-  canvas.height = H;
-  ctx.clearRect(0, 0, W, H);
-  ctx.imageSmoothingEnabled = false;
-
-  // 1. Background — leave fully transparent if nothing is selected/uploaded
-  if (customBgImage) {
-    drawCover(customBgImage, 0, 0, W, H);
-  } else if (selectedPresetBg !== "none") {
-    const img = await loadImage(BG_BASE_PATH + selectedPresetBg).catch(() => null);
-    if (img) {
-      drawCover(img, 0, 0, W, H);
-    }
-    // else: no fallback fill — stays transparent if the preset image fails to load
-  }
-  // else: no background chosen at all — canvas stays fully transparent
-
-  // 2. Border frame
-  drawBorderStyle(borderStyle, W, H, exportScale, borderColor);
-
-  let contentTop = 40 * exportScale;
-
-  // --- Icon tile size is computed independently of the logo/title, using only
-  //     the canvas width and icon count, so growing the logo or title text
-  //     never shrinks the icons. Logo/title instead push contentTop down,
-  //     which moves the icon row lower (and, if there's no room left, it will
-  //     simply sit close to the bottom margin rather than shrink).
-  const iconGap = 22 * exportScale;
-  const iconAvailableW = W - 60 * exportScale; // side margin so tiles never touch the border
-  const nIcons = Math.max(sequence.length, 1);
-  const maxPossibleTileByWidth = iconAvailableW / nIcons - iconGap;
-  const maxPossibleTileByCanvas = H * 0.85; // never bigger than ~85% of full canvas height
-  const maxPossibleTile = Math.min(maxPossibleTileByWidth, maxPossibleTileByCanvas);
-  const minTile = 2 * exportScale;
-  const requestedTile = minTile + (maxPossibleTile - minTile) * (iconScaleValue / 1000);
-  const rowWidthAtRequested = nIcons * requestedTile + (nIcons - 1) * iconGap;
-  const fitScale = Math.min(1, iconAvailableW / rowWidthAtRequested);
-  const tileSize = Math.max(minTile, requestedTile * fitScale);
-
-  // 3. Logo — sized generously and independently; only pushes content down
-  if (logoImage) {
-    const maxLogoH = H * 0.9; // logo can now get genuinely large if the slider is high
-    const minLogoH = 2 * exportScale;
-    const logoH = minLogoH + (maxLogoH - minLogoH) * (logoScaleValue / 1000);
-    const logoW = logoImage.width * (logoH / logoImage.height);
-    ctx.drawImage(logoImage, (W - logoW) / 2, contentTop, logoW, logoH);
-    contentTop += logoH + 20 * exportScale;
   }
 
-  // 4. Title text — sized independently; only pushes content down
-  if (titleText.trim()) {
-    const fontPx = titleSize * exportScale;
-    ctx.font = `700 ${fontPx}px ${titleFont}`;
-    ctx.fillStyle = "#ffffff";
-    ctx.textAlign = "center";
-    ctx.shadowColor = "rgba(0,0,0,0.6)";
-    ctx.shadowBlur = 4 * exportScale;
-    ctx.shadowOffsetY = 2 * exportScale;
-    ctx.fillText(titleText, W / 2, contentTop + fontPx);
-    ctx.shadowBlur = 0;
-    ctx.shadowOffsetY = 0;
-    contentTop += fontPx + 32 * exportScale;
-  }
+  for (const L of visibleLayers()) drawLayer(ctx, L);
 
-  // 5. Icon row — size was already fixed above; just position it in whatever
-  //    vertical space remains after the logo/title (may sit lower on the canvas,
-  //    but its size stays constant regardless of logo/title size).
-  if (sequence.length > 0) {
-    const iconImgs = await Promise.all(sequence.map(s => getIconImage(s.file)));
-    const validImgs = iconImgs.map((img, i) => ({ img, item: sequence[i] })).filter(x => x.img);
-    const n = validImgs.length;
-
-    const totalW = n * tileSize + (n - 1) * iconGap;
-    let x = (W - totalW) / 2;
-    const remainingH = H - contentTop - 20 * exportScale;
-    const y = contentTop + Math.max(0, (remainingH - tileSize) / 2);
-
-    validImgs.forEach(({ img }) => {
-      // tile background (skip fill entirely if "None")
-      if (tileColorMode === "color") {
-        roundRect(ctx, x, y, tileSize, tileSize, 10 * exportScale);
-        ctx.fillStyle = tileColor;
-        ctx.fill();
-        ctx.lineWidth = 3 * exportScale;
-        ctx.strokeStyle = "rgba(0,0,0,0.55)";
-        ctx.stroke();
-      }
-
-      // icon centered, padded, aspect ratio preserved (never stretched)
-      const pad = tileSize * 0.16;
-      const iconSize = tileSize - pad * 2;
-      const iconAspect = img.width / img.height;
-      let dw = iconSize, dh = iconSize;
-      if (iconAspect > 1) dh = iconSize / iconAspect;
-      else dw = iconSize * iconAspect;
-      const dx = x + (tileSize - dw) / 2;
-      const dy = y + (tileSize - dh) / 2;
-      ctx.drawImage(img, dx, dy, dw, dh);
-
-      x += tileSize + iconGap;
-    });
-  }
+  drawFrame(ctx, W, H);
 }
 
-function drawCover(img, x, y, w, h) {
-  const imgRatio = img.width / img.height;
-  const boxRatio = w / h;
+function drawFitted(ctx, img, W, H, fit) {
+  const ir = img.width / img.height, br = W / H;
+  if (fit === "stretch") { ctx.drawImage(img, 0, 0, W, H); return; }
+  if (fit === "tile") {
+    const p = ctx.createPattern(img, "repeat");
+    ctx.fillStyle = p; ctx.fillRect(0, 0, W, H); return;
+  }
+  if (fit === "contain") {
+    let w = W, h = W / ir;
+    if (h > H) { h = H; w = H * ir; }
+    ctx.drawImage(img, (W - w) / 2, (H - h) / 2, w, h); return;
+  }
+  // cover
   let sx, sy, sw, sh;
-  if (imgRatio > boxRatio) {
-    sh = img.height;
-    sw = sh * boxRatio;
-    sx = (img.width - sw) / 2;
-    sy = 0;
-  } else {
-    sw = img.width;
-    sh = sw / boxRatio;
-    sx = 0;
-    sy = (img.height - sh) / 2;
+  if (ir > br) { sh = img.height; sw = sh * br; sx = (img.width - sw) / 2; sy = 0; }
+  else { sw = img.width; sh = sw / br; sx = 0; sy = (img.height - sh) / 2; }
+  ctx.drawImage(img, sx, sy, sw, sh, 0, 0, W, H);
+}
+
+function drawLayer(ctx, L) {
+  ctx.save();
+  if (L.opacity != null) ctx.globalAlpha = L.opacity;
+
+  if (L.type === "image") {
+    const img = assetImg(L.assetId);
+    if (img) {
+      ctx.imageSmoothingEnabled = !L.pixelated;
+      if (L.shadow) { ctx.shadowColor = "rgba(0,0,0,0.55)"; ctx.shadowBlur = L.h * 0.06; ctx.shadowOffsetY = L.h * 0.03; }
+      ctx.drawImage(img, L.x, L.y, L.w, L.h);
+    }
   }
-  ctx.drawImage(img, sx, sy, sw, sh, x, y, w, h);
+
+  if (L.type === "text") {
+    const lines = textLines(L);
+    ctx.font = fontString(L);
+    ctx.textAlign = "left";
+    ctx.textBaseline = "alphabetic";
+    const b = boundsOf(L);
+    lines.forEach((ln, i) => {
+      let x = L.x;
+      measure.font = fontString(L);
+      const lw = measure.measureText(ln || " ").width;
+      if (L.align === "center") x = L.x + (b.w - lw) / 2;
+      if (L.align === "right") x = L.x + (b.w - lw);
+      const y = L.y + L.size * 0.95 + i * L.size * 1.22;
+      if (L.shadow) { ctx.shadowColor = "rgba(0,0,0,0.6)"; ctx.shadowBlur = L.size * 0.14; ctx.shadowOffsetY = L.size * 0.06; }
+      if (L.strokeWidth > 0) {
+        ctx.lineJoin = "round";
+        ctx.lineWidth = L.size * (L.strokeWidth / 100) * 2;
+        ctx.strokeStyle = L.strokeColor;
+        ctx.strokeText(ln, x, y);
+      }
+      ctx.shadowBlur = 0; ctx.shadowOffsetY = 0;
+      ctx.fillStyle = L.color;
+      ctx.fillText(ln, x, y);
+    });
+  }
+
+  if (L.type === "icons") {
+    let x = L.x;
+    for (const item of L.items) {
+      if (L.tileMode === "color") {
+        roundRect(ctx, x, L.y, L.tile, L.tile, L.tileRadius * (L.tile / 180));
+        ctx.fillStyle = L.tileColor;
+        ctx.fill();
+        if (L.tileStroke) {
+          ctx.lineWidth = Math.max(1, L.tile * 0.017);
+          ctx.strokeStyle = "rgba(0,0,0,0.55)";
+          ctx.stroke();
+        }
+      }
+      const img = getImg(iconSrc(item));
+      const pad = L.tile * 0.16;
+      const box = L.tile - pad * 2;
+      if (img) {
+        ctx.imageSmoothingEnabled = !L.pixelated;
+        const ar = img.width / img.height;
+        let dw = box, dh = box;
+        if (ar > 1) dh = box / ar; else dw = box * ar;
+        ctx.drawImage(img, x + (L.tile - dw) / 2, L.y + (L.tile - dh) / 2, dw, dh);
+      } else {
+        ctx.save();
+        ctx.setLineDash([L.tile * 0.08, L.tile * 0.06]);
+        ctx.strokeStyle = "rgba(224,98,95,0.9)";
+        ctx.lineWidth = Math.max(1, L.tile * 0.02);
+        ctx.strokeRect(x + pad, L.y + pad, box, box);
+        ctx.restore();
+      }
+      x += L.tile + L.gap;
+    }
+  }
+  ctx.restore();
 }
 
 function roundRect(c, x, y, w, h, r) {
+  r = Math.max(0, Math.min(r, w / 2, h / 2));
   c.beginPath();
   c.moveTo(x + r, y);
   c.arcTo(x + w, y, x + w, y + h, r);
@@ -1066,115 +876,946 @@ function roundRect(c, x, y, w, h, r) {
   c.closePath();
 }
 
-function drawBorderStyle(style, W, H, scale, color) {
-  if (style === "none") return;
-
-  // Different presets vary thickness/texture; color always comes from the picker.
-  const thicknessByStyle = { wood: 20, stone: 22, gold: 14, chalk: 16 };
-  const thickness = (thicknessByStyle[style] || 18) * scale;
-
-  const base = color || "#6c6ff2";
-  const shade = shadeColor(base, -25); // darker inner line, derived from chosen color
-
-  ctx.fillStyle = base;
-  ctx.fillRect(0, 0, W, thickness); // top
-  ctx.fillRect(0, H - thickness, W, thickness); // bottom
-  ctx.fillRect(0, 0, thickness, H); // left
-  ctx.fillRect(W - thickness, 0, thickness, H); // right
-
-  ctx.strokeStyle = shade;
-  ctx.lineWidth = 4 * scale;
-  ctx.strokeRect(thickness / 2, thickness / 2, W - thickness, H - thickness);
-}
-
-function shadeColor(hex, percent) {
-  // Lighten (positive) or darken (negative) a #rrggbb color by percent.
-  const num = parseInt(hex.replace("#", ""), 16);
-  let r = (num >> 16) + Math.round(2.55 * percent);
-  let g = ((num >> 8) & 0x00ff) + Math.round(2.55 * percent);
-  let b = (num & 0x0000ff) + Math.round(2.55 * percent);
-  r = Math.max(0, Math.min(255, r));
-  g = Math.max(0, Math.min(255, g));
-  b = Math.max(0, Math.min(255, b));
+function shade(hex, pct) {
+  const n = parseInt(hex.replace("#", ""), 16);
+  const f = (v) => Math.max(0, Math.min(255, v + Math.round(2.55 * pct)));
+  const r = f(n >> 16), g = f((n >> 8) & 255), b = f(n & 255);
   return `#${(1 << 24 | r << 16 | g << 8 | b).toString(16).slice(1)}`;
 }
 
-/* ---------------------------------------------------------
-   DOWNLOAD
---------------------------------------------------------- */
-document.getElementById("downloadLQBtn").addEventListener("click", async () => {
-  await renderPreview(400 / BASE_W);
-  triggerDownload("join-code-low.png");
-  setTimeout(() => renderPreview(currentSliderScale()), 50);
+function drawFrame(ctx, W, H) {
+  const { style, color, thickness: t } = doc.border;
+  if (style === "none" || t <= 0) return;
+  ctx.save();
+  ctx.fillStyle = color;
+  ctx.fillRect(0, 0, W, t);
+  ctx.fillRect(0, H - t, W, t);
+  ctx.fillRect(0, 0, t, H);
+  ctx.fillRect(W - t, 0, t, H);
+
+  const dark = shade(color, -28), light = shade(color, 18);
+
+  if (style === "wood") {
+    ctx.strokeStyle = dark; ctx.lineWidth = Math.max(1, t * 0.06);
+    for (let x = 0; x < W; x += t * 2.4) {
+      ctx.beginPath(); ctx.moveTo(x, 0); ctx.lineTo(x, t); ctx.moveTo(x + t * 1.2, H - t); ctx.lineTo(x + t * 1.2, H); ctx.stroke();
+    }
+    for (let y = 0; y < H; y += t * 2.4) {
+      ctx.beginPath(); ctx.moveTo(0, y); ctx.lineTo(t, y); ctx.moveTo(W - t, y + t * 1.2); ctx.lineTo(W, y + t * 1.2); ctx.stroke();
+    }
+  } else if (style === "stone") {
+    ctx.strokeStyle = dark; ctx.lineWidth = Math.max(1, t * 0.08);
+    const s = t;
+    for (let x = 0; x < W; x += s) {
+      ctx.beginPath(); ctx.moveTo(x, 0); ctx.lineTo(x, t); ctx.stroke();
+      ctx.beginPath(); ctx.moveTo(x + s / 2, H - t); ctx.lineTo(x + s / 2, H); ctx.stroke();
+    }
+    for (let y = 0; y < H; y += s) {
+      ctx.beginPath(); ctx.moveTo(0, y); ctx.lineTo(t, y); ctx.stroke();
+      ctx.beginPath(); ctx.moveTo(W - t, y + s / 2); ctx.lineTo(W, y + s / 2); ctx.stroke();
+    }
+  } else if (style === "gold") {
+    ctx.strokeStyle = light; ctx.lineWidth = Math.max(1, t * 0.18);
+    ctx.strokeRect(t * 0.22, t * 0.22, W - t * 0.44, H - t * 0.44);
+    ctx.strokeStyle = dark;
+    ctx.strokeRect(t * 0.8, t * 0.8, W - t * 1.6, H - t * 1.6);
+  } else if (style === "chalk") {
+    ctx.strokeStyle = "rgba(255,255,255,0.75)";
+    ctx.lineWidth = Math.max(1, t * 0.12);
+    ctx.setLineDash([t * 0.7, t * 0.5]);
+    ctx.strokeRect(t * 0.5, t * 0.5, W - t, H - t);
+    ctx.setLineDash([]);
+  } else {
+    ctx.strokeStyle = dark;
+    ctx.lineWidth = Math.max(1, t * 0.16);
+    ctx.strokeRect(t / 2, t / 2, W - t, H - t);
+  }
+  ctx.restore();
+}
+
+/* =========================================================
+   6. OVERLAY (selection, handles, guides)
+   ========================================================= */
+let guides = [];
+const HANDLE = 11;
+
+function drawOverlay() {
+  const rect = stageBox.getBoundingClientRect();
+  octx.save();
+  octx.setTransform(1, 0, 0, 1, 0, 0);
+  octx.clearRect(0, 0, overlay.width, overlay.height);
+  octx.restore();
+  const dpr = overlay.width / rect.width;
+  octx.setTransform(dpr, 0, 0, dpr, 0, 0);
+
+  // snap guides
+  octx.strokeStyle = "#58c07a";
+  octx.lineWidth = 1;
+  octx.setLineDash([5, 4]);
+  for (const g of guides) {
+    octx.beginPath();
+    if (g.axis === "x") { octx.moveTo(g.v * viewScale, 0); octx.lineTo(g.v * viewScale, doc.h * viewScale); }
+    else { octx.moveTo(0, g.v * viewScale); octx.lineTo(doc.w * viewScale, g.v * viewScale); }
+    octx.stroke();
+  }
+  octx.setLineDash([]);
+
+  const L = layerById(selectedId);
+  if (!L || !L.visible) return;
+  const b = boundsOf(L);
+  if (!b.w || !b.h) return;
+  const x = b.x * viewScale, y = b.y * viewScale, w = b.w * viewScale, h = b.h * viewScale;
+
+  octx.strokeStyle = "#58c07a";
+  octx.lineWidth = 1.5;
+  octx.strokeRect(x, y, w, h);
+
+  octx.fillStyle = "#ffffff";
+  octx.strokeStyle = "#2b6b43";
+  for (const p of handlePoints(b)) {
+    octx.beginPath();
+    octx.arc(p.x * viewScale, p.y * viewScale, HANDLE / 2, 0, Math.PI * 2);
+    octx.fill(); octx.stroke();
+  }
+}
+
+function handlePoints(b) {
+  return [
+    { k: "nw", x: b.x, y: b.y },
+    { k: "ne", x: b.x + b.w, y: b.y },
+    { k: "sw", x: b.x, y: b.y + b.h },
+    { k: "se", x: b.x + b.w, y: b.y + b.h },
+  ];
+}
+
+/* =========================================================
+   7. POINTER INTERACTION
+   ========================================================= */
+let drag = null;
+
+function toDoc(ev) {
+  const r = stageBox.getBoundingClientRect();
+  return { x: (ev.clientX - r.left) / r.width * doc.w, y: (ev.clientY - r.top) / r.height * doc.h };
+}
+
+overlay.addEventListener("pointerdown", (ev) => {
+  overlay.setPointerCapture(ev.pointerId);
+  overlay.focus({ preventScroll: true });
+  const p = toDoc(ev);
+  const tol = (HANDLE + 6) / 2 / viewScale;
+
+  const sel = layerById(selectedId);
+  if (sel && sel.visible) {
+    const b = boundsOf(sel);
+    if (b.w && b.h) {
+      for (const hp of handlePoints(b)) {
+        if (Math.hypot(p.x - hp.x, p.y - hp.y) <= tol) {
+          drag = { mode: "resize", handle: hp.k, layer: sel, orig: { ...b }, moved: false };
+          return;
+        }
+      }
+    }
+  }
+
+  const hit = [...visibleLayers()].reverse().find(L => {
+    const b = boundsOf(L);
+    return b.w && b.h && p.x >= b.x && p.x <= b.x + b.w && p.y >= b.y && p.y <= b.y + b.h;
+  });
+
+  if (hit) {
+    select(hit.id);
+    const b = boundsOf(hit);
+    drag = { mode: "move", layer: hit, dx: p.x - b.x, dy: p.y - b.y, moved: false };
+  } else {
+    select(null);
+  }
 });
 
-document.getElementById("downloadBtn").addEventListener("click", async () => {
-  await renderPreview(1);
-  triggerDownload("join-code.png");
-});
+overlay.addEventListener("pointermove", (ev) => {
+  const p = toDoc(ev);
 
-document.getElementById("downloadHQBtn").addEventListener("click", async () => {
-  await renderPreview(2500 / BASE_W);
-  triggerDownload("join-code-highres.png");
-  setTimeout(() => renderPreview(currentSliderScale()), 50);
-});
-
-document.getElementById("downloadCustomBtn").addEventListener("click", async () => {
-  const scale = currentSliderScale();
-  await renderPreview(scale);
-  const w = Math.round(BASE_W * scale);
-  triggerDownload(`join-code-${w}w.png`);
-});
-
-document.getElementById("copyImageBtn").addEventListener("click", async () => {
-  const btn = document.getElementById("copyImageBtn");
-  const originalLabel = btn.textContent;
-
-  if (!navigator.clipboard || !window.ClipboardItem) {
-    btn.textContent = "Copy not supported";
-    setTimeout(() => (btn.textContent = originalLabel), 1800);
+  if (!drag) {
+    // cursor feedback
+    const sel = layerById(selectedId);
+    let cur = "default";
+    if (sel && sel.visible) {
+      const b = boundsOf(sel);
+      const tol = (HANDLE + 6) / 2 / viewScale;
+      for (const hp of handlePoints(b)) {
+        if (Math.hypot(p.x - hp.x, p.y - hp.y) <= tol) cur = (hp.k === "nw" || hp.k === "se") ? "nwse-resize" : "nesw-resize";
+      }
+    }
+    if (cur === "default") {
+      const over = [...visibleLayers()].reverse().some(L => {
+        const b = boundsOf(L);
+        return b.w && p.x >= b.x && p.x <= b.x + b.w && p.y >= b.y && p.y <= b.y + b.h;
+      });
+      cur = over ? "move" : "default";
+    }
+    overlay.style.cursor = cur;
     return;
   }
 
-  try {
-    // Copy at the current preview resolution (full BASE_W x BASE_H).
-    await renderPreview(1);
-    const blob = await new Promise(resolve => canvas.toBlob(resolve, "image/png"));
-    await navigator.clipboard.write([
-      new ClipboardItem({ "image/png": blob })
-    ]);
-    btn.textContent = "Copied!";
-  } catch (err) {
-    btn.textContent = "Copy failed";
+  drag.moved = true;
+
+  if (drag.mode === "move") {
+    const L = drag.layer;
+    const b = boundsOf(L);
+    let nx = p.x - drag.dx, ny = p.y - drag.dy;
+    const snapped = snap(nx, ny, b.w, b.h, ev.shiftKey);
+    nx = snapped.x; ny = snapped.y;
+    applyBounds(L, { x: nx, y: ny, w: b.w, h: b.h });
   }
-  setTimeout(() => (btn.textContent = originalLabel), 1800);
+
+  if (drag.mode === "resize") {
+    const b0 = drag.orig, L = drag.layer, k = drag.handle;
+    const left = k === "nw" || k === "sw", top = k === "nw" || k === "ne";
+    const ax = left ? b0.x + b0.w : b0.x;
+    const ay = top ? b0.y + b0.h : b0.y;
+    let nw = Math.abs(p.x - ax), nh = Math.abs(p.y - ay);
+    const s = Math.max(nw / b0.w, nh / b0.h, 0.02);
+    nw = b0.w * s; nh = b0.h * s;
+    const nx = left ? ax - nw : ax;
+    const ny = top ? ay - nh : ay;
+    applyBounds(L, { x: nx, y: ny, w: nw, h: nh });
+  }
+
+  render();
 });
 
-function currentSliderScale() {
-  const w = parseInt(qualityRange.value, 10);
-  return w / BASE_W;
+function endDrag() {
+  if (drag && drag.moved) { pushHistory(); syncInspector(); }
+  drag = null;
+  guides = [];
+  render();
+}
+overlay.addEventListener("pointerup", endDrag);
+overlay.addEventListener("pointercancel", endDrag);
+
+overlay.addEventListener("dblclick", () => {
+  const L = layerById(selectedId);
+  if (!L) return;
+  showTab("layers");
+  const f = $("#inspector").querySelector("textarea, input[type=text]");
+  if (f) { f.focus(); f.select && f.select(); }
+});
+
+function snap(x, y, w, h, disabled) {
+  guides = [];
+  if (disabled) return { x, y };
+  const t = 8 / viewScale;
+  const cx = x + w / 2, cy = y + h / 2;
+  const xTargets = [{ v: doc.w / 2, at: "c" }, { v: 40, at: "l" }, { v: doc.w - 40, at: "r" }];
+  const yTargets = [{ v: doc.h / 2, at: "c" }, { v: 40, at: "t" }, { v: doc.h - 40, at: "b" }];
+  for (const L of visibleLayers()) {
+    if (drag && L === drag.layer) continue;
+    const b = boundsOf(L);
+    if (!b.w) continue;
+    xTargets.push({ v: b.x + b.w / 2, at: "c" });
+    yTargets.push({ v: b.y + b.h / 2, at: "c" });
+  }
+  for (const tg of xTargets) {
+    if (tg.at === "c" && Math.abs(cx - tg.v) < t) { x = tg.v - w / 2; guides.push({ axis: "x", v: tg.v }); break; }
+    if (tg.at === "l" && Math.abs(x - tg.v) < t) { x = tg.v; guides.push({ axis: "x", v: tg.v }); break; }
+    if (tg.at === "r" && Math.abs(x + w - tg.v) < t) { x = tg.v - w; guides.push({ axis: "x", v: tg.v }); break; }
+  }
+  for (const tg of yTargets) {
+    if (tg.at === "c" && Math.abs(cy - tg.v) < t) { y = tg.v - h / 2; guides.push({ axis: "y", v: tg.v }); break; }
+    if (tg.at === "t" && Math.abs(y - tg.v) < t) { y = tg.v; guides.push({ axis: "y", v: tg.v }); break; }
+    if (tg.at === "b" && Math.abs(y + h - tg.v) < t) { y = tg.v - h; guides.push({ axis: "y", v: tg.v }); break; }
+  }
+  return { x, y };
 }
 
-function triggerDownload(filename) {
-  canvas.toBlob((blob) => {
+/* keyboard */
+overlay.addEventListener("keydown", (e) => {
+  const L = layerById(selectedId);
+  if (["ArrowLeft", "ArrowRight", "ArrowUp", "ArrowDown"].includes(e.key) && L) {
+    e.preventDefault();
+    const step = e.shiftKey ? 20 : 2;
+    const b = boundsOf(L);
+    const dx = (e.key === "ArrowLeft" ? -step : e.key === "ArrowRight" ? step : 0);
+    const dy = (e.key === "ArrowUp" ? -step : e.key === "ArrowDown" ? step : 0);
+    applyBounds(L, { x: b.x + dx, y: b.y + dy, w: b.w, h: b.h });
+    render(); debouncedHistory();
+  }
+  if ((e.key === "Delete" || e.key === "Backspace") && L) { e.preventDefault(); deleteSelected(); }
+});
+
+document.addEventListener("keydown", (e) => {
+  const typing = /^(INPUT|TEXTAREA|SELECT)$/.test(document.activeElement.tagName);
+  if ((e.ctrlKey || e.metaKey) && e.key.toLowerCase() === "z") {
+    e.preventDefault(); e.shiftKey ? redo() : undo();
+  } else if ((e.ctrlKey || e.metaKey) && e.key.toLowerCase() === "y") {
+    e.preventDefault(); redo();
+  } else if ((e.ctrlKey || e.metaKey) && e.key.toLowerCase() === "d" && !typing) {
+    e.preventDefault(); duplicateSelected();
+  }
+});
+
+/* =========================================================
+   8. HISTORY
+   ========================================================= */
+let history = [], hIndex = -1, histTimer = null;
+
+function snapshot() {
+  return JSON.stringify({ doc, selectedId });
+}
+function pushHistory() {
+  const s = snapshot();
+  if (history[hIndex] === s) return;
+  history = history.slice(0, hIndex + 1);
+  history.push(s);
+  if (history.length > 60) history.shift();
+  hIndex = history.length - 1;
+  updateHistoryButtons();
+  autosave();
+}
+function debouncedHistory() {
+  clearTimeout(histTimer);
+  histTimer = setTimeout(pushHistory, 450);
+}
+function restore(s) {
+  const o = JSON.parse(s);
+  doc = o.doc; selectedId = o.selectedId;
+  sizeStage(); render(); renderAllPanels(); updateHistoryButtons(); autosave();
+}
+function undo() { if (hIndex > 0) { hIndex--; restore(history[hIndex]); } }
+function redo() { if (hIndex < history.length - 1) { hIndex++; restore(history[hIndex]); } }
+function updateHistoryButtons() {
+  $("#undoBtn").disabled = hIndex <= 0;
+  $("#redoBtn").disabled = hIndex >= history.length - 1;
+}
+
+/* =========================================================
+   9. AUTOSAVE
+   ========================================================= */
+const SAVE_KEY = "joinCodeMaker.v2";
+function projectData() {
+  return { doc, assets: Object.fromEntries(Object.entries(assets).map(([k, v]) => [k, v.src])), assetSeq };
+}
+function autosave() {
+  try {
+    const s = JSON.stringify(projectData());
+    if (s.length < 4_500_000) localStorage.setItem(SAVE_KEY, s);
+  } catch (_) { /* storage full or blocked — not a problem */ }
+}
+function loadProject(data) {
+  for (const [k, src] of Object.entries(data.assets || {})) { assets[k] = { src }; getImg(src); }
+  assetSeq = Math.max(assetSeq, data.assetSeq || 0);
+  doc = data.doc;
+  if (!iconsLayer()) doc.layers.unshift(makeIconsLayer());
+  selectedId = null;
+  history = []; hIndex = -1;
+  sizeStage(); pushHistory(); render(); renderAllPanels(); syncCanvasPanel();
+}
+function tryRestoreAutosave() {
+  try {
+    const s = localStorage.getItem(SAVE_KEY);
+    if (!s) return false;
+    loadProject(JSON.parse(s));
+    return true;
+  } catch (_) { return false; }
+}
+
+/* =========================================================
+   10. SELECTION + LAYER OPERATIONS
+   ========================================================= */
+function select(id) {
+  selectedId = id;
+  renderLayerList();
+  syncInspector();
+  const L = layerById(id);
+  $("#selInfo").textContent = L ? `Selected: ${layerName(L)}` : "Nothing selected";
+  render();
+}
+
+function layerName(L) {
+  if (L.type === "text") return (L.text || "Text").split("\n")[0].slice(0, 26) || "Text";
+  if (L.type === "icons") return `Join code (${L.items.length})`;
+  return L.name || "Image";
+}
+
+function addTextLayer(text) {
+  const L = {
+    id: uid("t"), type: "text", visible: true,
+    text: text || "Join code",
+    font: FONTS[0][0], weight: 700, size: Math.round(doc.h * 0.12),
+    color: "#ffffff", align: "center",
+    strokeColor: "#000000", strokeWidth: 0, shadow: true,
+    x: 0, y: doc.h * 0.08, opacity: 1,
+  };
+  doc.layers.push(L);
+  const b = boundsOf(L);
+  L.x = (doc.w - b.w) / 2;
+  select(L.id); pushHistory(); showTab("layers"); render();
+}
+
+async function addImageLayer(file) {
+  const src = await readFileAsDataURL(file);
+  const id = addAsset(src);
+  await imagesReady();
+  const img = assetImg(id);
+  const natW = img ? img.width : 300, natH = img ? img.height : 300;
+  const targetH = doc.h * 0.3;
+  const h = targetH, w = natW * (targetH / natH);
+  const L = {
+    id: uid("i"), type: "image", visible: true, name: file.name.replace(/\.[^.]+$/, ""),
+    assetId: id, x: (doc.w - w) / 2, y: doc.h * 0.06, w, h,
+    pixelated: false, shadow: false, opacity: 1,
+  };
+  doc.layers.push(L);
+  select(L.id); pushHistory(); render(); showTab("layers");
+}
+
+function deleteSelected() {
+  const L = layerById(selectedId);
+  if (!L) return;
+  if (L.type === "icons") {
+    L.items = [];
+    renderSeq(); renderIconGrid();
+  } else {
+    doc.layers = doc.layers.filter(x => x.id !== L.id);
+  }
+  select(null); pushHistory(); render(); renderLayerList();
+}
+
+function duplicateSelected() {
+  const L = layerById(selectedId);
+  if (!L || L.type === "icons") { toast("Pick a text or image layer to duplicate."); return; }
+  const copy = JSON.parse(JSON.stringify(L));
+  copy.id = uid(L.type[0]);
+  copy.x += 24; copy.y += 24;
+  doc.layers.push(copy);
+  select(copy.id); pushHistory(); render();
+}
+
+function centerSelected(axis) {
+  const L = layerById(selectedId);
+  if (!L) { toast("Select a layer first."); return; }
+  const b = boundsOf(L);
+  if (axis === "x") applyBounds(L, { ...b, x: (doc.w - b.w) / 2 });
+  else applyBounds(L, { ...b, y: (doc.h - b.h) / 2 });
+  pushHistory(); render();
+}
+
+function fitEverything() {
+  const ls = visibleLayers();
+  if (!ls.length) return;
+  const bs = ls.map(boundsOf).filter(b => b.w && b.h);
+  if (!bs.length) return;
+  const minX = Math.min(...bs.map(b => b.x)), minY = Math.min(...bs.map(b => b.y));
+  const maxX = Math.max(...bs.map(b => b.x + b.w)), maxY = Math.max(...bs.map(b => b.y + b.h));
+  const pad = Math.max(doc.w, doc.h) * 0.04 + (doc.border.style !== "none" ? doc.border.thickness : 0);
+  const availW = doc.w - pad * 2, availH = doc.h - pad * 2;
+  const s = Math.min(availW / (maxX - minX), availH / (maxY - minY), 4);
+  const newW = (maxX - minX) * s, newH = (maxY - minY) * s;
+  const offX = pad + (availW - newW) / 2, offY = pad + (availH - newH) / 2;
+  ls.forEach((L, i) => {
+    const b = boundsOf(L);
+    if (!b.w) return;
+    applyBounds(L, {
+      x: offX + (b.x - minX) * s,
+      y: offY + (b.y - minY) * s,
+      w: b.w * s, h: b.h * s,
+    });
+  });
+  pushHistory(); render(); syncInspector();
+}
+
+/* =========================================================
+   11. ICON PICKER + SEQUENCE
+   ========================================================= */
+let customIcons = []; // { assetId, name }
+
+function allPickerIcons() {
+  return [...ICONS.map(i => ({ ...i, key: i.file })), ...customIcons.map(c => ({ ...c, key: c.assetId }))];
+}
+
+function renderIconGrid() {
+  const grid = $("#iconGrid");
+  const q = $("#iconSearch").value.trim().toLowerCase();
+  const counts = {};
+  for (const it of iconsLayer().items) {
+    const k = it.assetId || it.file;
+    counts[k] = (counts[k] || 0) + 1;
+  }
+  grid.innerHTML = "";
+  const list = allPickerIcons().filter(i => !q || i.name.toLowerCase().includes(q));
+  if (!list.length) {
+    grid.innerHTML = `<p class="empty-state">No icons match “${escapeHtml(q)}”.</p>`;
+    return;
+  }
+  for (const icon of list) {
+    const src = icon.assetId ? assets[icon.assetId].src : ICON_BASE_PATH + icon.file;
+    const btn = document.createElement("button");
+    btn.className = "icon-btn" + (counts[icon.key] ? " used" : "");
+    btn.type = "button";
+    btn.title = `Add ${icon.name}`;
+    btn.innerHTML = `<img src="${src}" alt="" onerror="this.style.opacity=.15">
+                     <span class="icon-name">${escapeHtml(icon.name)}</span>
+                     ${counts[icon.key] ? `<span class="badge">${counts[icon.key]}</span>` : ""}`;
+    btn.addEventListener("click", () => addIcon(icon));
+    grid.appendChild(btn);
+  }
+}
+
+function addIcon(icon) {
+  const L = iconsLayer();
+  if (L.items.length >= MAX_ICONS) { toast(`A join code holds ${MAX_ICONS} icons at most.`); return; }
+  const wasEmpty = L.items.length === 0;
+  L.items.push(icon.assetId ? { uid: uid("s"), assetId: icon.assetId, name: icon.name }
+                            : { uid: uid("s"), file: icon.file, name: icon.name });
+  if (wasEmpty) centerIconRow();
+  renderSeq(); renderIconGrid(); renderLayerList(); pushHistory(); render();
+}
+
+function centerIconRow() {
+  const L = iconsLayer();
+  const b = boundsOf(L);
+  L.x = (doc.w - b.w) / 2;
+  L.y = (doc.h - b.h) / 2;
+}
+
+function renderSeq() {
+  const strip = $("#seqStrip");
+  const L = iconsLayer();
+  $("#seqCount").textContent = `${L.items.length} of ${MAX_ICONS}`;
+  strip.innerHTML = "";
+  if (!L.items.length) {
+    strip.innerHTML = `<span class="empty">Nothing picked yet — choose icons above and they'll land on the canvas.</span>`;
+    return;
+  }
+  L.items.forEach(item => {
+    const el = document.createElement("div");
+    el.className = "seq-item";
+    el.draggable = true;
+    el.dataset.uid = item.uid;
+    el.innerHTML = `<img src="${iconSrc(item)}" alt="${escapeHtml(item.name || "")}" onerror="this.style.opacity=.2">
+                    <span class="x" title="Remove">×</span>`;
+    el.querySelector(".x").addEventListener("click", (e) => {
+      e.stopPropagation();
+      L.items = L.items.filter(i => i.uid !== item.uid);
+      renderSeq(); renderIconGrid(); renderLayerList(); pushHistory(); render();
+    });
+    el.addEventListener("dragstart", () => el.classList.add("dragging"));
+    el.addEventListener("dragend", () => {
+      el.classList.remove("dragging");
+      const order = [...strip.querySelectorAll(".seq-item")].map(n => n.dataset.uid);
+      L.items.sort((a, b) => order.indexOf(a.uid) - order.indexOf(b.uid));
+      pushHistory(); render();
+    });
+    el.addEventListener("dragover", (e) => {
+      e.preventDefault();
+      const dragging = strip.querySelector(".dragging");
+      if (dragging && dragging !== el) {
+        const r = el.getBoundingClientRect();
+        strip.insertBefore(dragging, (e.clientX - r.left) < r.width / 2 ? el : el.nextSibling);
+      }
+    });
+    strip.appendChild(el);
+  });
+}
+
+/* =========================================================
+   12. LAYER LIST + INSPECTOR
+   ========================================================= */
+function renderLayerList() {
+  const box = $("#layerList");
+  box.innerHTML = "";
+  const ordered = [...doc.layers].reverse();
+  ordered.forEach((L) => {
+    const row = document.createElement("div");
+    row.className = "layer" + (L.id === selectedId ? " sel" : "");
+    row.innerHTML = `
+      <button class="btn sm icon quiet" title="${L.visible ? "Hide" : "Show"}" data-act="vis">${L.visible ? "👁" : "🚫"}</button>
+      <span class="name ${L.visible ? "" : "off"}">${escapeHtml(layerName(L))}</span>
+      <span class="layer-actions">
+        <button class="btn sm icon quiet" title="Bring forward" data-act="up">▲</button>
+        <button class="btn sm icon quiet" title="Send back" data-act="down">▼</button>
+        ${L.type !== "icons" ? `<button class="btn sm icon quiet" title="Delete" data-act="del">✕</button>` : ""}
+      </span>`;
+    row.querySelector(".name").addEventListener("click", () => select(L.id));
+    row.addEventListener("click", (e) => {
+      const act = e.target.dataset && e.target.dataset.act;
+      if (!act) return;
+      const i = doc.layers.indexOf(L);
+      if (act === "vis") L.visible = !L.visible;
+      if (act === "up" && i < doc.layers.length - 1) doc.layers.splice(i + 1, 0, doc.layers.splice(i, 1)[0]);
+      if (act === "down" && i > 0) doc.layers.splice(i - 1, 0, doc.layers.splice(i, 1)[0]);
+      if (act === "del") { doc.layers.splice(i, 1); if (selectedId === L.id) selectedId = null; }
+      pushHistory(); renderLayerList(); render(); syncInspector();
+    });
+    box.appendChild(row);
+  });
+}
+
+function field(label, inner, note) {
+  return `<div class="field"><span class="field-label">${label}</span>${inner}${note ? `<div class="note">${note}</div>` : ""}</div>`;
+}
+
+function syncInspector() {
+  const box = $("#inspector"), head = $("#inspectorTitle");
+  const L = layerById(selectedId);
+  if (!L) {
+    head.textContent = "Nothing selected";
+    box.innerHTML = `<p class="empty-state">Click something on the canvas, or pick a layer above, to change it here.</p>`;
+    return;
+  }
+  head.textContent = layerName(L);
+  const b = boundsOf(L);
+
+  let html = "";
+
+  if (L.type === "text") {
+    html += field("Words", `<textarea id="ins_text">${escapeHtml(L.text)}</textarea>`, "Press Enter for a second line.");
+    html += `<div class="row">
+      ${field("Font", `<select id="ins_font">${FONTS.map(f => `<option value="${f[0]}" ${f[0] === L.font ? "selected" : ""}>${f[1]}</option>`).join("")}</select>`)}
+      ${field("Weight", `<select id="ins_weight">${[400, 500, 600, 700, 800].map(w => `<option ${w == L.weight ? "selected" : ""}>${w}</option>`).join("")}</select>`)}
+    </div>`;
+    html += `<div class="row">
+      ${field("Size (px)", `<input type="number" id="ins_size" min="6" max="4000" step="1" value="${Math.round(L.size)}">`)}
+      ${field("Colour", `<input type="color" id="ins_color" value="${L.color}">`)}
+    </div>`;
+    html += `<div class="row">
+      ${field("Line up", `<select id="ins_align">${["left", "center", "right"].map(a => `<option value="${a}" ${a === L.align ? "selected" : ""}>${a}</option>`).join("")}</select>`)}
+      ${field("Outline colour", `<input type="color" id="ins_strokeColor" value="${L.strokeColor}">`)}
+    </div>`;
+    html += field(`Outline thickness: <span id="ins_strokeWidthVal">${L.strokeWidth}</span>%`, `<input type="range" id="ins_strokeWidth" min="0" max="20" value="${L.strokeWidth}">`);
+    html += `<label class="check"><input type="checkbox" id="ins_shadow" ${L.shadow ? "checked" : ""}> Drop shadow</label>`;
+  }
+
+  if (L.type === "image") {
+    html += field(`Size: <span id="ins_wVal">${Math.round(L.w)}</span> × ${Math.round(L.h)} px`,
+      `<input type="range" id="ins_imgScale" min="2" max="300" value="${Math.round(L.w / doc.w * 100)}">`,
+      "Or drag a corner on the canvas.");
+    html += field(`Fade: <span id="ins_opVal">${Math.round((L.opacity ?? 1) * 100)}</span>%`, `<input type="range" id="ins_opacity" min="5" max="100" value="${Math.round((L.opacity ?? 1) * 100)}">`);
+    html += `<label class="check" style="margin-bottom:8px;"><input type="checkbox" id="ins_pixel" ${L.pixelated ? "checked" : ""}> Keep pixel edges crisp</label>`;
+    html += `<label class="check"><input type="checkbox" id="ins_shadow2" ${L.shadow ? "checked" : ""}> Drop shadow</label>`;
+  }
+
+  if (L.type === "icons") {
+    html += field(`Icon size: <span id="ins_tileVal">${Math.round(L.tile)}</span>px`, `<input type="range" id="ins_tile" min="16" max="${Math.round(Math.max(doc.w, doc.h))}" value="${Math.round(L.tile)}">`);
+    html += field(`Space between: <span id="ins_gapVal">${Math.round(L.gap)}</span>px`, `<input type="range" id="ins_gap" min="0" max="240" value="${Math.round(L.gap)}">`);
+    html += `<div class="row">
+      ${field("Tile behind icons", `<select id="ins_tileMode"><option value="none" ${L.tileMode === "none" ? "selected" : ""}>None</option><option value="color" ${L.tileMode === "color" ? "selected" : ""}>Solid colour</option></select>`)}
+      ${field("Tile colour", `<input type="color" id="ins_tileColor" value="${L.tileColor}">`)}
+    </div>`;
+    html += field(`Corner rounding: <span id="ins_radVal">${L.tileRadius}</span>`, `<input type="range" id="ins_tileRadius" min="0" max="90" value="${L.tileRadius}">`);
+    html += `<label class="check" style="margin-bottom:8px;"><input type="checkbox" id="ins_tileStroke" ${L.tileStroke ? "checked" : ""}> Outline each tile</label>`;
+    html += `<label class="check"><input type="checkbox" id="ins_pixel2" ${L.pixelated ? "checked" : ""}> Keep pixel edges crisp</label>`;
+  }
+
+  html += `<div class="row" style="margin-top:14px;">
+    ${field("X position", `<input type="number" id="ins_x" value="${Math.round(b.x)}">`)}
+    ${field("Y position", `<input type="number" id="ins_y" value="${Math.round(b.y)}">`)}
+  </div>`;
+
+  box.innerHTML = html;
+  wireInspector(L);
+}
+
+function wireInspector(L) {
+  const on = (id, ev, fn) => { const el = $("#" + id); if (el) el.addEventListener(ev, fn); };
+  const live = () => { render(); debouncedHistory(); };
+
+  on("ins_text", "input", e => { L.text = e.target.value; renderLayerList(); live(); });
+  on("ins_font", "change", e => { L.font = e.target.value; render(); pushHistory(); });
+  on("ins_weight", "change", e => { L.weight = +e.target.value; render(); pushHistory(); });
+  on("ins_size", "input", e => { L.size = Math.max(6, +e.target.value || 6); live(); });
+  on("ins_color", "input", e => { L.color = e.target.value; live(); });
+  on("ins_align", "change", e => { L.align = e.target.value; render(); pushHistory(); });
+  on("ins_strokeColor", "input", e => { L.strokeColor = e.target.value; live(); });
+  on("ins_strokeWidth", "input", e => { L.strokeWidth = +e.target.value; $("#ins_strokeWidthVal").textContent = L.strokeWidth; live(); });
+  on("ins_shadow", "change", e => { L.shadow = e.target.checked; render(); pushHistory(); });
+
+  on("ins_imgScale", "input", e => {
+    const pct = +e.target.value;
+    const ar = L.w / L.h;
+    const cx = L.x + L.w / 2, cy = L.y + L.h / 2;
+    L.w = doc.w * pct / 100; L.h = L.w / ar;
+    L.x = cx - L.w / 2; L.y = cy - L.h / 2;
+    $("#ins_wVal").textContent = Math.round(L.w);
+    live();
+  });
+  on("ins_opacity", "input", e => { L.opacity = +e.target.value / 100; $("#ins_opVal").textContent = e.target.value; live(); });
+  on("ins_pixel", "change", e => { L.pixelated = e.target.checked; render(); pushHistory(); });
+  on("ins_shadow2", "change", e => { L.shadow = e.target.checked; render(); pushHistory(); });
+
+  on("ins_tile", "input", e => {
+    const b = boundsOf(L); const cx = b.x + b.w / 2, cy = b.y + b.h / 2;
+    L.tile = +e.target.value;
+    const nb = boundsOf(L);
+    L.x = cx - nb.w / 2; L.y = cy - nb.h / 2;
+    $("#ins_tileVal").textContent = Math.round(L.tile); live();
+  });
+  on("ins_gap", "input", e => {
+    const b = boundsOf(L); const cx = b.x + b.w / 2;
+    L.gap = +e.target.value;
+    const nb = boundsOf(L); L.x = cx - nb.w / 2;
+    $("#ins_gapVal").textContent = Math.round(L.gap); live();
+  });
+  on("ins_tileMode", "change", e => { L.tileMode = e.target.value; render(); pushHistory(); });
+  on("ins_tileColor", "input", e => { L.tileColor = e.target.value; live(); });
+  on("ins_tileRadius", "input", e => { L.tileRadius = +e.target.value; $("#ins_radVal").textContent = L.tileRadius; live(); });
+  on("ins_tileStroke", "change", e => { L.tileStroke = e.target.checked; render(); pushHistory(); });
+  on("ins_pixel2", "change", e => { L.pixelated = e.target.checked; render(); pushHistory(); });
+
+  on("ins_x", "input", e => { const b = boundsOf(L); applyBounds(L, { ...b, x: +e.target.value || 0 }); live(); });
+  on("ins_y", "input", e => { const b = boundsOf(L); applyBounds(L, { ...b, y: +e.target.value || 0 }); live(); });
+}
+
+/* =========================================================
+   13. CANVAS PANEL
+   ========================================================= */
+function syncCanvasPanel() {
+  $("#canvasW").value = doc.w;
+  $("#canvasH").value = doc.h;
+  const key = `${doc.w}x${doc.h}`;
+  const preset = [...$("#sizePreset").options].some(o => o.value === key);
+  $("#sizePreset").value = preset ? key : "custom";
+  $("#bgSelect").value = doc.bg.assetId ? "none" : doc.bg.presetFile;
+  $("#bgFit").value = doc.bg.fit;
+  $("#bgColor").value = doc.bg.color;
+  $("#bgColorOn").checked = doc.bg.colorOn;
+  $("#bgDim").value = doc.bg.dim;
+  $("#bgDimVal").textContent = doc.bg.dim;
+  $("#borderStyle").value = doc.border.style;
+  $("#borderColor").value = doc.border.color;
+  $("#borderThickness").value = doc.border.thickness;
+  $("#borderThicknessVal").textContent = doc.border.thickness;
+  updateOutHeight();
+}
+
+function setCanvasSize(w, h) {
+  doc.w = Math.max(200, Math.min(6000, Math.round(w)));
+  doc.h = Math.max(200, Math.min(6000, Math.round(h)));
+  sizeStage(); render(); syncCanvasPanel(); pushHistory();
+}
+
+/* =========================================================
+   14. EXPORT
+   ========================================================= */
+function updateOutHeight() {
+  const w = +$("#outW").value || doc.w;
+  $("#outHLabel").value = Math.round(w * doc.h / doc.w);
+}
+
+async function exportCanvas() {
+  await imagesReady();
+  const outW = Math.max(100, Math.min(6000, +$("#outW").value || doc.w));
+  const scale = outW / doc.w;
+  const c = document.createElement("canvas");
+  c.width = Math.round(doc.w * scale);
+  c.height = Math.round(doc.h * scale);
+  const ctx = c.getContext("2d");
+  ctx.setTransform(scale, 0, 0, scale, 0, 0);
+  drawDoc(ctx, true, $("#transparentBg").checked);
+  return c;
+}
+
+async function download() {
+  const c = await exportCanvas();
+  c.toBlob((blob) => {
     const url = URL.createObjectURL(blob);
     const a = document.createElement("a");
     a.href = url;
-    a.download = filename;
-    document.body.appendChild(a);
-    a.click();
-    a.remove();
-    URL.revokeObjectURL(url);
+    a.download = `join-code-${c.width}x${c.height}.png`;
+    document.body.appendChild(a); a.click(); a.remove();
+    setTimeout(() => URL.revokeObjectURL(url), 1000);
+    toast("Saved to your downloads.");
   }, "image/png");
 }
 
-/* ---------------------------------------------------------
-   INIT
---------------------------------------------------------- */
-renderSequence();
-renderGridState();
-renderPreview();
-</script>
+async function copyImage() {
+  if (!navigator.clipboard || !window.ClipboardItem) { toast("This browser can't copy images — use Download instead."); return; }
+  try {
+    const c = await exportCanvas();
+    const blob = await new Promise(r => c.toBlob(r, "image/png"));
+    await navigator.clipboard.write([new ClipboardItem({ "image/png": blob })]);
+    toast("Copied — paste it anywhere.");
+  } catch (_) {
+    toast("Copy didn't work here — use Download instead.");
+  }
+}
 
+/* =========================================================
+   15. WARNINGS + TOAST
+   ========================================================= */
+function updateWarnings() {
+  const off = visibleLayers().filter(L => {
+    const b = boundsOf(L);
+    if (!b.w) return false;
+    return b.x < -1 || b.y < -1 || b.x + b.w > doc.w + 1 || b.y + b.h > doc.h + 1;
+  });
+  const el = $("#offCanvasWarn");
+  if (off.length) {
+    el.hidden = false;
+    el.innerHTML = `${off.length === 1 ? "One layer runs" : off.length + " layers run"} past the edge of the canvas and will be cut off. <button class="btn sm" id="warnFitBtn" style="margin-left:6px;">Fit everything</button>`;
+    const btn = $("#warnFitBtn");
+    if (btn) btn.onclick = fitEverything;
+  } else el.hidden = true;
+
+  const anyMissing = [...imgCache.entries()].some(([src, e]) => e.err && src.startsWith(ICON_BASE_PATH));
+  $("#missingWarn").hidden = !anyMissing;
+  $("#startHint").hidden = iconsLayer().items.length > 0;
+}
+
+let toastTimer;
+function toast(msg) {
+  const t = $("#toast");
+  t.textContent = msg;
+  t.classList.add("show");
+  clearTimeout(toastTimer);
+  toastTimer = setTimeout(() => t.classList.remove("show"), 2200);
+}
+
+function escapeHtml(s) {
+  return String(s).replace(/[&<>"']/g, c => ({ "&": "&amp;", "<": "&lt;", ">": "&gt;", '"': "&quot;", "'": "&#39;" }[c]));
+}
+
+/* =========================================================
+   16. TABS
+   ========================================================= */
+function showTab(name) {
+  for (const t of document.querySelectorAll(".tab")) {
+    const on = t.id === "tab-" + name;
+    t.setAttribute("aria-selected", on ? "true" : "false");
+    $("#panel-" + t.id.slice(4)).hidden = !on;
+  }
+}
+document.querySelectorAll(".tab").forEach(t => t.addEventListener("click", () => showTab(t.id.slice(4))));
+
+/* =========================================================
+   17. WIRING
+   ========================================================= */
+function renderAllPanels() {
+  renderIconGrid(); renderSeq(); renderLayerList(); syncInspector(); syncCanvasPanel();
+}
+
+$("#iconSearch").addEventListener("input", renderIconGrid);
+$("#clearSeqBtn").addEventListener("click", () => {
+  iconsLayer().items = [];
+  renderSeq(); renderIconGrid(); renderLayerList(); pushHistory(); render();
+});
+$("#selectIconsBtn").addEventListener("click", () => { select("icons"); showTab("layers"); });
+
+$("#customIconInput").addEventListener("change", async (e) => {
+  for (const f of e.target.files) {
+    const src = await readFileAsDataURL(f);
+    customIcons.push({ assetId: addAsset(src), name: f.name.replace(/\.[^.]+$/, "").slice(0, 16) });
+  }
+  e.target.value = "";
+  await imagesReady();
+  renderIconGrid(); autosave();
+});
+
+$("#addTextBtn").addEventListener("click", () => addTextLayer());
+$("#addImageInput").addEventListener("change", async (e) => {
+  if (e.target.files[0]) await addImageLayer(e.target.files[0]);
+  e.target.value = "";
+});
+
+$("#undoBtn").addEventListener("click", undo);
+$("#redoBtn").addEventListener("click", redo);
+$("#centerHBtn").addEventListener("click", () => centerSelected("x"));
+$("#centerVBtn").addEventListener("click", () => centerSelected("y"));
+$("#fitBtn").addEventListener("click", fitEverything);
+$("#dupBtn").addEventListener("click", duplicateSelected);
+$("#delBtn").addEventListener("click", deleteSelected);
+
+$("#sizePreset").addEventListener("change", (e) => {
+  if (e.target.value === "custom") return;
+  const [w, h] = e.target.value.split("x").map(Number);
+  setCanvasSize(w, h);
+});
+$("#canvasW").addEventListener("change", () => setCanvasSize(+$("#canvasW").value, doc.h));
+$("#canvasH").addEventListener("change", () => setCanvasSize(doc.w, +$("#canvasH").value));
+
+const bgSelect = $("#bgSelect");
+bgSelect.innerHTML = `<option value="none">None</option>` +
+  BACKGROUNDS.map(b => `<option value="${b.file}">${b.name}</option>`).join("");
+bgSelect.addEventListener("change", () => {
+  doc.bg.presetFile = bgSelect.value;
+  doc.bg.assetId = null;
+  render(); pushHistory();
+});
+$("#bgUpload").addEventListener("change", async (e) => {
+  const f = e.target.files[0];
+  if (!f) return;
+  doc.bg.assetId = addAsset(await readFileAsDataURL(f));
+  doc.bg.presetFile = "none";
+  bgSelect.value = "none";
+  await imagesReady();
+  render(); pushHistory();
+});
+$("#clearBgBtn").addEventListener("click", () => {
+  doc.bg.assetId = null; doc.bg.presetFile = "none";
+  bgSelect.value = "none"; $("#bgUpload").value = "";
+  render(); pushHistory();
+});
+$("#bgFit").addEventListener("change", e => { doc.bg.fit = e.target.value; render(); pushHistory(); });
+$("#bgColor").addEventListener("input", e => { doc.bg.color = e.target.value; doc.bg.colorOn = true; $("#bgColorOn").checked = true; render(); debouncedHistory(); });
+$("#bgColorOn").addEventListener("change", e => { doc.bg.colorOn = e.target.checked; render(); pushHistory(); });
+$("#bgDim").addEventListener("input", e => { doc.bg.dim = +e.target.value; $("#bgDimVal").textContent = e.target.value; render(); debouncedHistory(); });
+
+$("#borderStyle").addEventListener("change", e => { doc.border.style = e.target.value; render(); pushHistory(); });
+$("#borderColor").addEventListener("input", e => { doc.border.color = e.target.value; render(); debouncedHistory(); });
+$("#borderThickness").addEventListener("input", e => { doc.border.thickness = +e.target.value; $("#borderThicknessVal").textContent = e.target.value; render(); debouncedHistory(); });
+
+$("#outW").addEventListener("input", updateOutHeight);
+$("#downloadBtn").addEventListener("click", download);
+$("#copyBtn").addEventListener("click", copyImage);
+
+$("#saveProjectBtn").addEventListener("click", () => {
+  const blob = new Blob([JSON.stringify(projectData())], { type: "application/json" });
+  const url = URL.createObjectURL(blob);
+  const a = document.createElement("a");
+  a.href = url; a.download = "join-code-project.json";
+  document.body.appendChild(a); a.click(); a.remove();
+  setTimeout(() => URL.revokeObjectURL(url), 1000);
+  toast("Project saved.");
+});
+$("#loadProjectInput").addEventListener("change", async (e) => {
+  const f = e.target.files[0];
+  if (!f) return;
+  try {
+    loadProject(JSON.parse(await f.text()));
+    await imagesReady(); render();
+    toast("Project opened.");
+  } catch (_) { toast("That file didn't look like a saved project."); }
+  e.target.value = "";
+});
+$("#resetBtn").addEventListener("click", () => {
+  if (!confirm("Clear the canvas and start over?")) return;
+  doc = blankDoc();
+  customIcons = [];
+  selectedId = null;
+  history = []; hIndex = -1;
+  try { localStorage.removeItem(SAVE_KEY); } catch (_) {}
+  sizeStage(); pushHistory(); render(); renderAllPanels();
+});
+
+window.addEventListener("resize", () => { sizeStage(); render(); });
+if (window.ResizeObserver) new ResizeObserver(() => { sizeStage(); render(); }).observe(stageBox);
+
+/* =========================================================
+   18. START
+   ========================================================= */
+doc = blankDoc();
+const restored = tryRestoreAutosave();
+if (!restored) {
+  addTextLayer("Join code");
+  const t = doc.layers[doc.layers.length - 1];
+  t.y = doc.h * 0.06;
+  selectedId = null;
+}
+sizeStage();
+renderAllPanels();
+pushHistory();
+render();
+imagesReady().then(render);
+showTab("icons");
+</script>
 </body>
 </html>
