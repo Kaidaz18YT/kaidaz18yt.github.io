@@ -1,0 +1,192 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1, viewport-fit=cover">
+<title>Ledger — Connection Test</title>
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link href="https://fonts.googleapis.com/css2?family=IBM+Plex+Sans:wght@400;500;600&family=IBM+Plex+Mono:wght@400;500&display=swap" rel="stylesheet">
+<style>
+  :root {
+    --bg: #171615;
+    --bg-raised: #201F1D;
+    --border: #322F29;
+    --ink: #EDEAE3;
+    --ink-dim: #A8A399;
+    --ink-faint: #6f6b62;
+    --sage: #8FA184;
+    --danger: #C97C6E;
+    --amber: #C9A15C;
+    color-scheme: dark;
+  }
+  * { box-sizing: border-box; }
+  body {
+    background: var(--bg);
+    color: var(--ink);
+    font-family: 'IBM Plex Sans', system-ui, sans-serif;
+    margin: 0;
+    min-height: 100vh;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    padding: 20px;
+  }
+  .card {
+    background: var(--bg-raised);
+    border: 1px solid var(--border);
+    border-radius: 6px;
+    width: 100%;
+    max-width: 480px;
+    padding: 24px;
+  }
+  h1 {
+    font-size: 18px;
+    font-weight: 600;
+    margin: 0 0 16px 0;
+    padding-bottom: 12px;
+    border-bottom: 1px solid var(--border);
+  }
+  .test-list {
+    display: flex;
+    flex-direction: column;
+    gap: 12px;
+  }
+  .test-item {
+    display: flex;
+    align-items: center;
+    justify-content: space-between;
+    padding: 10px 12px;
+    background: var(--bg);
+    border: 1px solid var(--border);
+    border-radius: 4px;
+  }
+  .test-info {
+    display: flex;
+    flex-direction: column;
+    gap: 2px;
+  }
+  .test-name {
+    font-size: 14px;
+    font-weight: 500;
+  }
+  .test-url {
+    font-size: 12px;
+    font-family: 'IBM Plex Mono', monospace;
+    color: var(--ink-faint);
+  }
+  .status-badge {
+    font-size: 12px;
+    font-weight: 500;
+    padding: 4px 8px;
+    border-radius: 3px;
+    font-family: 'IBM Plex Mono', monospace;
+  }
+  .status-testing { background: var(--border); color: var(--amber); }
+  .status-ok { background: rgba(143, 161, 132, 0.2); color: var(--sage); }
+  .status-failed { background: rgba(201, 124, 110, 0.2); color: var(--danger); }
+
+  .summary {
+    margin-top: 20px;
+    padding-top: 16px;
+    border-top: 1px solid var(--border);
+    font-size: 13px;
+    color: var(--ink-dim);
+  }
+  button {
+    margin-top: 16px;
+    width: 100%;
+    padding: 10px;
+    background: #4A5D8A;
+    color: #fff;
+    border: none;
+    border-radius: 3px;
+    font-size: 14px;
+    font-weight: 500;
+    cursor: pointer;
+  }
+  button:hover { background: #5a70a3; }
+</style>
+</head>
+<body>
+
+<div class="card">
+  <h1>Safari Restriction Diagnostic</h1>
+  <div class="test-list" id="test-list"></div>
+  <div class="summary" id="summary">Running connectivity tests...</div>
+  <button id="retest-btn">Run Tests Again</button>
+</div>
+
+<script>
+const domains = [
+  { name: 'PocketBase Server', url: 'https://kaidaz18.duckdns.org/api/health', type: 'fetch' },
+  { name: 'CDNJS (PocketBase SDK)', url: 'https://cdnjs.cloudflare.com/ajax/libs/pocketbase/0.21.3/pocketbase.umd.js', type: 'fetch' },
+  { name: 'Google Fonts (Styles)', url: 'https://fonts.googleapis.com/css2?family=IBM+Plex+Sans&display=swap', type: 'fetch' },
+  { name: 'Google Fonts (Static)', url: 'https://fonts.gstatic.com/s/ibmplexsans/v19/z43H-q27C1f42d8IouB5.woff2', type: 'img' }
+];
+
+async function checkDomain(domain) {
+  try {
+    if (domain.type === 'fetch') {
+      await fetch(domain.url, { mode: 'no-cors', cache: 'no-store' });
+    } else {
+      await new Promise((resolve, reject) => {
+        const img = new Image();
+        img.onload = resolve;
+        img.onerror = reject;
+        img.src = domain.url + '?t=' + Date.now();
+      });
+    }
+    return true;
+  } catch (e) {
+    return false;
+  }
+}
+
+async function runDiagnostics() {
+  const container = document.getElementById('test-list');
+  const summaryEl = document.getElementById('summary');
+  container.innerHTML = '';
+  summaryEl.textContent = 'Running connectivity tests...';
+
+  let failedCount = 0;
+
+  for (const domain of domains) {
+    const item = document.createElement('div');
+    item.className = 'test-item';
+    item.innerHTML = `
+      <div class="test-info">
+        <span class="test-name">${domain.name}</span>
+        <span class="test-url">${new URL(domain.url).hostname}</span>
+      </div>
+      <span class="status-badge status-testing">Testing...</span>
+    `;
+    container.appendChild(item);
+
+    const badge = item.querySelector('.status-badge');
+    const success = await checkDomain(domain);
+
+    if (success) {
+      badge.className = 'status-badge status-ok';
+      badge.textContent = 'ALLOWED';
+    } else {
+      badge.className = 'status-badge status-failed';
+      badge.textContent = 'BLOCKED';
+      failedCount++;
+    }
+  }
+
+  if (failedCount === 0) {
+    summaryEl.textContent = 'All required websites are accessible!';
+    summaryEl.style.color = 'var(--sage)';
+  } else {
+    summaryEl.textContent = `${failedCount} domain(s) blocked. Add the red items to Safari "Allowed Websites".`;
+    summaryEl.style.color = 'var(--danger)';
+  }
+}
+
+document.getElementById('retest-btn').addEventListener('click', runDiagnostics);
+window.addEventListener('DOMContentLoaded', runDiagnostics);
+</script>
+
+</body>
+</html>
