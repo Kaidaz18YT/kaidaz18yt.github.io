@@ -570,6 +570,53 @@
   .rte-toolbar button.i { font-style: italic; }
   .rte-toolbar button.u { text-decoration: underline; }
   .rte-toolbar .sep { width: 1px; background: var(--border); margin: 3px 4px; }
+
+  .color-btn-wrap { position: relative; }
+  #color-toggle-btn { position: relative; font-weight: 700; }
+  #color-swatch-indicator {
+    position: absolute;
+    bottom: 4px; left: 50%;
+    transform: translateX(-50%);
+    width: 14px; height: 3px;
+    border-radius: 1px;
+    background: var(--ink);
+  }
+  .color-panel {
+    display: none;
+    position: absolute;
+    top: calc(100% + 4px);
+    left: 0;
+    background: var(--bg-raised);
+    border: 1px solid var(--border);
+    border-radius: var(--radius);
+    padding: 8px;
+    z-index: 20;
+    grid-template-columns: repeat(5, 24px);
+    gap: 6px;
+    box-shadow: 0 6px 20px rgba(0,0,0,0.35);
+  }
+  .color-panel.open { display: grid; }
+  .color-swatch {
+    width: 24px; height: 24px;
+    border-radius: 50%;
+    border: 1px solid var(--border-soft);
+    padding: 0;
+    display: flex; align-items: center; justify-content: center;
+    overflow: hidden;
+  }
+  .color-swatch:hover { border-color: var(--ink-faint); transform: scale(1.08); }
+  .color-custom {
+    position: relative;
+    background: conic-gradient(red, yellow, lime, cyan, blue, magenta, red);
+    cursor: pointer;
+  }
+  .color-custom input[type=color] {
+    position: absolute; inset: 0;
+    opacity: 0;
+    width: 100%; height: 100%;
+    cursor: pointer;
+    padding: 0; border: none;
+  }
   #note-content {
     min-height: 220px;
     max-height: 420px;
@@ -837,6 +884,23 @@
           <button type="button" data-cmd="bold" title="Bold"><b>B</b></button>
           <button type="button" data-cmd="italic" class="i" title="Italic">I</button>
           <button type="button" data-cmd="underline" class="u" title="Underline">U</button>
+          <div class="sep"></div>
+          <div class="color-btn-wrap">
+            <button type="button" id="color-toggle-btn" title="Text color">A<span id="color-swatch-indicator"></span></button>
+            <div class="color-panel" id="color-panel">
+              <button type="button" class="color-swatch" data-color="" title="Default" style="background:transparent; border:1px solid var(--border);"><span style="color:var(--ink); font-size:12px;">A</span></button>
+              <button type="button" class="color-swatch" data-color="#EDEAE3" title="Ink" style="background:#EDEAE3"></button>
+              <button type="button" class="color-swatch" data-color="#7C93CC" title="Blue" style="background:#7C93CC"></button>
+              <button type="button" class="color-swatch" data-color="#C9A15C" title="Amber" style="background:#C9A15C"></button>
+              <button type="button" class="color-swatch" data-color="#8FA184" title="Sage" style="background:#8FA184"></button>
+              <button type="button" class="color-swatch" data-color="#C97C6E" title="Red" style="background:#C97C6E"></button>
+              <button type="button" class="color-swatch" data-color="#B490C0" title="Purple" style="background:#B490C0"></button>
+              <button type="button" class="color-swatch" data-color="#6FB3B8" title="Teal" style="background:#6FB3B8"></button>
+              <label class="color-swatch color-custom" title="Custom color">
+                <input type="color" id="color-custom-input" value="#EDEAE3">
+              </label>
+            </div>
+          </div>
           <div class="sep"></div>
           <button type="button" data-cmd="insertUnorderedList" title="Bullet list">•—</button>
           <button type="button" data-cmd="insertOrderedList" title="Numbered list">1.</button>
@@ -1358,7 +1422,7 @@ $('file-drop').addEventListener('drop', (e)=>{
 });
 
 // rich text toolbar
-document.querySelectorAll('.rte-toolbar button').forEach(btn=>{
+document.querySelectorAll('.rte-toolbar button[data-cmd]').forEach(btn=>{
   btn.addEventListener('click', ()=>{
     const cmd = btn.dataset.cmd;
     $('note-content').focus();
@@ -1372,6 +1436,61 @@ document.querySelectorAll('.rte-toolbar button').forEach(btn=>{
     }
   });
 });
+
+// text color picker
+let savedSelectionRange = null;
+function saveSelection(){
+  const sel = window.getSelection();
+  if (sel.rangeCount > 0 && $('note-content').contains(sel.anchorNode)) {
+    savedSelectionRange = sel.getRangeAt(0).cloneRange();
+  }
+}
+function restoreSelection(){
+  if (savedSelectionRange) {
+    const sel = window.getSelection();
+    sel.removeAllRanges();
+    sel.addRange(savedSelectionRange);
+  }
+}
+function applyTextColor(color){
+  $('note-content').focus();
+  restoreSelection();
+  if (color) {
+    document.execCommand('foreColor', false, color);
+    $('color-swatch-indicator').style.background = color;
+  } else {
+    // "Default" clears color by removing the CSS-set foreColor span (best effort)
+    document.execCommand('foreColor', false, 'inherit');
+    $('color-swatch-indicator').style.background = 'var(--ink)';
+  }
+  $('color-panel').classList.remove('open');
+}
+$('color-toggle-btn').addEventListener('click', (e)=>{
+  e.stopPropagation();
+  saveSelection();
+  $('color-panel').classList.toggle('open');
+});
+document.querySelectorAll('.color-swatch[data-color]').forEach(sw=>{
+  sw.addEventListener('click', (e)=>{
+    e.stopPropagation();
+    applyTextColor(sw.dataset.color);
+  });
+});
+$('color-custom-input').addEventListener('input', (e)=>{
+  applyTextColor(e.target.value);
+});
+$('color-custom-input').addEventListener('click', (e)=>{
+  e.stopPropagation();
+  saveSelection();
+});
+document.addEventListener('click', (e)=>{
+  if (!e.target.closest('.color-btn-wrap')) {
+    $('color-panel').classList.remove('open');
+  }
+});
+// Keep selection saved as the user selects text, so the panel can open without losing it
+$('note-content').addEventListener('mouseup', saveSelection);
+$('note-content').addEventListener('keyup', saveSelection);
 
 $('note-save-btn').addEventListener('click', async ()=>{
   const title = $('note-title').value.trim() || 'Untitled';
