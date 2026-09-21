@@ -184,6 +184,8 @@
         .time-inputs .col { flex: 1; min-width: 260px; }
         .time-inputs .btns { display: flex; flex-wrap: wrap; gap: 4px; margin-top: 6px; }
         .time-inputs .btns button { padding: 4px 8px; font-size: 12px; }
+        .hint { font-size: 12px; color: var(--muted); margin-top: 4px; line-height: 1.4; }
+        .hint code { background: rgba(0,0,0,.07); padding: 1px 4px; border-radius: 3px; }
         .duration { font-size: 13px; color: var(--muted); margin-top: 14px; }
         .duration strong { color: var(--ink); }
 
@@ -272,9 +274,24 @@
     </div>
     <div class="duration" id="durationInfo">Clip length: <strong>0:30</strong></div>
 
+    <div style="margin-top:18px">
+        <label for="folder">Folder to run from</label>
+        <input type="text" id="folder" placeholder="C:\Users\Kaidaz18\Downloads" autocomplete="off" spellcheck="false">
+        <div class="hint">Paste the folder that holds yt-dlp.exe. The command starts with a <code>cd</code> to it, so it works from any PowerShell window. Leave blank to skip.</div>
+    </div>
+
+    <div style="margin-top:14px">
+        <label for="filename">File name</label>
+        <input type="text" id="filename" placeholder="Leave blank to use the video title" autocomplete="off" spellcheck="false">
+        <div class="hint">No extension needed, it is added for you.</div>
+    </div>
+
     <div class="row" style="margin-top:14px">
+        <label class="check"><input type="checkbox" id="mp4" checked> Save as .mp4 (uses H.264 video + AAC audio when YouTube has it, which plays almost everywhere)</label>
+    </div>
+    <div class="row" style="margin-top:8px">
         <label class="check"><input type="checkbox" id="dotSlash" checked> Run from this folder (<code>.\yt-dlp</code>)</label>
-        <label class="check"><input type="checkbox" id="precise"> Frame-accurate cuts (re-encodes at the cut points, slower)</label>
+        <label class="check"><input type="checkbox" id="precise" checked> Fix frozen start / audio sync (re-encodes at the cut points, slower)</label>
     </div>
 
     <div class="output-box" id="cmdOutput">Enter a URL to generate the command...</div>
@@ -458,11 +475,29 @@
         const out = $('cmdOutput');
         if (!raw) { out.textContent = 'Enter a URL to generate the command...'; return; }
         const url = videoId ? 'https://www.youtube.com/watch?v=' + videoId : raw;
-        const prog = $('dotSlash').checked ? '.\\yt-dlp' : 'yt-dlp';
+        // Windows "Copy as path" wraps the path in quotes, so strip those
+        const folder = $('folder').value.trim().replace(/^["']+|["']+$/g, '').replace(/[\\\/]+$/, '');
+        $('dotSlash').disabled = !!folder;
+        const prog = (folder || $('dotSlash').checked) ? '.\\yt-dlp' : 'yt-dlp';
         const section = `*${fmt(start)}-${fmt(end)}`;
-        let cmd = `${prog} --download-sections "${section}"`;
+        let cmd = folder ? `cd "${folder}"; ` : '';
+        cmd += `${prog} --download-sections "${section}"`;
         if ($('precise').checked) cmd += ' --force-keyframes-at-cuts';
-        cmd += ` -f "bestvideo[height<=1080][fps=60]+bestaudio/best[height<=1080]" "${url}"`;
+        const baseFmt = 'bestvideo[height<=1080][fps=60]+bestaudio/best[height<=1080]';
+        const mp4 = $('mp4').checked;
+        const fmtStr = mp4
+            ? 'bestvideo[height<=1080][fps=60][vcodec^=avc1]+bestaudio[ext=m4a]/' + baseFmt
+            : baseFmt;
+        cmd += ` -f "${fmtStr}"`;
+        if (mp4) cmd += ' --merge-output-format mp4';
+        // Strip characters Windows or PowerShell would choke on, and any typed extension
+        const name = $('filename').value.trim()
+            .replace(/\.(mp4|mkv|webm)$/i, '')
+            .replace(/[<>:"\/\\|?*$`\x00-\x1f]/g, '')
+            .replace(/%/g, '%%')
+            .trim();
+        if (name) cmd += ` -o "${name}.%(ext)s"`;
+        cmd += ` "${url}"`;
         out.textContent = cmd;
     }
 
@@ -718,6 +753,13 @@
         $(w).addEventListener('keydown', e => { if (e.key === 'Enter') { applyTyped(w); $(w).blur(); } });
     });
 
+    try { $('folder').value = localStorage.getItem('ytdlp-folder') || ''; } catch (e) { /* storage unavailable */ }
+    $('folder').addEventListener('input', () => {
+        try { localStorage.setItem('ytdlp-folder', $('folder').value); } catch (e) { /* ignore */ }
+        generateCommand();
+    });
+    $('filename').addEventListener('input', generateCommand);
+    $('mp4').addEventListener('change', generateCommand);
     $('dotSlash').addEventListener('change', generateCommand);
     $('precise').addEventListener('change', generateCommand);
 
