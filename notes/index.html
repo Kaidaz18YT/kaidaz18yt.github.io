@@ -681,7 +681,7 @@
       <button id="new-project-btn">Add</button>
     </div>
     <div class="rail-foot">
-      Live view for other screens: <a href="dashbaord/" target="_blank">dashboard.html</a>
+      Live view for other screens: <a href="dashboard.html" target="_blank">dashboard.html</a>
     </div>
   </aside>
 
@@ -835,6 +835,7 @@ function toast(msg){
 }
 
 // ---------- Auth ----------
+let booted = false;
 function showApp(){
   $('login-screen').classList.add('hidden');
   $('app').classList.add('visible');
@@ -872,7 +873,6 @@ $('logout-btn').addEventListener('click', ()=>{
 });
 
 // ---------- Boot ----------
-let booted = false;
 async function boot(){
   if (booted) return;
   booted = true;

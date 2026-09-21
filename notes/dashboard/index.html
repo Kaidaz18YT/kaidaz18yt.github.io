@@ -213,6 +213,8 @@ function projectName(id){
   return p ? p.name : null;
 }
 
+let booted = false;
+
 function showBoard(){
   $('login-screen').classList.add('hidden');
   $('board').classList.add('visible');
@@ -240,7 +242,6 @@ async function doLogin(){
 }
 $('signout').addEventListener('click', ()=>{ pb.authStore.clear(); showLogin(); });
 
-let booted = false;
 async function boot(){
   if (booted) return;
   booted = true;
