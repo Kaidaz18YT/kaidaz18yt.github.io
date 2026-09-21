@@ -3,7 +3,7 @@
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>yt-dlp Clip Editor</title>
+    <title>YouTube Clip Editor</title>
     <style>
         :root {
             --bg: #f4f5f7;
@@ -15,6 +15,8 @@
             --accent-dark: #005a9e;
             --playhead: #e53935;
             --track: #e6e8ec;
+            --good: #2e7d32;
+            --bad: #c62828;
         }
         * { box-sizing: border-box; }
         body {
@@ -36,12 +38,7 @@
             max-width: 880px;
             align-self: flex-start;
         }
-        h1 {
-            font-size: 24px;
-            margin: 0 0 20px;
-            color: var(--ink);
-            text-align: center;
-        }
+        h1 { font-size: 24px; margin: 0 0 20px; color: var(--ink); text-align: center; }
         label { display: block; margin-bottom: 5px; font-weight: 600; font-size: 14px; }
         input[type="text"] {
             width: 100%;
@@ -88,22 +85,6 @@
             display: none;
         }
         .msg code { background: rgba(0,0,0,.07); padding: 1px 4px; border-radius: 3px; }
-
-        /* First-time setup */
-        .setup { margin-bottom: 20px; border: 1px solid var(--line); border-radius: 6px; background: #f8fafc; }
-        .setup summary { padding: 12px 14px; cursor: pointer; font-weight: 600; font-size: 14px; }
-        .setup-body { padding: 0 14px 14px; font-size: 14px; line-height: 1.5; }
-        .setup-body p { margin: 10px 0; }
-        .setup-body code { background: rgba(0,0,0,.07); padding: 1px 4px; border-radius: 3px; }
-        .cmd-row { display: flex; gap: 8px; align-items: center; margin: 12px 0; flex-wrap: wrap; }
-        .cmd-row .what { flex-basis: 100%; font-size: 13px; color: #444; }
-        .cmd-row code {
-            flex: 1; min-width: 220px;
-            background: #272822; color: #f8f8f2;
-            padding: 8px 10px; border-radius: 4px;
-            font-family: "Courier New", Courier, monospace; font-size: 13px;
-        }
-        .cmd-row button { padding: 6px 10px; font-size: 12px; }
 
         /* Player */
         .player-box {
@@ -201,58 +182,60 @@
         .time-inputs .btns { display: flex; flex-wrap: wrap; gap: 4px; margin-top: 6px; }
         .time-inputs .btns button { padding: 4px 8px; font-size: 12px; }
         .hint { font-size: 12px; color: var(--muted); margin-top: 4px; line-height: 1.4; }
-        .hint code { background: rgba(0,0,0,.07); padding: 1px 4px; border-radius: 3px; }
         .duration { font-size: 13px; color: var(--muted); margin-top: 14px; }
         .duration strong { color: var(--ink); }
 
-        .output-box {
+        /* Clip maker */
+        .make-box {
             margin-top: 22px;
-            background-color: #272822;
-            color: #f8f8f2;
-            padding: 15px;
-            border-radius: 4px;
-            font-family: "Courier New", Courier, monospace;
-            font-size: 14px;
-            word-break: break-all;
-            white-space: pre-wrap;
-            min-height: 40px;
+            padding: 16px;
+            border: 1px solid var(--line);
+            border-radius: 6px;
+            background: #f8fafc;
         }
-        .copy-btn { margin-top: 10px; width: 100%; padding: 12px; font-size: 16px; }
+        #makeBtn { width: 100%; padding: 14px; font-size: 16px; }
+        .bar {
+            display: none;
+            margin-top: 14px;
+            height: 14px;
+            background: var(--track);
+            border-radius: 7px;
+            overflow: hidden;
+        }
+        .bar > div { height: 100%; width: 0; background: var(--accent); transition: width .3s; }
+        .bar.indeterminate > div { width: 40%; animation: slide 1.1s infinite ease-in-out; }
+        @keyframes slide { 0% { margin-left: -40%; } 100% { margin-left: 100%; } }
+        .status { margin-top: 10px; font-size: 14px; min-height: 20px; }
+        .status.err { color: var(--bad); }
+        .status.ok { color: var(--good); }
+        .result { display: none; margin-top: 12px; }
+        .result a.dl {
+            display: block; text-align: center; text-decoration: none;
+            background: var(--good); color: #fff; font-weight: 600;
+            padding: 14px; border-radius: 4px; font-size: 16px;
+        }
+        .result a.dl:hover { background: #1b5e20; }
+        .info-line { font-size: 13px; color: var(--muted); margin-top: 8px; text-align: center; }
+        .info-line .warn { color: #b26a00; font-weight: 600; }
+        pre.log {
+            display: none; margin-top: 10px; padding: 10px;
+            background: #272822; color: #f8f8f2; border-radius: 4px;
+            font-size: 12px; white-space: pre-wrap; word-break: break-all; max-height: 200px; overflow: auto;
+        }
     </style>
 </head>
 <body>
 
 <div class="container">
-    <h1>yt-dlp Clip Editor</h1>
+    <h1>YouTube Clip Editor</h1>
 
-    <details class="setup" id="setup">
-        <summary>First time here? Set up yt-dlp and ffmpeg</summary>
-        <div class="setup-body">
-            <p>This page builds the command, but your PC needs a few free programs to run it. On Windows, press Start, type <strong>PowerShell</strong>, press Enter, then run these one at a time. If winget asks you to agree to terms, type <code>Y</code> and press Enter.</p>
-
-            <div class="cmd-row">
-                <div class="what"><strong>yt-dlp</strong> downloads the video.</div>
-                <code>winget install yt-dlp.yt-dlp</code><button data-copy>Copy</button>
-            </div>
-            <div class="cmd-row">
-                <div class="what"><strong>ffmpeg</strong> cuts the clip and joins the video and audio. Clips won't work without it.</div>
-                <code>winget install Gyan.FFmpeg</code><button data-copy>Copy</button>
-            </div>
-            <div class="cmd-row">
-                <div class="what"><strong>Deno</strong> lets yt-dlp read YouTube's pages. Without it you may see a JavaScript runtime warning and miss some video formats.</div>
-                <code>winget install DenoLand.Deno</code><button data-copy>Copy</button>
-            </div>
-
-            <p>Close PowerShell and open a new one so it can find them. Then check they installed by running <code>yt-dlp --version</code> and <code>ffmpeg -version</code>. Each should print a version number.</p>
-            <p>Installed this way, the command works from any folder, so leave "Folder to run from" blank and untick the <code>.\</code> box below. The button here does that for you.</p>
-            <p class="hint">Don't have winget, or prefer to download it yourself? Get <code>yt-dlp.exe</code> from the <a href="https://github.com/yt-dlp/yt-dlp/releases/latest" target="_blank" rel="noopener">yt-dlp releases page</a>, put it in a folder, and paste that folder into "Folder to run from". You'll still need ffmpeg from the list above.</p>
-
-            <div class="row">
-                <button id="wingetSetup">I installed with winget, set up the command</button>
-                <button id="setupDone" class="primary">Got it, hide this</button>
-            </div>
+    <div class="url-row" style="margin-bottom:14px">
+        <div class="grow">
+            <label for="apiBase">Server address</label>
+            <input type="text" id="apiBase" placeholder="https://your-tunnel.trycloudflare.com" autocomplete="off" spellcheck="false">
         </div>
-    </details>
+    </div>
+    <div class="msg" id="apiMsg" style="background:#eef4ff;border-color:#a9c6f5"></div>
 
     <div class="url-row">
         <div class="grow">
@@ -319,28 +302,28 @@
     </div>
     <div class="duration" id="durationInfo">Clip length: <strong>0:30</strong></div>
 
-    <div style="margin-top:18px">
-        <label for="folder">Folder to run from</label>
-        <input type="text" id="folder" placeholder="C:\Users\Kaidaz18\Downloads" autocomplete="off" spellcheck="false">
-        <div class="hint">Paste the folder that holds yt-dlp.exe. The command starts with a <code>cd</code> to it, so it works from any PowerShell window. Leave blank to skip.</div>
-    </div>
-
-    <div style="margin-top:14px">
+    <div class="make-box">
         <label for="filename">File name</label>
-        <input type="text" id="filename" placeholder="Leave blank to use the video title" autocomplete="off" spellcheck="false">
-        <div class="hint">No extension needed, it is added for you.</div>
-    </div>
+        <input type="text" id="filename" placeholder="Leave blank for a generated name" autocomplete="off" spellcheck="false">
+        <div class="hint">No extension needed, .mp4 is added for you.</div>
 
-    <div class="row" style="margin-top:14px">
-        <label class="check"><input type="checkbox" id="mp4" checked> Save as .mp4 (uses H.264 video + AAC audio when YouTube has it, which plays almost everywhere)</label>
-    </div>
-    <div class="row" style="margin-top:8px">
-        <label class="check"><input type="checkbox" id="dotSlash" checked> Run from this folder (<code>.\yt-dlp</code>)</label>
-        <label class="check"><input type="checkbox" id="precise" checked> Fix frozen start / audio sync (re-encodes at the cut points, slower)</label>
-    </div>
+        <div class="row">
+            <label class="check"><input type="checkbox" id="precise" checked> Fix frozen start / audio sync (re-encodes at the cut points, slower)</label>
+        </div>
 
-    <div class="output-box" id="cmdOutput">Enter a URL to generate the command...</div>
-    <button class="copy-btn primary" id="copyBtn">Copy PowerShell Command</button>
+        <div style="margin-top:16px">
+            <button class="primary" id="makeBtn" disabled>Make clip</button>
+        </div>
+
+        <div class="bar" id="bar"><div id="barFill"></div></div>
+        <div class="status" id="status"></div>
+
+        <div class="result" id="result">
+            <a class="dl" id="dlLink" href="#">Download clip</a>
+            <div class="info-line" id="infoLine"></div>
+        </div>
+        <pre class="log" id="log"></pre>
+    </div>
 </div>
 
 <script>
@@ -360,6 +343,8 @@
     let dragging = null, scrubbing = false, panning = false;
     let pendingStart = null;
     let lastSeek = 0;
+    let pollTimer = null;
+    let working = false;
 
     const track = $('track'), overview = $('overview');
     const handles = { start: $('hStart'), end: $('hEnd') };
@@ -456,6 +441,7 @@
         const ready = duration > 0;
         track.classList.toggle('disabled', !ready);
         ['playBtn', 'previewBtn', 'zoomCutBtn', 'zoomFullBtn'].forEach(id => $(id).disabled = !ready);
+        $('makeBtn').disabled = !ready || working;
 
         if (ready) {
             // ruler
@@ -502,7 +488,6 @@
         $('durationInfo').innerHTML = 'Clip length: <strong>' + fmtShort(len, len % 1 !== 0) + '</strong>';
 
         renderPlayhead();
-        generateCommand();
     }
 
     function renderPlayhead() {
@@ -512,38 +497,6 @@
             ph.style.left = timeToPct(cur) + '%';
         } else ph.style.display = 'none';
         $('ovPlay').style.left = duration > 0 ? (cur / duration * 100) + '%' : '0';
-    }
-
-    // ---- Command ----
-    function generateCommand() {
-        const raw = $('url').value.trim();
-        const out = $('cmdOutput');
-        if (!raw) { out.textContent = 'Enter a URL to generate the command...'; return; }
-        const url = videoId ? 'https://www.youtube.com/watch?v=' + videoId : raw;
-        // Windows "Copy as path" wraps the path in quotes, so strip those
-        const folder = $('folder').value.trim().replace(/^["']+|["']+$/g, '').replace(/[\\\/]+$/, '');
-        $('dotSlash').disabled = !!folder;
-        const prog = (folder || $('dotSlash').checked) ? '.\\yt-dlp' : 'yt-dlp';
-        const section = `*${fmt(start)}-${fmt(end)}`;
-        let cmd = folder ? `cd "${folder}"; ` : '';
-        cmd += `${prog} --download-sections "${section}"`;
-        if ($('precise').checked) cmd += ' --force-keyframes-at-cuts';
-        const baseFmt = 'bestvideo[height<=1080][fps=60]+bestaudio/best[height<=1080]';
-        const mp4 = $('mp4').checked;
-        const fmtStr = mp4
-            ? 'bestvideo[height<=1080][fps=60][vcodec^=avc1]+bestaudio[ext=m4a]/' + baseFmt
-            : baseFmt;
-        cmd += ` -f "${fmtStr}"`;
-        if (mp4) cmd += ' --merge-output-format mp4';
-        // Strip characters Windows or PowerShell would choke on, and any typed extension
-        const name = $('filename').value.trim()
-            .replace(/\.(mp4|mkv|webm)$/i, '')
-            .replace(/[<>:"\/\\|?*$`\x00-\x1f]/g, '')
-            .replace(/%/g, '%%')
-            .trim();
-        if (name) cmd += ` -o "${name}.%(ext)s"`;
-        cmd += ` "${url}"`;
-        out.textContent = cmd;
     }
 
     // ---- Player ----
@@ -584,11 +537,9 @@
         const code = e.data;
         let html = 'The player reported error ' + code + '. ';
         if (code === 153 || location.protocol === 'file:') {
-            html += 'YouTube blocks embeds that have no web address to check. Opening this page straight from a file does that. ' +
-                'Serve it locally instead: in this folder run <code>python -m http.server 8000</code>, then open ' +
-                '<code>http://localhost:8000/yt-dlp-generator.html</code>. Hosting it on GitHub Pages works too.';
+            html += 'YouTube blocks embeds when it can\u2019t see a proper web address for the page. Open this page from the laptop\u2019s address (for example <code>http://192.168.0.245:3100</code>) rather than from a file.';
         } else if (code === 101 || code === 150) {
-            html += 'The uploader doesn\u2019t allow this video to be embedded, so the timeline can\u2019t preview it. You can still type the times by hand.';
+            html += 'The uploader doesn\u2019t allow this video to be embedded, so the timeline can\u2019t preview it.';
         } else if (code === 100) {
             html += 'The video was not found or is private.';
         } else {
@@ -605,6 +556,7 @@
         duration = 0;
         previewing = false;
         pendingStart = t;
+        resetResult();
         $('placeholder').style.display = 'none';
         if (player && playerReady) player.cueVideoById(id);
         else if (apiReady && !player) createPlayer();
@@ -618,9 +570,10 @@
         start = clamp(s, 0, Math.max(d - MIN_GAP, 0));
         end = clamp(start + 30, start + MIN_GAP, d);
         viewStart = 0; viewEnd = d;
-        if (pendingStart != null) zoomToCut(); else renderStatic();
+        const hadStart = pendingStart != null;
         pendingStart = null;
-        if (pendingStart == null && start > 0) player.seekTo(start, true);
+        if (hadStart) zoomToCut(); else renderStatic();
+        if (!hadStart && start > 0) player.seekTo(start, true);
     }
 
     // ---- Seeking ----
@@ -740,7 +693,6 @@
     $('loadBtn').addEventListener('click', loadVideo);
     $('url').addEventListener('keydown', e => { if (e.key === 'Enter') loadVideo(); });
     $('url').addEventListener('paste', () => setTimeout(loadVideo, 0));
-    $('url').addEventListener('input', generateCommand);
 
     $('playBtn').addEventListener('click', () => {
         if (!player) return;
@@ -798,62 +750,142 @@
         $(w).addEventListener('keydown', e => { if (e.key === 'Enter') { applyTyped(w); $(w).blur(); } });
     });
 
-    try { $('folder').value = localStorage.getItem('ytdlp-folder') || ''; } catch (e) { /* storage unavailable */ }
-    $('folder').addEventListener('input', () => {
-        try { localStorage.setItem('ytdlp-folder', $('folder').value); } catch (e) { /* ignore */ }
-        generateCommand();
-    });
-    $('filename').addEventListener('input', generateCommand);
-    $('mp4').addEventListener('change', generateCommand);
-    $('dotSlash').addEventListener('change', generateCommand);
-    $('precise').addEventListener('change', generateCommand);
-
-    $('copyBtn').addEventListener('click', () => {
-        const text = $('cmdOutput').textContent;
-        if (!text || text.startsWith('Enter a URL')) return;
-        const btn = $('copyBtn');
-        const done = () => { btn.textContent = 'Copied!'; setTimeout(() => btn.textContent = 'Copy PowerShell Command', 1400); };
-        if (navigator.clipboard && window.isSecureContext) {
-            navigator.clipboard.writeText(text).then(done).catch(() => fallbackCopy(text, done));
-        } else fallbackCopy(text, done);
-    });
-    function fallbackCopy(text, done) {
-        const ta = document.createElement('textarea');
-        ta.value = text; ta.style.position = 'fixed'; ta.style.opacity = '0';
-        document.body.appendChild(ta); ta.select();
-        try { document.execCommand('copy'); done(); } catch (e) { alert('Copy failed, select the command and copy it by hand.'); }
-        document.body.removeChild(ta);
+    // ---- Making the clip (talks to the server on the laptop) ----
+    function setStatus(text, cls) {
+        const el = $('status');
+        el.textContent = text;
+        el.className = 'status' + (cls ? ' ' + cls : '');
+    }
+    function resetResult() {
+        clearTimeout(pollTimer);
+        working = false;
+        $('bar').style.display = 'none';
+        $('bar').classList.remove('indeterminate');
+        $('barFill').style.width = '0';
+        $('result').style.display = 'none';
+        $('log').style.display = 'none';
+        setStatus('');
+    }
+    function setBar(pct, indeterminate) {
+        const bar = $('bar');
+        bar.style.display = 'block';
+        bar.classList.toggle('indeterminate', !!indeterminate);
+        $('barFill').style.width = indeterminate ? '' : pct + '%';
+    }
+    function fail(text, log) {
+        working = false;
+        $('bar').style.display = 'none';
+        setStatus(text, 'err');
+        if (log) { $('log').textContent = log; $('log').style.display = 'block'; }
+        renderStatic();
     }
 
-    // ---- First-time setup panel ----
-    const setup = $('setup');
-    let seenSetup = false;
-    try { seenSetup = localStorage.getItem('ytdlp-setup-seen') === '1'; } catch (e) { /* storage unavailable */ }
-    setup.open = !seenSetup;
+    function apiBase() {
+        return $('apiBase').value.trim().replace(/\/+$/, '');
+    }
+    function apiUrl(path) {
+        const base = apiBase();
+        // Same-origin fallback: if this page is itself served by the clip
+        // server (e.g. opened straight from the laptop), a blank address
+        // still works via relative paths.
+        return base ? base + path : path;
+    }
 
-    $('setupDone').addEventListener('click', () => {
-        try { localStorage.setItem('ytdlp-setup-seen', '1'); } catch (e) { /* ignore */ }
-        setup.open = false;
-        setup.scrollIntoView({ block: 'nearest' });
+    async function makeClip() {
+        if (!videoId || !duration || working) return;
+        if (!apiBase() && location.hostname.endsWith('github.io')) {
+            return fail('Enter the server address above first (the tunnel URL).');
+        }
+        resetResult();
+        working = true;
+        renderStatic();
+        setStatus('Sending to the server...');
+        setBar(0, true);
+        try {
+            const res = await fetch(apiUrl('/api/jobs'), {
+                method: 'POST',
+                headers: { 'Content-Type': 'application/json' },
+                body: JSON.stringify({
+                    videoId, start, end,
+                    filename: $('filename').value,
+                    precise: $('precise').checked
+                })
+            });
+            const data = await res.json();
+            if (!res.ok) return fail(data.error || 'The server refused that request.');
+            poll(data.id);
+        } catch (e) {
+            fail('Could not reach the server. Check the server address above and that it\u2019s running.');
+        }
+    }
+
+    async function poll(id) {
+        try {
+            const res = await fetch(apiUrl('/api/jobs/' + id));
+            if (!res.ok) return fail('The server lost track of that job. Try again.');
+            const j = await res.json();
+
+            if (j.status === 'queued') {
+                setStatus('Waiting in the queue' + (j.queuePosition ? ' (position ' + j.queuePosition + ')' : '') + '...');
+                setBar(0, true);
+            } else if (j.status === 'running') {
+                if (j.progress > 0 && j.progress < 99) {
+                    setStatus(Math.round(j.progress) + '% downloaded');
+                    setBar(j.progress, false);
+                } else {
+                    setStatus(j.stage || 'Working...');
+                    setBar(100, true);
+                }
+            } else if (j.status === 'done') {
+                working = false;
+                setBar(100, false);
+                setStatus('Clip ready.', 'ok');
+                showResult(j);
+                renderStatic();
+                return;
+            } else if (j.status === 'error') {
+                return fail((j.error || 'Something went wrong.') + ' Details below.', j.log);
+            }
+        } catch (e) {
+            return fail('Lost contact with the server.');
+        }
+        pollTimer = setTimeout(() => poll(id), 1000);
+    }
+
+    function showResult(j) {
+        const link = $('dlLink');
+        link.href = apiUrl('/downloads/' + encodeURIComponent(j.file));
+        link.setAttribute('download', j.downloadName || '');
+        link.textContent = 'Download ' + (j.downloadName || 'clip');
+        $('result').style.display = 'block';
+
+        const i = j.info;
+        if (!i) { $('infoLine').textContent = ''; return; }
+        const fps = i.fps != null ? i.fps : '?';
+        const codec = String(i.codec || '?').toUpperCase();
+        let html = i.width + '\u00d7' + i.height + ' \u00b7 ' + fps + ' fps \u00b7 ' + codec;
+        if (i.fps != null && i.fps < 50) html += ' <span class="warn">(not 60 fps, the source video may not offer it)</span>';
+        else if (i.codec !== 'h264') html += ' <span class="warn">(not H.264, some players may struggle)</span>';
+        $('infoLine').innerHTML = html;
+    }
+
+    $('makeBtn').addEventListener('click', makeClip);
+
+    // ---- Server address (saved locally so you don't retype it each visit) ----
+    try {
+        const saved = localStorage.getItem('clip-api-base');
+        if (saved) $('apiBase').value = saved;
+    } catch (e) { /* storage unavailable */ }
+    $('apiBase').addEventListener('input', () => {
+        try { localStorage.setItem('clip-api-base', $('apiBase').value.trim()); } catch (e) { /* ignore */ }
     });
-    $('wingetSetup').addEventListener('click', () => {
-        $('folder').value = '';
-        try { localStorage.setItem('ytdlp-folder', ''); } catch (e) { /* ignore */ }
-        $('dotSlash').checked = false;
-        generateCommand();
-        const b = $('wingetSetup');
-        b.textContent = 'Done, the command now runs from anywhere';
-        setTimeout(() => b.textContent = 'I installed with winget, set up the command', 2200);
-    });
-    document.querySelectorAll('[data-copy]').forEach(b => {
-        b.addEventListener('click', () => {
-            const text = b.previousElementSibling.textContent;
-            const done = () => { b.textContent = 'Copied!'; setTimeout(() => b.textContent = 'Copy', 1400); };
-            if (navigator.clipboard && window.isSecureContext) {
-                navigator.clipboard.writeText(text).then(done).catch(() => fallbackCopy(text, done));
-            } else fallbackCopy(text, done);
-        });
-    });
+    if (location.hostname.endsWith('github.io')) {
+        document.getElementById('apiMsg').style.display = 'block';
+        document.getElementById('apiMsg').textContent =
+            'Paste your tunnel address above (e.g. from cloudflared) before making a clip. It changes each time the tunnel restarts.';
+    } else {
+        document.getElementById('apiMsg').style.display = 'none';
+    }
 
     // ---- Boot ----
     loadApi();
