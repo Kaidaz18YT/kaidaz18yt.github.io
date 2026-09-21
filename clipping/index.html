@@ -89,6 +89,22 @@
         }
         .msg code { background: rgba(0,0,0,.07); padding: 1px 4px; border-radius: 3px; }
 
+        /* First-time setup */
+        .setup { margin-bottom: 20px; border: 1px solid var(--line); border-radius: 6px; background: #f8fafc; }
+        .setup summary { padding: 12px 14px; cursor: pointer; font-weight: 600; font-size: 14px; }
+        .setup-body { padding: 0 14px 14px; font-size: 14px; line-height: 1.5; }
+        .setup-body p { margin: 10px 0; }
+        .setup-body code { background: rgba(0,0,0,.07); padding: 1px 4px; border-radius: 3px; }
+        .cmd-row { display: flex; gap: 8px; align-items: center; margin: 12px 0; flex-wrap: wrap; }
+        .cmd-row .what { flex-basis: 100%; font-size: 13px; color: #444; }
+        .cmd-row code {
+            flex: 1; min-width: 220px;
+            background: #272822; color: #f8f8f2;
+            padding: 8px 10px; border-radius: 4px;
+            font-family: "Courier New", Courier, monospace; font-size: 13px;
+        }
+        .cmd-row button { padding: 6px 10px; font-size: 12px; }
+
         /* Player */
         .player-box {
             margin-top: 18px;
@@ -208,6 +224,35 @@
 
 <div class="container">
     <h1>yt-dlp Clip Editor</h1>
+
+    <details class="setup" id="setup">
+        <summary>First time here? Set up yt-dlp and ffmpeg</summary>
+        <div class="setup-body">
+            <p>This page builds the command, but your PC needs a few free programs to run it. On Windows, press Start, type <strong>PowerShell</strong>, press Enter, then run these one at a time. If winget asks you to agree to terms, type <code>Y</code> and press Enter.</p>
+
+            <div class="cmd-row">
+                <div class="what"><strong>yt-dlp</strong> downloads the video.</div>
+                <code>winget install yt-dlp.yt-dlp</code><button data-copy>Copy</button>
+            </div>
+            <div class="cmd-row">
+                <div class="what"><strong>ffmpeg</strong> cuts the clip and joins the video and audio. Clips won't work without it.</div>
+                <code>winget install Gyan.FFmpeg</code><button data-copy>Copy</button>
+            </div>
+            <div class="cmd-row">
+                <div class="what"><strong>Deno</strong> lets yt-dlp read YouTube's pages. Without it you may see a JavaScript runtime warning and miss some video formats.</div>
+                <code>winget install DenoLand.Deno</code><button data-copy>Copy</button>
+            </div>
+
+            <p>Close PowerShell and open a new one so it can find them. Then check they installed by running <code>yt-dlp --version</code> and <code>ffmpeg -version</code>. Each should print a version number.</p>
+            <p>Installed this way, the command works from any folder, so leave "Folder to run from" blank and untick the <code>.\</code> box below. The button here does that for you.</p>
+            <p class="hint">Don't have winget, or prefer to download it yourself? Get <code>yt-dlp.exe</code> from the <a href="https://github.com/yt-dlp/yt-dlp/releases/latest" target="_blank" rel="noopener">yt-dlp releases page</a>, put it in a folder, and paste that folder into "Folder to run from". You'll still need ffmpeg from the list above.</p>
+
+            <div class="row">
+                <button id="wingetSetup">I installed with winget, set up the command</button>
+                <button id="setupDone" class="primary">Got it, hide this</button>
+            </div>
+        </div>
+    </details>
 
     <div class="url-row">
         <div class="grow">
@@ -779,6 +824,36 @@
         try { document.execCommand('copy'); done(); } catch (e) { alert('Copy failed, select the command and copy it by hand.'); }
         document.body.removeChild(ta);
     }
+
+    // ---- First-time setup panel ----
+    const setup = $('setup');
+    let seenSetup = false;
+    try { seenSetup = localStorage.getItem('ytdlp-setup-seen') === '1'; } catch (e) { /* storage unavailable */ }
+    setup.open = !seenSetup;
+
+    $('setupDone').addEventListener('click', () => {
+        try { localStorage.setItem('ytdlp-setup-seen', '1'); } catch (e) { /* ignore */ }
+        setup.open = false;
+        setup.scrollIntoView({ block: 'nearest' });
+    });
+    $('wingetSetup').addEventListener('click', () => {
+        $('folder').value = '';
+        try { localStorage.setItem('ytdlp-folder', ''); } catch (e) { /* ignore */ }
+        $('dotSlash').checked = false;
+        generateCommand();
+        const b = $('wingetSetup');
+        b.textContent = 'Done, the command now runs from anywhere';
+        setTimeout(() => b.textContent = 'I installed with winget, set up the command', 2200);
+    });
+    document.querySelectorAll('[data-copy]').forEach(b => {
+        b.addEventListener('click', () => {
+            const text = b.previousElementSibling.textContent;
+            const done = () => { b.textContent = 'Copied!'; setTimeout(() => b.textContent = 'Copy', 1400); };
+            if (navigator.clipboard && window.isSecureContext) {
+                navigator.clipboard.writeText(text).then(done).catch(() => fallbackCopy(text, done));
+            } else fallbackCopy(text, done);
+        });
+    });
 
     // ---- Boot ----
     loadApi();
