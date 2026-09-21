@@ -1,0 +1,748 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>yt-dlp Clip Editor</title>
+    <style>
+        :root {
+            --bg: #f4f5f7;
+            --card: #ffffff;
+            --ink: #1a1a1a;
+            --muted: #666;
+            --line: #d5d8de;
+            --accent: #0078d4;
+            --accent-dark: #005a9e;
+            --playhead: #e53935;
+            --track: #e6e8ec;
+        }
+        * { box-sizing: border-box; }
+        body {
+            font-family: -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, Helvetica, Arial, sans-serif;
+            background-color: var(--bg);
+            color: #333;
+            margin: 0;
+            padding: 20px;
+            display: flex;
+            justify-content: center;
+            min-height: 100vh;
+        }
+        .container {
+            background-color: var(--card);
+            padding: 28px;
+            border-radius: 8px;
+            box-shadow: 0 4px 6px rgba(0, 0, 0, 0.1);
+            width: 100%;
+            max-width: 880px;
+            align-self: flex-start;
+        }
+        h1 {
+            font-size: 24px;
+            margin: 0 0 20px;
+            color: var(--ink);
+            text-align: center;
+        }
+        label { display: block; margin-bottom: 5px; font-weight: 600; font-size: 14px; }
+        input[type="text"] {
+            width: 100%;
+            padding: 10px;
+            border: 1px solid #ccc;
+            border-radius: 4px;
+            font-size: 14px;
+        }
+        input[type="text"]:focus-visible, button:focus-visible {
+            outline: 2px solid var(--accent);
+            outline-offset: 1px;
+        }
+        .url-row { display: flex; gap: 10px; align-items: flex-end; }
+        .url-row .grow { flex: 1; }
+
+        button {
+            font: inherit;
+            font-size: 14px;
+            padding: 8px 12px;
+            border: 1px solid #b9bec7;
+            background: #fff;
+            color: var(--ink);
+            border-radius: 4px;
+            cursor: pointer;
+        }
+        button:hover { background: #f0f2f5; }
+        button.primary {
+            background: var(--accent);
+            border-color: var(--accent);
+            color: #fff;
+            font-weight: 600;
+        }
+        button.primary:hover { background: var(--accent-dark); }
+        button:disabled { opacity: .45; cursor: default; }
+
+        .msg {
+            margin-top: 10px;
+            padding: 10px 12px;
+            border-radius: 4px;
+            background: #fff4e5;
+            border: 1px solid #f0c987;
+            font-size: 13px;
+            line-height: 1.45;
+            display: none;
+        }
+        .msg code { background: rgba(0,0,0,.07); padding: 1px 4px; border-radius: 3px; }
+
+        /* Player */
+        .player-box {
+            margin-top: 18px;
+            position: relative;
+            width: 100%;
+            aspect-ratio: 16 / 9;
+            background: #111;
+            border-radius: 6px;
+            overflow: hidden;
+        }
+        .player-box iframe { width: 100%; height: 100%; display: block; }
+        .placeholder {
+            position: absolute; inset: 0;
+            display: flex; align-items: center; justify-content: center;
+            color: #9aa0aa; font-size: 14px; text-align: center; padding: 20px;
+            pointer-events: none;
+        }
+
+        /* Timeline */
+        .timeline-wrap { margin-top: 16px; padding: 0 10px; user-select: none; -webkit-user-select: none; }
+        .ruler { position: relative; height: 22px; font-size: 11px; color: var(--muted); }
+        .tick {
+            position: absolute; top: 0; height: 100%;
+            border-left: 1px solid #b5bac3;
+            padding-left: 3px; white-space: nowrap;
+        }
+        .track {
+            position: relative;
+            height: 64px;
+            background: var(--track);
+            border-radius: 6px;
+            cursor: crosshair;
+            touch-action: none;
+        }
+        .track.disabled { opacity: .5; pointer-events: none; }
+        .range {
+            position: absolute; top: 0; bottom: 0;
+            background: rgba(0, 120, 212, .25);
+            border-top: 3px solid var(--accent);
+            border-bottom: 3px solid var(--accent);
+            pointer-events: none;
+        }
+        .handle {
+            position: absolute; top: -5px; bottom: -5px;
+            width: 14px; margin-left: -7px;
+            background: var(--accent);
+            border-radius: 4px;
+            cursor: ew-resize;
+            touch-action: none;
+            z-index: 3;
+        }
+        .handle::after {
+            content: ""; position: absolute; left: 50%; top: 22%; bottom: 22%;
+            width: 2px; margin-left: -1px; background: rgba(255,255,255,.8); border-radius: 1px;
+        }
+        .handle:hover, .handle.dragging { background: var(--accent-dark); }
+        .handle .tip {
+            position: absolute; bottom: calc(100% + 4px); left: 50%;
+            transform: translateX(-50%);
+            background: #1a1a1a; color: #fff;
+            font-size: 11px; padding: 2px 6px; border-radius: 3px;
+            white-space: nowrap; display: none; pointer-events: none;
+        }
+        .handle:hover .tip, .handle.dragging .tip { display: block; }
+        .playhead {
+            position: absolute; top: -2px; bottom: -2px; width: 2px; margin-left: -1px;
+            background: var(--playhead);
+            pointer-events: none; z-index: 2;
+        }
+        .overview {
+            position: relative; height: 16px; margin-top: 12px;
+            background: var(--track); border-radius: 4px;
+            touch-action: none; cursor: pointer;
+        }
+        .ov-cut { position: absolute; top: 0; bottom: 0; background: var(--accent); opacity: .7; min-width: 2px; }
+        .ov-play { position: absolute; top: 0; bottom: 0; width: 2px; background: var(--playhead); }
+        .ov-view {
+            position: absolute; top: -3px; bottom: -3px;
+            border: 2px solid #444; border-radius: 4px;
+            background: rgba(0,0,0,.05);
+            cursor: grab; min-width: 10px;
+        }
+        .ov-view.dragging { cursor: grabbing; }
+        .tl-hint { font-size: 12px; color: var(--muted); margin-top: 8px; }
+
+        /* Controls */
+        .row { display: flex; flex-wrap: wrap; gap: 8px; align-items: center; margin-top: 14px; }
+        .row .spacer { flex: 1; }
+        .check { display: inline-flex; align-items: center; gap: 6px; font-size: 14px; font-weight: 400; margin: 0; }
+        .check input { margin: 0; }
+
+        .time-inputs { display: flex; gap: 20px; margin-top: 18px; flex-wrap: wrap; }
+        .time-inputs .col { flex: 1; min-width: 260px; }
+        .time-inputs .btns { display: flex; flex-wrap: wrap; gap: 4px; margin-top: 6px; }
+        .time-inputs .btns button { padding: 4px 8px; font-size: 12px; }
+        .duration { font-size: 13px; color: var(--muted); margin-top: 14px; }
+        .duration strong { color: var(--ink); }
+
+        .output-box {
+            margin-top: 22px;
+            background-color: #272822;
+            color: #f8f8f2;
+            padding: 15px;
+            border-radius: 4px;
+            font-family: "Courier New", Courier, monospace;
+            font-size: 14px;
+            word-break: break-all;
+            white-space: pre-wrap;
+            min-height: 40px;
+        }
+        .copy-btn { margin-top: 10px; width: 100%; padding: 12px; font-size: 16px; }
+    </style>
+</head>
+<body>
+
+<div class="container">
+    <h1>yt-dlp Clip Editor</h1>
+
+    <div class="url-row">
+        <div class="grow">
+            <label for="url">YouTube Video URL</label>
+            <input type="text" id="url" placeholder="https://www.youtube.com/watch?v=..." autocomplete="off">
+        </div>
+        <button class="primary" id="loadBtn">Load video</button>
+    </div>
+    <div class="msg" id="msg"></div>
+
+    <div class="player-box">
+        <div id="player"></div>
+        <div class="placeholder" id="placeholder">Paste a YouTube link and press Load video</div>
+    </div>
+
+    <div class="timeline-wrap">
+        <div class="ruler" id="ruler"></div>
+        <div class="track disabled" id="track">
+            <div class="range" id="range"></div>
+            <div class="handle" id="hStart" data-which="start"><span class="tip"></span></div>
+            <div class="handle" id="hEnd" data-which="end"><span class="tip"></span></div>
+            <div class="playhead" id="playhead"></div>
+        </div>
+        <div class="overview" id="overview">
+            <div class="ov-cut" id="ovCut"></div>
+            <div class="ov-play" id="ovPlay"></div>
+            <div class="ov-view" id="ovView"></div>
+        </div>
+        <div class="tl-hint">Drag the blue handles to set the cut. Click the track to jump. Scroll to zoom, drag the outlined box in the thin bar to pan.</div>
+    </div>
+
+    <div class="row">
+        <button id="playBtn" disabled>Play</button>
+        <button id="previewBtn" class="primary" disabled>Preview cut</button>
+        <label class="check"><input type="checkbox" id="loop" checked> Loop</label>
+        <span class="spacer"></span>
+        <button id="zoomCutBtn" disabled>Zoom to cut</button>
+        <button id="zoomFullBtn" disabled>Full video</button>
+    </div>
+
+    <div class="time-inputs">
+        <div class="col">
+            <label for="start">Start time</label>
+            <input type="text" id="start" value="00:00:00">
+            <div class="btns">
+                <button data-nudge="start" data-d="-1">-1s</button>
+                <button data-nudge="start" data-d="-0.1">-0.1</button>
+                <button data-nudge="start" data-d="0.1">+0.1</button>
+                <button data-nudge="start" data-d="1">+1s</button>
+                <button id="setStartNow">Set to current time</button>
+            </div>
+        </div>
+        <div class="col">
+            <label for="end">End time</label>
+            <input type="text" id="end" value="00:00:30">
+            <div class="btns">
+                <button data-nudge="end" data-d="-1">-1s</button>
+                <button data-nudge="end" data-d="-0.1">-0.1</button>
+                <button data-nudge="end" data-d="0.1">+0.1</button>
+                <button data-nudge="end" data-d="1">+1s</button>
+                <button id="setEndNow">Set to current time</button>
+            </div>
+        </div>
+    </div>
+    <div class="duration" id="durationInfo">Clip length: <strong>0:30</strong></div>
+
+    <div class="row" style="margin-top:14px">
+        <label class="check"><input type="checkbox" id="dotSlash" checked> Run from this folder (<code>.\yt-dlp</code>)</label>
+        <label class="check"><input type="checkbox" id="precise"> Frame-accurate cuts (re-encodes at the cut points, slower)</label>
+    </div>
+
+    <div class="output-box" id="cmdOutput">Enter a URL to generate the command...</div>
+    <button class="copy-btn primary" id="copyBtn">Copy PowerShell Command</button>
+</div>
+
+<script>
+(function () {
+    const $ = id => document.getElementById(id);
+    const MIN_GAP = 0.1;   // smallest allowed clip length in seconds
+    const MIN_VIEW = 2;    // smallest zoom window in seconds
+
+    // ---- State ----
+    let player = null, apiReady = false, playerReady = false;
+    let videoId = null;
+    let duration = 0;
+    let start = 0, end = 30;
+    let viewStart = 0, viewEnd = 30;
+    let cur = 0;
+    let previewing = false;
+    let dragging = null, scrubbing = false, panning = false;
+    let pendingStart = null;
+    let lastSeek = 0;
+
+    const track = $('track'), overview = $('overview');
+    const handles = { start: $('hStart'), end: $('hEnd') };
+
+    // ---- Helpers ----
+    const clamp = (v, a, b) => Math.min(Math.max(v, a), b);
+    const pad = n => String(n).padStart(2, '0');
+
+    function fmt(sec) {
+        sec = Math.max(0, sec);
+        const totalMs = Math.round(sec * 1000);
+        const ms = totalMs % 1000;
+        const s = Math.floor(totalMs / 1000);
+        let out = pad(Math.floor(s / 3600)) + ':' + pad(Math.floor(s % 3600 / 60)) + ':' + pad(s % 60);
+        if (ms) out += '.' + String(ms).padStart(3, '0').replace(/0+$/, '');
+        return out;
+    }
+    function fmtShort(sec, showFrac) {
+        const totalMs = Math.round(Math.max(0, sec) * 1000);
+        const s = Math.floor(totalMs / 1000);
+        const h = Math.floor(s / 3600), m = Math.floor(s % 3600 / 60), ss = s % 60;
+        let out = h ? h + ':' + pad(m) + ':' + pad(ss) : m + ':' + pad(ss);
+        if (showFrac) out += '.' + String(Math.floor((totalMs % 1000) / 100));
+        return out;
+    }
+    function parseTime(str) {
+        str = String(str).trim();
+        if (!str) return null;
+        if (/^\d+(\.\d+)?$/.test(str)) return parseFloat(str);
+        const parts = str.split(':');
+        if (parts.length > 3) return null;
+        let total = 0;
+        for (const p of parts) {
+            if (!/^\d+(\.\d+)?$/.test(p)) return null;
+            total = total * 60 + parseFloat(p);
+        }
+        return total;
+    }
+    function parseHms(str) { // "6710s", "6710", "1h51m50s"
+        if (!str) return null;
+        if (/^\d+$/.test(str)) return parseInt(str, 10);
+        const m = str.match(/^(?:(\d+)h)?(?:(\d+)m)?(?:(\d+)s)?$/);
+        if (!m || (!m[1] && !m[2] && !m[3])) return null;
+        return (+m[1] || 0) * 3600 + (+m[2] || 0) * 60 + (+m[3] || 0);
+    }
+    function parseVideo(raw) {
+        let id = null, t = null;
+        try {
+            const u = new URL(raw);
+            const host = u.hostname.replace(/^www\./, '');
+            if (host === 'youtu.be') id = u.pathname.slice(1).split('/')[0];
+            else if (host.endsWith('youtube.com')) {
+                id = u.searchParams.get('v');
+                const m = u.pathname.match(/^\/(?:shorts|embed|live)\/([\w-]{11})/);
+                if (!id && m) id = m[1];
+            }
+            t = parseHms(u.searchParams.get('t') || u.searchParams.get('start'));
+        } catch (e) { /* not a URL */ }
+        if (id && !/^[\w-]{11}$/.test(id)) id = null;
+        return { id, t };
+    }
+
+    function showMsg(html) {
+        const el = $('msg');
+        if (!html) { el.style.display = 'none'; return; }
+        el.innerHTML = html;
+        el.style.display = 'block';
+    }
+
+    // ---- Timeline geometry ----
+    const span = () => viewEnd - viewStart;
+    const timeToPct = t => ((t - viewStart) / span()) * 100;
+    function xToTime(clientX) {
+        const r = track.getBoundingClientRect();
+        const f = clamp((clientX - r.left) / r.width, 0, 1);
+        return viewStart + f * span();
+    }
+    function setView(a, b) {
+        let s = clamp(b - a, MIN_VIEW, duration);
+        a = clamp(a, 0, duration - s);
+        viewStart = a; viewEnd = a + s;
+    }
+    function zoomToCut() {
+        const pad2 = Math.max((end - start) * 0.25, 2);
+        setView(start - pad2, end + pad2);
+        renderStatic();
+    }
+    function ensureCutVisible() {
+        if (start < viewStart || end > viewEnd) zoomToCut();
+    }
+
+    // ---- Rendering ----
+    function renderStatic() {
+        const ready = duration > 0;
+        track.classList.toggle('disabled', !ready);
+        ['playBtn', 'previewBtn', 'zoomCutBtn', 'zoomFullBtn'].forEach(id => $(id).disabled = !ready);
+
+        if (ready) {
+            // ruler
+            const steps = [0.5, 1, 2, 5, 10, 15, 30, 60, 120, 300, 600, 900, 1800, 3600, 7200];
+            const step = steps.find(s => s >= span() / 8) || 7200;
+            const ruler = $('ruler');
+            ruler.innerHTML = '';
+            for (let t = Math.ceil(viewStart / step) * step; t <= viewEnd; t += step) {
+                const d = document.createElement('div');
+                d.className = 'tick';
+                d.style.left = timeToPct(t) + '%';
+                d.textContent = fmtShort(t, step < 1);
+                ruler.appendChild(d);
+            }
+            // range + handles (clipped to the visible window)
+            const range = $('range');
+            const l = clamp(timeToPct(start), 0, 100), r = clamp(timeToPct(end), 0, 100);
+            range.style.left = l + '%';
+            range.style.width = Math.max(r - l, 0) + '%';
+            range.style.display = (end < viewStart || start > viewEnd) ? 'none' : 'block';
+            for (const w of ['start', 'end']) {
+                const t = w === 'start' ? start : end;
+                const h = handles[w];
+                h.style.display = (t < viewStart || t > viewEnd) ? 'none' : 'block';
+                h.style.left = timeToPct(t) + '%';
+                h.querySelector('.tip').textContent = fmt(t);
+            }
+            // overview
+            $('ovCut').style.left = (start / duration * 100) + '%';
+            $('ovCut').style.width = ((end - start) / duration * 100) + '%';
+            $('ovView').style.left = (viewStart / duration * 100) + '%';
+            $('ovView').style.width = ((viewEnd - viewStart) / duration * 100) + '%';
+        } else {
+            $('ruler').innerHTML = '';
+            handles.start.style.display = handles.end.style.display = 'none';
+            $('range').style.display = 'none';
+            $('ovCut').style.width = '0';
+        }
+
+        // inputs (don't overwrite while typing)
+        if (document.activeElement !== $('start')) $('start').value = fmt(start);
+        if (document.activeElement !== $('end')) $('end').value = fmt(end);
+        const len = end - start;
+        $('durationInfo').innerHTML = 'Clip length: <strong>' + fmtShort(len, len % 1 !== 0) + '</strong>';
+
+        renderPlayhead();
+        generateCommand();
+    }
+
+    function renderPlayhead() {
+        const ph = $('playhead');
+        if (duration > 0 && cur >= viewStart && cur <= viewEnd) {
+            ph.style.display = 'block';
+            ph.style.left = timeToPct(cur) + '%';
+        } else ph.style.display = 'none';
+        $('ovPlay').style.left = duration > 0 ? (cur / duration * 100) + '%' : '0';
+    }
+
+    // ---- Command ----
+    function generateCommand() {
+        const raw = $('url').value.trim();
+        const out = $('cmdOutput');
+        if (!raw) { out.textContent = 'Enter a URL to generate the command...'; return; }
+        const url = videoId ? 'https://www.youtube.com/watch?v=' + videoId : raw;
+        const prog = $('dotSlash').checked ? '.\\yt-dlp' : 'yt-dlp';
+        const section = `*${fmt(start)}-${fmt(end)}`;
+        let cmd = `${prog} --download-sections "${section}"`;
+        if ($('precise').checked) cmd += ' --force-keyframes-at-cuts';
+        cmd += ` -f "bestvideo[height<=1080][fps=60]+bestaudio/best[height<=1080]" "${url}"`;
+        out.textContent = cmd;
+    }
+
+    // ---- Player ----
+    function loadApi() {
+        const tag = document.createElement('script');
+        tag.src = 'https://www.youtube.com/iframe_api';
+        document.head.appendChild(tag);
+    }
+    window.onYouTubeIframeAPIReady = function () {
+        apiReady = true;
+        if (videoId) createPlayer();
+    };
+
+    function createPlayer() {
+        const vars = { rel: 0, playsinline: 1, modestbranding: 1 };
+        if (location.protocol.startsWith('http')) vars.origin = location.origin;
+        player = new YT.Player('player', {
+            videoId: videoId,
+            width: '100%', height: '100%',
+            playerVars: vars,
+            events: {
+                onReady: () => {
+                    playerReady = true;
+                    showMsg('');
+                    const d = player.getVideoData && player.getVideoData();
+                    if (d && d.video_id !== videoId) player.cueVideoById(videoId);
+                },
+                onStateChange: onState,
+                onError: onPlayerError
+            }
+        });
+    }
+
+    function onState(e) {
+        $('playBtn').textContent = (e.data === 1) ? 'Pause' : 'Play';
+    }
+    function onPlayerError(e) {
+        const code = e.data;
+        let html = 'The player reported error ' + code + '. ';
+        if (code === 153 || location.protocol === 'file:') {
+            html += 'YouTube blocks embeds that have no web address to check. Opening this page straight from a file does that. ' +
+                'Serve it locally instead: in this folder run <code>python -m http.server 8000</code>, then open ' +
+                '<code>http://localhost:8000/yt-dlp-generator.html</code>. Hosting it on GitHub Pages works too.';
+        } else if (code === 101 || code === 150) {
+            html += 'The uploader doesn\u2019t allow this video to be embedded, so the timeline can\u2019t preview it. You can still type the times by hand.';
+        } else if (code === 100) {
+            html += 'The video was not found or is private.';
+        } else {
+            html += 'Check the link and try again.';
+        }
+        showMsg(html);
+    }
+
+    function loadVideo() {
+        showMsg('');
+        const { id, t } = parseVideo($('url').value.trim());
+        if (!id) { showMsg('That doesn\u2019t look like a YouTube video link. Try a watch, youtu.be or shorts URL.'); return; }
+        videoId = id;
+        duration = 0;
+        previewing = false;
+        pendingStart = t;
+        $('placeholder').style.display = 'none';
+        if (player && playerReady) player.cueVideoById(id);
+        else if (apiReady && !player) createPlayer();
+        else if (!apiReady) showMsg('Still loading the YouTube player, it will start as soon as it is ready.');
+        renderStatic();
+    }
+
+    function initFromDuration(d) {
+        duration = d;
+        const s = pendingStart != null ? pendingStart : 0;
+        start = clamp(s, 0, Math.max(d - MIN_GAP, 0));
+        end = clamp(start + 30, start + MIN_GAP, d);
+        viewStart = 0; viewEnd = d;
+        if (pendingStart != null) zoomToCut(); else renderStatic();
+        pendingStart = null;
+        if (pendingStart == null && start > 0) player.seekTo(start, true);
+    }
+
+    // ---- Seeking ----
+    function seek(t, allowAhead) {
+        if (!player || !playerReady) return;
+        cur = t;
+        player.seekTo(t, allowAhead !== false);
+        renderPlayhead();
+    }
+    function seekThrottled(t) {
+        const now = performance.now();
+        cur = t; renderPlayhead();
+        if (now - lastSeek > 90) { lastSeek = now; player.seekTo(t, false); }
+    }
+    function pausePlayer() { if (player && playerReady) player.pauseVideo(); }
+
+    // ---- Polling loop ----
+    setInterval(function () {
+        if (!player || !playerReady || typeof player.getCurrentTime !== 'function') return;
+        if (duration <= 0) {
+            const d = player.getDuration();
+            if (d > 0) initFromDuration(d);
+            return;
+        }
+        if (!dragging && !scrubbing) cur = player.getCurrentTime();
+        if (previewing && player.getPlayerState() === 1 && cur >= end) {
+            if ($('loop').checked) seek(start);
+            else { player.pauseVideo(); previewing = false; seek(end); }
+        }
+        renderPlayhead();
+    }, 100);
+
+    // ---- Handle dragging ----
+    ['start', 'end'].forEach(which => {
+        const h = handles[which];
+        h.addEventListener('pointerdown', e => {
+            if (!duration) return;
+            e.preventDefault(); e.stopPropagation();
+            dragging = which;
+            h.classList.add('dragging');
+            h.setPointerCapture(e.pointerId);
+            pausePlayer();
+            previewing = false;
+        });
+        h.addEventListener('pointermove', e => {
+            if (dragging !== which) return;
+            const t = xToTime(e.clientX);
+            if (which === 'start') start = clamp(t, 0, end - MIN_GAP);
+            else end = clamp(t, start + MIN_GAP, duration);
+            renderStatic();
+            seekThrottled(which === 'start' ? start : end);
+        });
+        const finish = () => {
+            if (dragging !== which) return;
+            dragging = null;
+            h.classList.remove('dragging');
+            seek(which === 'start' ? start : end, true);
+        };
+        h.addEventListener('pointerup', finish);
+        h.addEventListener('pointercancel', finish);
+    });
+
+    // ---- Scrub on track ----
+    track.addEventListener('pointerdown', e => {
+        if (!duration || e.target.closest('.handle')) return;
+        scrubbing = true;
+        previewing = false;
+        track.setPointerCapture(e.pointerId);
+        seekThrottled(xToTime(e.clientX));
+    });
+    track.addEventListener('pointermove', e => { if (scrubbing) seekThrottled(xToTime(e.clientX)); });
+    const endScrub = e => { if (!scrubbing) return; scrubbing = false; seek(xToTime(e.clientX), true); };
+    track.addEventListener('pointerup', endScrub);
+    track.addEventListener('pointercancel', () => { scrubbing = false; });
+
+    // ---- Zoom with wheel ----
+    track.addEventListener('wheel', e => {
+        if (!duration) return;
+        e.preventDefault();
+        const r = track.getBoundingClientRect();
+        const f = clamp((e.clientX - r.left) / r.width, 0, 1);
+        const pivot = viewStart + f * span();
+        const factor = e.deltaY < 0 ? 0.8 : 1.25;
+        const newSpan = clamp(span() * factor, MIN_VIEW, duration);
+        setView(pivot - f * newSpan, pivot - f * newSpan + newSpan);
+        renderStatic();
+    }, { passive: false });
+
+    // ---- Overview: pan the zoom window ----
+    let panOffset = 0;
+    function ovTime(clientX) {
+        const r = overview.getBoundingClientRect();
+        return clamp((clientX - r.left) / r.width, 0, 1) * duration;
+    }
+    overview.addEventListener('pointerdown', e => {
+        if (!duration) return;
+        const t = ovTime(e.clientX);
+        const inside = t >= viewStart && t <= viewEnd;
+        panOffset = inside ? t - viewStart : span() / 2;
+        panning = true;
+        $('ovView').classList.add('dragging');
+        overview.setPointerCapture(e.pointerId);
+        setView(t - panOffset, t - panOffset + span());
+        renderStatic();
+    });
+    overview.addEventListener('pointermove', e => {
+        if (!panning) return;
+        const t = ovTime(e.clientX);
+        setView(t - panOffset, t - panOffset + span());
+        renderStatic();
+    });
+    const endPan = () => { panning = false; $('ovView').classList.remove('dragging'); };
+    overview.addEventListener('pointerup', endPan);
+    overview.addEventListener('pointercancel', endPan);
+
+    // ---- Buttons ----
+    $('loadBtn').addEventListener('click', loadVideo);
+    $('url').addEventListener('keydown', e => { if (e.key === 'Enter') loadVideo(); });
+    $('url').addEventListener('paste', () => setTimeout(loadVideo, 0));
+    $('url').addEventListener('input', generateCommand);
+
+    $('playBtn').addEventListener('click', () => {
+        if (!player) return;
+        previewing = false;
+        player.getPlayerState() === 1 ? player.pauseVideo() : player.playVideo();
+    });
+    $('previewBtn').addEventListener('click', () => {
+        if (!player || !duration) return;
+        seek(start);
+        player.playVideo();
+        previewing = true;
+    });
+    $('zoomCutBtn').addEventListener('click', zoomToCut);
+    $('zoomFullBtn').addEventListener('click', () => { setView(0, duration); renderStatic(); });
+
+    $('setStartNow').addEventListener('click', () => {
+        if (!duration) return;
+        start = clamp(cur, 0, end - MIN_GAP);
+        ensureCutVisible(); renderStatic();
+    });
+    $('setEndNow').addEventListener('click', () => {
+        if (!duration) return;
+        end = clamp(cur, start + MIN_GAP, duration);
+        ensureCutVisible(); renderStatic();
+    });
+
+    document.querySelectorAll('[data-nudge]').forEach(b => {
+        b.addEventListener('click', () => {
+            if (!duration) return;
+            const which = b.dataset.nudge, d = parseFloat(b.dataset.d);
+            if (which === 'start') start = clamp(start + d, 0, end - MIN_GAP);
+            else end = clamp(end + d, start + MIN_GAP, duration);
+            previewing = false;
+            pausePlayer();
+            seek(which === 'start' ? start : end);
+            ensureCutVisible(); renderStatic();
+        });
+    });
+
+    // typed times
+    function applyTyped(which) {
+        const el = $(which);
+        const t = parseTime(el.value);
+        if (t != null) {
+            const max = duration || Infinity;
+            if (which === 'start') start = clamp(t, 0, Math.min(end - MIN_GAP, max));
+            else end = clamp(t, start + MIN_GAP, max);
+            if (duration) { seek(which === 'start' ? start : end); ensureCutVisible(); }
+        }
+        el.value = fmt(which === 'start' ? start : end);
+        renderStatic();
+    }
+    ['start', 'end'].forEach(w => {
+        $(w).addEventListener('change', () => applyTyped(w));
+        $(w).addEventListener('keydown', e => { if (e.key === 'Enter') { applyTyped(w); $(w).blur(); } });
+    });
+
+    $('dotSlash').addEventListener('change', generateCommand);
+    $('precise').addEventListener('change', generateCommand);
+
+    $('copyBtn').addEventListener('click', () => {
+        const text = $('cmdOutput').textContent;
+        if (!text || text.startsWith('Enter a URL')) return;
+        const btn = $('copyBtn');
+        const done = () => { btn.textContent = 'Copied!'; setTimeout(() => btn.textContent = 'Copy PowerShell Command', 1400); };
+        if (navigator.clipboard && window.isSecureContext) {
+            navigator.clipboard.writeText(text).then(done).catch(() => fallbackCopy(text, done));
+        } else fallbackCopy(text, done);
+    });
+    function fallbackCopy(text, done) {
+        const ta = document.createElement('textarea');
+        ta.value = text; ta.style.position = 'fixed'; ta.style.opacity = '0';
+        document.body.appendChild(ta); ta.select();
+        try { document.execCommand('copy'); done(); } catch (e) { alert('Copy failed, select the command and copy it by hand.'); }
+        document.body.removeChild(ta);
+    }
+
+    // ---- Boot ----
+    loadApi();
+    renderStatic();
+})();
+</script>
+
+</body>
+</html>
