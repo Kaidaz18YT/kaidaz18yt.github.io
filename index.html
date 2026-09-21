@@ -96,6 +96,7 @@ img { max-width: 100%; display: block; }
   top: 0;
   top: env(safe-area-inset-top, 0px);
   z-index: 30;
+  box-shadow: 0 4px 16px rgba(0,0,0,0.2);
 }
 .topbar-inner {
   max-width: 980px;
@@ -114,7 +115,9 @@ img { max-width: 100%; display: block; }
   font-size: 15px;
   letter-spacing: -0.01em;
   color: var(--ink);
+  text-decoration: none;
 }
+.brand:hover { text-decoration: none; color: var(--ink); opacity: 0.85; }
 .brand-icon {
   width: 26px; height: 26px;
   border-radius: 4px;
@@ -172,12 +175,17 @@ img { max-width: 100%; display: block; }
   display: flex;
   align-items: flex-end;
   justify-content: center;
+  overflow: visible;
 }
 .hero-art::before {
   content: '';
   position: absolute;
-  inset: -20% -30%;
-  background: radial-gradient(circle at 50% 40%, var(--brand-red-glow), transparent 70%);
+  top: 50%;
+  left: 50%;
+  width: 340px;
+  height: 340px;
+  transform: translate(-50%, -50%);
+  background: radial-gradient(circle, var(--brand-red-glow), transparent 70%);
   pointer-events: none;
   z-index: 0;
 }
@@ -409,23 +417,14 @@ img { max-width: 100%; display: block; }
 }
 .tool-icon svg { width: 16px; height: 16px; }
 .tool-name { font-size: 14.5px; font-weight: 600; color: var(--ink); margin-bottom: 5px; }
-.tool-desc { font-size: 13px; color: var(--ink-dim); flex: 1; }
-.tool-link {
-  font-size: 12.5px;
-  color: var(--ink-faint);
-  margin-top: 12px;
-  display: flex;
-  align-items: center;
-  gap: 5px;
-  transition: color 0.2s ease;
-}
-.tool-card:hover .tool-link { color: var(--accent); }
+.tool-desc { font-size: 13px; color: var(--ink-dim); flex: 1; margin-bottom: 14px; }
+.tool-btn { align-self: flex-start; }
 .tool-card.coming-soon {
   border-style: dashed;
   align-items: flex-start;
   justify-content: center;
 }
-.tool-card.coming-soon .tool-desc { color: var(--ink-faint); }
+.tool-card.coming-soon .tool-desc { color: var(--ink-faint); margin-bottom: 0; }
 
 /* ============================================================
    ABOUT SECTION
@@ -520,14 +519,14 @@ img { max-width: 100%; display: block; }
 }
 </style>
 </head>
-<body>
+<body id="top">
 
 <div class="topbar">
   <div class="topbar-inner">
-    <div class="brand">
+    <a class="brand" href="#top">
       <img class="brand-icon" src="https://kaidaz18yt.github.io/assets/head.png" alt="Kaidaz18">
       Kaidaz18 <span class="brand-handle">.creator</span>
-    </div>
+    </a>
     <nav class="topnav">
       <a href="#videos">Videos</a>
       <a href="#addons">Add-ons</a>
@@ -722,31 +721,32 @@ img { max-width: 100%; display: block; }
     <div class="tools-grid">
 
       <!-- ============================================================
-           TOOL CARD TEMPLATE — copy this whole <a> block to add a new
-           tool. Just change: href, tool-icon color, name, and desc.
+           TOOL CARD TEMPLATE — copy this whole <div> block to add a new
+           tool. Just change: href (in two places), tool-icon color,
+           name, and desc.
            Icon colors cycle through: var(--accent) var(--amber)
-           var(--sage) var(--danger) var(--project-color-5) etc.
+           var(--sage) var(--brand-red) var(--project-color-5) etc.
            ============================================================ -->
 
-      <a class="tool-card" href="https://kaidaz18yt.github.io/joincode-maker" target="_blank" rel="noopener">
+      <div class="tool-card">
         <div class="tool-icon" style="background:rgba(124,147,204,0.15)">
           <svg viewBox="0 0 24 24" fill="none" stroke="var(--accent)" stroke-width="1.6"><rect x="3" y="3" width="7" height="7" rx="1"/><rect x="14" y="3" width="7" height="7" rx="1"/><rect x="3" y="14" width="7" height="7" rx="1"/><path d="M14 14h7M14 18h7M14 21h4"/></svg>
         </div>
         <div class="tool-name">Join Code Maker</div>
         <div class="tool-desc">Generate join codes for Minecraft Education Edition worlds.</div>
-        <div class="tool-link mono">kaidaz18yt.github.io/joincode-maker ↗</div>
-      </a>
+        <a class="btn-secondary tool-btn" href="https://kaidaz18yt.github.io/joincode-maker" target="_blank" rel="noopener">Open tool</a>
+      </div>
 
-      <a class="tool-card" href="https://kaidaz18yt.github.io/beta-api-enable" target="_blank" rel="noopener">
+      <div class="tool-card">
         <div class="tool-icon" style="background:rgba(201,161,92,0.15)">
           <svg viewBox="0 0 24 24" fill="none" stroke="var(--amber)" stroke-width="1.6"><path d="M12 2 3 7v6c0 5 4 8.5 9 9 5-.5 9-4 9-9V7l-9-5Z"/><path d="M9 12l2 2 4-4"/></svg>
         </div>
         <div class="tool-name">Beta API Enabler</div>
         <div class="tool-desc">Enable Beta APIs on a Minecraft Bedrock world without digging through settings.</div>
-        <div class="tool-link mono">kaidaz18yt.github.io/beta-api-enable ↗</div>
-      </a>
+        <a class="btn-secondary tool-btn" href="https://kaidaz18yt.github.io/beta-api-enable" target="_blank" rel="noopener">Open tool</a>
+      </div>
 
-      <!-- End of tool cards. To add another, paste a copy of one <a class="tool-card">
+      <!-- End of tool cards. To add another, paste a copy of one <div class="tool-card">
            block above this line and edit it. -->
 
       <div class="tool-card coming-soon">
