@@ -384,53 +384,89 @@
   .task-row:hover .task-del { opacity: 1; }
   .task-del:hover { color: var(--danger); }
 
-  /* ---------- Notes grid ---------- */
-  #notes-grid {
-    display: grid;
-    grid-template-columns: repeat(auto-fill, minmax(230px, 1fr));
-    gap: 12px;
+  /* ---------- Notes list (date-grouped, Mem-style) ---------- */
+  .notes-group-label {
+    font-size: 11px;
+    color: var(--ink-faint);
+    text-transform: uppercase;
+    letter-spacing: 0.05em;
+    font-weight: 500;
+    margin: 22px 0 4px;
+    padding: 0 2px;
   }
-  .note-card {
-    background: var(--bg-raised);
-    border: 1px solid var(--border-soft);
-    border-radius: var(--radius);
-    padding: 14px 16px;
-    cursor: pointer;
-    min-height: 110px;
+  .notes-group-label:first-child { margin-top: 0; }
+  .note-row {
     display: flex;
-    flex-direction: column;
+    align-items: flex-start;
+    gap: 12px;
+    padding: 12px 8px;
+    border-bottom: 1px solid var(--border-soft);
+    cursor: pointer;
   }
-  .note-card:hover { border-color: var(--border); }
-  .note-card.pinned { border-color: var(--amber); }
-  .note-card-title {
+  .note-row:hover { background: var(--bg-raised); }
+  .note-row-icon {
+    width: 18px; height: 18px;
+    flex-shrink: 0;
+    margin-top: 2px;
+    color: var(--ink-faint);
+    display: flex;
+    align-items: center;
+    justify-content: center;
+  }
+  .note-row-icon svg { width: 16px; height: 16px; }
+  .note-row.pinned .note-row-icon { color: var(--amber); }
+  .note-row-body { flex: 1; min-width: 0; }
+  .note-row-title {
+    font-size: 15px;
     font-weight: 600;
-    font-size: 14px;
-    margin-bottom: 6px;
+    color: var(--ink);
     display: flex;
     align-items: center;
     gap: 6px;
+    margin-bottom: 2px;
   }
-  .note-card-snippet {
-    color: var(--ink-dim);
-    font-size: 12.5px;
-    line-height: 1.5;
-    flex: 1;
+  .note-row-snippet {
+    font-size: 13px;
+    color: var(--ink-faint);
     overflow: hidden;
-    display: -webkit-box;
-    -webkit-line-clamp: 4;
-    -webkit-box-orient: vertical;
+    text-overflow: ellipsis;
+    white-space: nowrap;
   }
-  .note-card-foot {
+  .note-row-meta {
     display: flex;
     align-items: center;
-    justify-content: space-between;
-    margin-top: 10px;
-    font-size: 11px;
+    gap: 10px;
+    margin-top: 5px;
+    font-size: 11.5px;
     color: var(--ink-faint);
   }
-  .note-card-foot .project-tag { display: flex; align-items: center; gap: 5px; }
-  .note-card-foot .dot { width: 6px; height: 6px; border-radius: 50%; }
-  .note-card .attach-count { font-family: 'IBM Plex Mono', monospace; }
+  .note-row-meta .project-tag { display: flex; align-items: center; gap: 5px; }
+  .note-row-meta .dot { width: 6px; height: 6px; border-radius: 50%; }
+  .note-row-meta .attach-count { font-family: 'IBM Plex Mono', monospace; }
+
+  /* Sub-tabs under the Notes header (All / by project quick filter chips) */
+  .notes-subtabs {
+    display: flex;
+    gap: 18px;
+    padding: 0 2px 12px;
+    border-bottom: 1px solid var(--border-soft);
+    margin-bottom: 4px;
+  }
+  .notes-subtabs button {
+    background: none;
+    border: none;
+    color: var(--ink-faint);
+    font-size: 13.5px;
+    font-weight: 500;
+    padding: 4px 0 10px;
+    border-bottom: 2px solid transparent;
+    margin-bottom: -1px;
+  }
+  .notes-subtabs button:hover { color: var(--ink-dim); }
+  .notes-subtabs button.active {
+    color: var(--ink);
+    border-bottom-color: var(--accent);
+  }
 
   /* ---------- Modal / editor ---------- */
   .modal-overlay {
@@ -1307,26 +1343,87 @@ function renderNotes(){
     $('notes-view').innerHTML = `<div class="empty-state">No notes here yet. Click "New Note" to start writing.</div>`;
     return;
   }
-  const sorted = [...filtered].sort((a,b)=>{
-    if (!!a.pinned !== !!b.pinned) return a.pinned ? -1 : 1;
-    return new Date(b.updated) - new Date(a.updated);
+
+  const pinned = filtered.filter(n=>n.pinned).sort((a,b)=> new Date(b.updated) - new Date(a.updated));
+  const unpinned = filtered.filter(n=>!n.pinned).sort((a,b)=> new Date(b.updated) - new Date(a.updated));
+
+  let html = '';
+  if (pinned.length) {
+    html += `<div class="notes-group-label">Pinned</div>`;
+    html += pinned.map(noteRowHtml).join('');
+  }
+
+  const buckets = bucketNotesByDate(unpinned);
+  buckets.forEach(bucket => {
+    if (!bucket.items.length) return;
+    html += `<div class="notes-group-label">${bucket.label}</div>`;
+    html += bucket.items.map(noteRowHtml).join('');
   });
-  $('notes-view').innerHTML = `<div id="notes-grid">${sorted.map(noteCardHtml).join('')}</div>`;
-  $('notes-view').querySelectorAll('.note-card').forEach(el=>{
+
+  $('notes-view').innerHTML = html;
+  $('notes-view').querySelectorAll('.note-row').forEach(el=>{
     el.addEventListener('click', ()=>openNoteModal(el.dataset.id));
   });
 }
-function noteCardHtml(n){
+
+function bucketNotesByDate(sortedNotes){
+  const now = new Date();
+  const startOfToday = new Date(now.getFullYear(), now.getMonth(), now.getDate());
+  const startOfWeek = new Date(startOfToday); startOfWeek.setDate(startOfWeek.getDate() - startOfToday.getDay());
+  const startOfLastWeek = new Date(startOfWeek); startOfLastWeek.setDate(startOfLastWeek.getDate() - 7);
+  const startOfMonth = new Date(now.getFullYear(), now.getMonth(), 1);
+
+  const groups = {
+    today: { label: 'Today', items: [] },
+    week: { label: 'This Week', items: [] },
+    lastWeek: { label: 'Last Week', items: [] },
+    month: { label: 'Earlier This Month', items: [] },
+  };
+  const monthBuckets = {}; // key: "2026-07" -> { label, items }
+  const orderedMonthKeys = [];
+
+  sortedNotes.forEach(n => {
+    const d = new Date(n.updated);
+    if (d >= startOfToday) {
+      groups.today.items.push(n);
+    } else if (d >= startOfWeek) {
+      groups.week.items.push(n);
+    } else if (d >= startOfLastWeek) {
+      groups.lastWeek.items.push(n);
+    } else if (d >= startOfMonth) {
+      groups.month.items.push(n);
+    } else {
+      const key = `${d.getFullYear()}-${d.getMonth()}`;
+      if (!monthBuckets[key]) {
+        monthBuckets[key] = { label: d.toLocaleDateString(undefined, { month: 'long', year: 'numeric' }), items: [] };
+        orderedMonthKeys.push(key);
+      }
+      monthBuckets[key].items.push(n);
+    }
+  });
+
+  const result = [groups.today, groups.week, groups.lastWeek, groups.month];
+  orderedMonthKeys.forEach(k => result.push(monthBuckets[k]));
+  return result;
+}
+
+const NOTE_ICON = `<svg viewBox="0 0 16 16" fill="none"><path d="M3 2h7l3 3v9a1 1 0 0 1-1 1H3a1 1 0 0 1-1-1V3a1 1 0 0 1 1-1Z" stroke="currentColor" stroke-width="1.3"/><path d="M10 2v3h3" stroke="currentColor" stroke-width="1.3"/></svg>`;
+const PIN_ICON = `<svg viewBox="0 0 16 16" fill="none"><path d="M8 2l1.5 4.5L14 8l-4.5 1.5L8 14l-1.5-4.5L2 8l4.5-1.5L8 2Z" fill="currentColor"/></svg>`;
+
+function noteRowHtml(n){
   const color = projectColor(n.project);
   const pname = projectName(n.project);
   const plain = stripHtml(n.content || '').trim();
   const fileCount = (n.attachments || []).length;
-  return `<div class="note-card ${n.pinned?'pinned':''}" data-id="${n.id}">
-    <div class="note-card-title">${n.pinned?'★ ':''}${escapeHtml(n.title || 'Untitled')}</div>
-    <div class="note-card-snippet">${escapeHtml(plain) || '<em style="color:var(--ink-faint)">Empty note</em>'}</div>
-    <div class="note-card-foot">
-      ${pname ? `<span class="project-tag"><span class="dot" style="background:${color}"></span>${escapeHtml(pname)}</span>` : '<span></span>'}
-      ${fileCount ? `<span class="attach-count">${fileCount} file${fileCount>1?'s':''}</span>` : ''}
+  return `<div class="note-row ${n.pinned?'pinned':''}" data-id="${n.id}">
+    <div class="note-row-icon">${n.pinned ? PIN_ICON : NOTE_ICON}</div>
+    <div class="note-row-body">
+      <div class="note-row-title">${escapeHtml(n.title || 'Untitled')}</div>
+      <div class="note-row-snippet">${escapeHtml(plain) || 'Empty note'}</div>
+      <div class="note-row-meta">
+        ${pname ? `<span class="project-tag"><span class="dot" style="background:${color}"></span>${escapeHtml(pname)}</span>` : ''}
+        ${fileCount ? `<span class="attach-count">${fileCount} file${fileCount>1?'s':''}</span>` : ''}
+      </div>
     </div>
   </div>`;
 }
