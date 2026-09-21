@@ -1,0 +1,341 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1, viewport-fit=cover">
+<title>Ledger — Board</title>
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link href="https://fonts.googleapis.com/css2?family=IBM+Plex+Sans:ital,wght@0,400;0,500;0,600;0,700&family=IBM+Plex+Mono:wght@400;500&display=swap" rel="stylesheet">
+<style>
+  :root {
+    --bg: #171615;
+    --bg-raised: #201F1D;
+    --border: #322F29;
+    --ink: #EDEAE3;
+    --ink-dim: #A8A399;
+    --ink-faint: #6f6b62;
+    --accent: #7C93CC;
+    --amber: #C9A15C;
+    --sage: #8FA184;
+    --danger: #C97C6E;
+    color-scheme: dark;
+  }
+  * { box-sizing: border-box; }
+  html, body { height: 100%; margin: 0; }
+  body {
+    background: var(--bg);
+    color: var(--ink);
+    font-family: 'IBM Plex Sans', system-ui, sans-serif;
+    padding-top: env(safe-area-inset-top, 0px);
+    padding-bottom: env(safe-area-inset-bottom, 0px);
+    -webkit-font-smoothing: antialiased;
+  }
+  input, button { font-family: inherit; color: inherit; }
+
+  #login-screen {
+    position: fixed; inset: 0;
+    display: flex; align-items: center; justify-content: center;
+    background: var(--bg);
+    z-index: 100;
+  }
+  #login-screen.hidden { display: none; }
+  .login-box { width: 300px; padding: 0 8px; }
+  .login-box h1 { font-size: 20px; font-weight: 600; margin: 0 0 4px; }
+  .login-box p { color: var(--ink-dim); font-size: 13px; margin: 0 0 24px; }
+  .login-box input {
+    width: 100%; padding: 10px 12px; border: 1px solid var(--border);
+    border-radius: 3px; background: var(--bg-raised); margin-bottom: 10px; font-size: 14px;
+    outline: none;
+  }
+  .login-box input:focus { border-color: var(--accent); }
+  .login-box button {
+    width: 100%; padding: 10px 12px; background: #4A5D8A; color: #fff;
+    border: none; border-radius: 3px; font-size: 14px; font-weight: 500; cursor: pointer;
+  }
+  .login-error { color: var(--danger); font-size: 13px; margin-top: 10px; min-height: 16px; }
+
+  #board {
+    display: none;
+    max-width: 900px;
+    margin: 0 auto;
+    padding: 28px 24px 60px;
+    min-height: 100vh;
+  }
+  #board.visible { display: block; }
+
+  #board-head {
+    display: flex;
+    align-items: baseline;
+    justify-content: space-between;
+    margin-bottom: 24px;
+    padding-bottom: 16px;
+    border-bottom: 1px solid var(--border);
+  }
+  #board-head h1 {
+    font-size: 22px;
+    margin: 0;
+    font-weight: 700;
+    letter-spacing: -0.01em;
+  }
+  #board-head h1::before {
+    content: '';
+    display: inline-block;
+    width: 9px; height: 9px;
+    background: var(--amber);
+    margin-right: 10px;
+    border-radius: 1px;
+  }
+  #clock {
+    font-family: 'IBM Plex Mono', monospace;
+    color: var(--ink-faint);
+    font-size: 13px;
+  }
+  #live-dot {
+    display: inline-block;
+    width: 6px; height: 6px;
+    border-radius: 50%;
+    background: var(--sage);
+    margin-right: 6px;
+    animation: pulse 2s infinite;
+  }
+  @keyframes pulse { 0%,100% { opacity: 1; } 50% { opacity: 0.35; } }
+
+  .col-label {
+    font-size: 11.5px;
+    text-transform: uppercase;
+    letter-spacing: 0.05em;
+    color: var(--ink-faint);
+    margin: 28px 0 10px;
+    display: flex;
+    align-items: center;
+    gap: 8px;
+  }
+  .col-label:first-of-type { margin-top: 0; }
+  .col-label .n { font-family: 'IBM Plex Mono', monospace; color: var(--ink-dim); }
+
+  .row {
+    display: flex;
+    align-items: flex-start;
+    gap: 14px;
+    padding: 13px 4px;
+    border-bottom: 1px solid var(--border);
+    border-left: 3px solid transparent;
+  }
+  .row.p-urgent { border-left-color: var(--danger); }
+  .row.p-high { border-left-color: var(--amber); }
+  .row.p-medium { border-left-color: var(--accent); }
+  .row.p-low { border-left-color: var(--border); }
+
+  .row-title { font-size: 16px; font-weight: 500; }
+  .row-meta {
+    display: flex;
+    gap: 16px;
+    margin-top: 4px;
+    font-size: 13px;
+    color: var(--ink-faint);
+    flex-wrap: wrap;
+  }
+  .row-meta .deadline { font-family: 'IBM Plex Mono', monospace; }
+  .row-meta .deadline.overdue { color: var(--danger); font-weight: 500; }
+  .row-meta .deadline.soon { color: var(--amber); font-weight: 500; }
+  .row-meta .priority-word { font-weight: 500; }
+  .row-meta .priority-word.p-urgent { color: var(--danger); }
+  .row-meta .priority-word.p-high { color: var(--amber); }
+  .row-meta .project-tag { display: flex; align-items: center; gap: 6px; }
+  .row-meta .dot { width: 6px; height: 6px; border-radius: 50%; }
+
+  .empty {
+    color: var(--ink-faint);
+    font-size: 14px;
+    padding: 30px 4px;
+    text-align: center;
+  }
+
+  #signout {
+    position: fixed;
+    bottom: 16px;
+    right: 16px;
+    background: var(--bg-raised);
+    border: 1px solid var(--border);
+    color: var(--ink-faint);
+    padding: 7px 12px;
+    border-radius: 3px;
+    font-size: 12px;
+    cursor: pointer;
+  }
+  #signout:hover { color: var(--ink); }
+
+  @media (max-width: 600px) {
+    #board { padding: 20px 16px 60px; }
+    #board-head { flex-direction: column; align-items: flex-start; gap: 6px; }
+    .row-title { font-size: 15px; }
+  }
+</style>
+</head>
+<body>
+
+<div id="login-screen">
+  <div class="login-box">
+    <h1>Ledger — Board</h1>
+    <p>Sign in to view.</p>
+    <input type="password" id="login-password" placeholder="Password" autocomplete="current-password">
+    <button id="login-btn">Sign in</button>
+    <div class="login-error" id="login-error"></div>
+  </div>
+</div>
+
+<div id="board">
+  <div id="board-head">
+    <h1>What's due</h1>
+    <div id="clock"><span id="live-dot"></span><span id="clock-text"></span></div>
+  </div>
+  <div id="list"></div>
+</div>
+
+<button id="signout">Sign out</button>
+
+<script src="https://cdnjs.cloudflare.com/ajax/libs/pocketbase/0.21.3/pocketbase.umd.js"></script>
+<script>
+const pb = new PocketBase("https://kaidaz18.duckdns.org");
+const $ = (id) => document.getElementById(id);
+
+let tasks = [];
+let projects = [];
+const PROJECT_COLORS = ['#7C93CC','#C9A15C','#8FA184','#C97C6E','#B490C0','#6FB3B8','#D0A868','#9AAF6E'];
+function colorForIndex(i){ return PROJECT_COLORS[i % PROJECT_COLORS.length]; }
+function projectColor(id){
+  const idx = projects.findIndex(p=>p.id===id);
+  if (idx===-1) return null;
+  return projects[idx].color || colorForIndex(idx);
+}
+function projectName(id){
+  const p = projects.find(p=>p.id===id);
+  return p ? p.name : null;
+}
+
+function showBoard(){
+  $('login-screen').classList.add('hidden');
+  $('board').classList.add('visible');
+  boot();
+}
+function showLogin(){
+  $('login-screen').classList.remove('hidden');
+  $('board').classList.remove('visible');
+}
+
+if (pb.authStore.isValid) showBoard(); else showLogin();
+
+$('login-btn').addEventListener('click', doLogin);
+$('login-password').addEventListener('keydown', (e)=>{ if(e.key==='Enter') doLogin(); });
+async function doLogin(){
+  const pw = $('login-password').value;
+  $('login-error').textContent = '';
+  try {
+    await pb.collection('users').authWithPassword('kaioliver111@gmail.com', pw);
+    $('login-password').value = '';
+    showBoard();
+  } catch(err) {
+    $('login-error').textContent = 'Incorrect password.';
+  }
+}
+$('signout').addEventListener('click', ()=>{ pb.authStore.clear(); showLogin(); });
+
+let booted = false;
+async function boot(){
+  if (booted) return;
+  booted = true;
+  await loadAll();
+  render();
+  pb.collection('tasks').subscribe('*', async ()=>{ await loadAll(); render(); });
+  pb.collection('projects').subscribe('*', async ()=>{ await loadAll(); render(); });
+  startClock();
+}
+
+async function loadAll(){
+  try {
+    tasks = await pb.collection('tasks').getFullList({ sort: 'deadline' });
+  } catch(e){ console.error(e); tasks = []; }
+  try {
+    projects = await pb.collection('projects').getFullList({ sort: 'name' });
+  } catch(e){ console.error(e); projects = []; }
+}
+
+const PRIORITY_ORDER = { Urgent:0, High:1, Medium:2, Low:3 };
+function sortTasks(a,b){
+  const pd = PRIORITY_ORDER[a.priority] - PRIORITY_ORDER[b.priority];
+  if (pd !== 0) return pd;
+  const ad = a.deadline ? new Date(a.deadline) : new Date('9999-12-31');
+  const bd = b.deadline ? new Date(b.deadline) : new Date('9999-12-31');
+  return ad - bd;
+}
+
+function fmtDeadline(d){
+  if (!d) return null;
+  const date = new Date(d);
+  const now = new Date();
+  const diffMs = date - now;
+  const opts = { weekday:'short', month:'short', day:'numeric', hour:'2-digit', minute:'2-digit' };
+  const str = date.toLocaleString(undefined, opts);
+  let cls = '';
+  if (diffMs < 0) cls = 'overdue';
+  else if (diffMs < 1000*60*60*24) cls = 'soon';
+  return { str, cls };
+}
+
+function escapeHtml(str){
+  if (str === null || str === undefined) return '';
+  return String(str).replace(/[&<>"']/g, m => ({'&':'&amp;','<':'&lt;','>':'&gt;','"':'&quot;',"'":'&#39;'}[m]));
+}
+
+function rowHtml(t){
+  const pClass = 'p-' + t.priority.toLowerCase();
+  const dl = fmtDeadline(t.deadline);
+  const color = projectColor(t.project);
+  const pname = projectName(t.project);
+  let metaParts = [];
+  if (dl) metaParts.push(`<span class="deadline ${dl.cls}">${dl.str}${dl.cls==='overdue'?' · overdue':''}</span>`);
+  metaParts.push(`<span class="priority-word ${pClass}">${t.priority}</span>`);
+  if (pname) metaParts.push(`<span class="project-tag"><span class="dot" style="background:${color}"></span>${escapeHtml(pname)}</span>`);
+  return `<div class="row ${pClass}">
+    <div>
+      <div class="row-title">${escapeHtml(t.title)}</div>
+      <div class="row-meta">${metaParts.join('')}</div>
+    </div>
+  </div>`;
+}
+
+function render(){
+  const open = tasks.filter(t=>t.status!=='Done').sort(sortTasks);
+  const inProgress = open.filter(t=>t.status==='In Progress');
+  const todo = open.filter(t=>t.status!=='In Progress');
+
+  if (!open.length) {
+    $('list').innerHTML = `<div class="empty">Nothing outstanding. Clear board.</div>`;
+    return;
+  }
+
+  let html = '';
+  if (inProgress.length) {
+    html += `<div class="col-label">In progress <span class="n">${inProgress.length}</span></div>`;
+    html += inProgress.map(rowHtml).join('');
+  }
+  if (todo.length) {
+    html += `<div class="col-label">To do <span class="n">${todo.length}</span></div>`;
+    html += todo.map(rowHtml).join('');
+  }
+  $('list').innerHTML = html;
+}
+
+function startClock(){
+  function tick(){
+    const now = new Date();
+    $('clock-text').textContent = now.toLocaleString(undefined, { weekday:'short', month:'short', day:'numeric', hour:'2-digit', minute:'2-digit' });
+    // Re-render deadline "overdue/soon" states as time passes
+    render();
+  }
+  tick();
+  setInterval(tick, 30000);
+}
+</script>
+</body>
+</html>
