@@ -232,7 +232,7 @@
     <div class="url-row" style="margin-bottom:14px">
         <div class="grow">
             <label for="apiBase">Server address</label>
-            <input type="text" id="apiBase" placeholder="https://your-tunnel.trycloudflare.com" autocomplete="off" spellcheck="false">
+            <input type="text" id="apiBase" placeholder="https://a1-backend.tail1b131d.ts.net/clips" autocomplete="off" spellcheck="false">
         </div>
     </div>
     <div class="msg" id="apiMsg" style="background:#eef4ff;border-color:#a9c6f5"></div>
@@ -871,21 +871,27 @@
 
     $('makeBtn').addEventListener('click', makeClip);
 
-    // ---- Server address (saved locally so you don't retype it each visit) ----
-    try {
-        const saved = localStorage.getItem('clip-api-base');
-        if (saved) $('apiBase').value = saved;
-    } catch (e) { /* storage unavailable */ }
+    // ---- Server address ----
+    // Fixed address (Tailscale Funnel, doesn't change on restart). A
+    // ?api=... in the URL or a manually typed value can still override it
+    // for testing, and either gets remembered for next time.
+    const DEFAULT_API_BASE = 'https://a1-backend.tail1b131d.ts.net/clips';
+    (function initApiBase() {
+        let fromUrl = null;
+        try { fromUrl = new URLSearchParams(location.search).get('api'); } catch (e) { /* ignore */ }
+        if (fromUrl) {
+            $('apiBase').value = fromUrl;
+            try { localStorage.setItem('clip-api-base', fromUrl.trim()); } catch (e) { /* ignore */ }
+            return;
+        }
+        let saved = null;
+        try { saved = localStorage.getItem('clip-api-base'); } catch (e) { /* storage unavailable */ }
+        $('apiBase').value = saved || DEFAULT_API_BASE;
+    })();
     $('apiBase').addEventListener('input', () => {
         try { localStorage.setItem('clip-api-base', $('apiBase').value.trim()); } catch (e) { /* ignore */ }
     });
-    if (location.hostname.endsWith('github.io')) {
-        document.getElementById('apiMsg').style.display = 'block';
-        document.getElementById('apiMsg').textContent =
-            'Paste your tunnel address above (e.g. from cloudflared) before making a clip. It changes each time the tunnel restarts.';
-    } else {
-        document.getElementById('apiMsg').style.display = 'none';
-    }
+    document.getElementById('apiMsg').style.display = 'none';
 
     // ---- Boot ----
     loadApi();
