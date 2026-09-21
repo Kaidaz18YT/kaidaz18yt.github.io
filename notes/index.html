@@ -217,6 +217,18 @@
     font-family: 'IBM Plex Mono', monospace;
   }
   .project-item.all .project-dot { background: var(--ink-faint); }
+  .project-del {
+    background: none; border: none;
+    color: var(--ink-faint);
+    font-size: 15px;
+    padding: 0 4px;
+    margin-left: auto;
+    opacity: 0;
+    line-height: 1;
+  }
+  .project-item:hover .project-del { opacity: 1; }
+  .project-item:hover .count { display: none; }
+  .project-del:hover { color: var(--danger); }
 
   #new-project-row {
     display: flex;
@@ -921,17 +933,50 @@ function renderProjectList(){
     const color = p.color || colorForIndex(i);
     html += `<div class="project-item ${currentProjectId===p.id?'active':''}" data-id="${p.id}">
       <span class="project-dot" style="background:${color}"></span> ${escapeHtml(p.name)} <span class="count">${count}</span>
+      <button class="project-del" data-id="${p.id}" title="Delete project">&times;</button>
     </div>`;
   });
   list.innerHTML = html;
   list.querySelectorAll('.project-item').forEach(el=>{
-    el.addEventListener('click', ()=>{
+    el.addEventListener('click', (e)=>{
+      if (e.target.closest('.project-del')) return;
       currentProjectId = el.dataset.id;
       renderProjectList();
       renderCurrentView();
       closeRailMobile();
     });
   });
+  list.querySelectorAll('.project-del').forEach(el=>{
+    el.addEventListener('click', (e)=>{
+      e.stopPropagation();
+      deleteProject(el.dataset.id);
+    });
+  });
+}
+
+async function deleteProject(id){
+  const p = projects.find(x=>x.id===id);
+  if (!p) return;
+  const taskCount = tasks.filter(t=>t.project===id).length;
+  const noteCount = notes.filter(n=>n.project===id).length;
+  let msg = `Delete project "${p.name}"?`;
+  if (taskCount || noteCount) {
+    msg += ` It has ${taskCount} task${taskCount!==1?'s':''} and ${noteCount} note${noteCount!==1?'s':''}. They will NOT be deleted, just unassigned from this project.`;
+  }
+  if (!confirm(msg)) return;
+  try {
+    // Unassign any tasks/notes pointing at this project first, so they don't
+    // reference a deleted record.
+    const affectedTasks = tasks.filter(t=>t.project===id);
+    const affectedNotes = notes.filter(n=>n.project===id);
+    await Promise.all([
+      ...affectedTasks.map(t => pb.collection('tasks').update(t.id, { project: null })),
+      ...affectedNotes.map(n => pb.collection('notes').update(n.id, { project: null })),
+    ]);
+    await pb.collection('projects').delete(id);
+    if (currentProjectId === id) currentProjectId = 'all';
+    toast('Project deleted');
+  } catch(e){ console.error(e); toast('Could not delete project'); }
 }
 
 function projectColor(projectId){
