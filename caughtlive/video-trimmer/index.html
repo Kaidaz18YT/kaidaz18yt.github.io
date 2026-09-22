@@ -536,9 +536,16 @@ async function getFFmpeg(onLog) {
     // SharedArrayBuffer, which needs cross-origin-isolation response headers
     // (COOP/COEP) that GitHub Pages doesn't send. This build works without them.
     const coreBaseURL = "https://cdn.jsdelivr.net/npm/@ffmpeg/core@0.12.6/dist/umd";
+    // ffmpeg internally spawns a Worker from a script URL. Browsers block
+    // constructing a Worker from a script hosted on a different origin than
+    // the page, even though a normal <script>/fetch to that same URL is
+    // allowed. Pulling the worker script down ourselves and handing it back
+    // as a blob: URL (same-origin by definition) works around that.
+    const ffmpegBaseURL = "https://cdn.jsdelivr.net/npm/@ffmpeg/ffmpeg@0.12.10/dist/umd";
     await ffmpeg.load({
       coreURL: await toBlobURL(`${coreBaseURL}/ffmpeg-core.js`, "text/javascript"),
       wasmURL: await toBlobURL(`${coreBaseURL}/ffmpeg-core.wasm`, "application/wasm"),
+      classWorkerURL: await toBlobURL(`${ffmpegBaseURL}/814.ffmpeg.js`, "text/javascript"),
     });
     console.log("ffmpeg core loaded");
     ffmpegInstance = ffmpeg;
