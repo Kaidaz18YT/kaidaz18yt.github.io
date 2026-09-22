@@ -1,0 +1,618 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1, viewport-fit=cover">
+<title>Kaidaz18 | Home</title>
+<link rel="icon" type="image/x-icon" href="https://kaidaz18yt.github.io/favicon.ico">
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link href="https://fonts.googleapis.com/css2?family=IBM+Plex+Sans:ital,wght@0,400;0,500;0,600;0,700;1,400&family=IBM+Plex+Mono:wght@400;500&display=swap" rel="stylesheet">
+<meta name="title" content="Kaidaz18 | Home" />
+<meta name="description" content="Kaidaz18 is an Australian Minecraft content creator and addon maker for Minecraft Education Edition and Minecraft Bedrock and also thinking about making Java Edition content." />
+
+<!-- Open Graph / Facebook -->
+<meta property="og:type" content="website" />
+<meta property="og:url" content="https://kaidaz18.github.io" />
+<meta property="og:title" content="Kaidaz18 | Home" />
+<meta property="og:description" content="Kaidaz18 is an Australian Minecraft content creator and addon maker for Minecraft Education Edition and Minecraft Bedrock and also thinking about making Java Edition content." />
+<meta property="og:image" content="https://kaidaz18yt.github.io/media/meta-image.jpg" />
+
+<!-- X (Twitter) -->
+<meta property="twitter:card" content="summary_large_image" />
+<meta property="twitter:url" content="https://kaidaz18.github.io" />
+<meta property="twitter:title" content="Kaidaz18 | Home" />
+<meta property="twitter:description" content="Kaidaz18 is an Australian Minecraft content creator and addon maker for Minecraft Education Edition and Minecraft Bedrock and also thinking about making Java Edition content." />
+<meta property="twitter:image" content="https://kaidaz18yt.github.io/media/meta-image.jpg" />
+
+<!-- Meta Tags Generated with https://metatags.io -->
+<style>
+/* ============================================================
+   MEDIA ASSETS — swap these two lines when your GitHub Pages
+   images are live. Search-replace the placeholder URLs below.
+
+   HEAD_ICON  : 500x500 PNG, transparent bg, used in the top nav
+   BUST_IMG   : ~800x1000 PNG, transparent bg, used in the hero
+
+   e.g. https://kaidaz18yt.github.io/assets/head.png
+        https://kaidaz18yt.github.io/assets/bust.png
+   ============================================================ */
+
+/* ============================================================
+   LEDGER THEME — carried over as-is from the supplied stylesheet
+   ============================================================ */
+:root {
+  --bg: #1C1B1A;
+  --bg-raised: #242321;
+  --bg-hover: #2C2B28;
+  --border: #38362f;
+  --border-soft: #2c2b27;
+
+  --ink: #EDEAE3;
+  --ink-dim: #A8A399;
+  --ink-faint: #6f6b62;
+
+  --accent: #7C93CC;
+  --accent-dim: #4A5D8A;
+  --amber: #C9A15C;
+  --sage: #8FA184;
+  --danger: #C97C6E;
+  --brand-red: #C1443A;
+  --brand-red-dim: #8B322A;
+  --brand-red-glow: rgba(193,68,58,0.18);
+
+  --radius: 3px;
+  color-scheme: dark;
+}
+:root {
+  --project-color-1: #7C93CC;
+  --project-color-2: #C9A15C;
+  --project-color-3: #8FA184;
+  --project-color-4: #C97C6E;
+}
+
+@media (prefers-color-scheme: light) {
+  :root:not([data-theme="dark"]) {
+    --bg: #1C1B1A; --bg-raised: #242321; --bg-hover: #2C2B28;
+    --border: #38362f; --border-soft: #2c2b27;
+    --ink: #EDEAE3; --ink-dim: #A8A399; --ink-faint: #6f6b62;
+  }
+}
+
+* { box-sizing: border-box; }
+html, body { height: 100%; margin: 0; }
+html { scroll-padding-top: calc(64px + env(safe-area-inset-top, 0px)); scroll-behavior: smooth; }
+body {
+  background: var(--bg);
+  color: var(--ink);
+  font-family: 'IBM Plex Sans', system-ui, sans-serif;
+  font-size: 15px;
+  line-height: 1.55;
+  -webkit-font-smoothing: antialiased;
+  padding-top: env(safe-area-inset-top, 0px);
+  padding-bottom: env(safe-area-inset-bottom, 0px);
+}
+::selection { background: var(--accent-dim); color: #fff; }
+::-webkit-scrollbar { width: 10px; height: 10px; }
+::-webkit-scrollbar-thumb { background: var(--border); border-radius: 5px; }
+::-webkit-scrollbar-track { background: transparent; }
+a { color: var(--accent); text-decoration: none; transition: color 0.18s ease, background-color 0.18s ease, border-color 0.18s ease, opacity 0.18s ease; }
+a:hover { text-decoration: underline; }
+button { font-family: inherit; cursor: pointer; }
+.mono { font-family: 'IBM Plex Mono', monospace; }
+
+img { max-width: 100%; display: block; }
+
+/* ============================================================
+   LAYOUT SHELL
+   ============================================================ */
+.page-wrap { max-width: 980px; margin: 0 auto; padding: 0 28px; }
+
+.topbar {
+  border-bottom: 1px solid var(--border-soft);
+  background: var(--bg);
+  position: sticky;
+  top: 0;
+  top: env(safe-area-inset-top, 0px);
+  z-index: 30;
+  box-shadow: 0 4px 16px rgba(0,0,0,0.2);
+}
+.topbar-inner {
+  max-width: 980px;
+  margin: 0 auto;
+  padding: 16px 28px;
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: 16px;
+}
+.brand {
+  display: flex;
+  align-items: center;
+  gap: 10px;
+  font-weight: 700;
+  font-size: 15px;
+  letter-spacing: -0.01em;
+  color: var(--ink);
+  text-decoration: none;
+}
+.brand:hover { text-decoration: none; color: var(--ink); opacity: 0.85; }
+.brand-icon {
+  width: 26px; height: 26px;
+  border-radius: 4px;
+  image-rendering: pixelated;
+  flex-shrink: 0;
+  box-shadow: 0 0 0 1px var(--border-soft);
+}
+.brand-handle { color: var(--ink-faint); font-weight: 400; font-size: 12.5px; }
+
+.topnav { display: flex; gap: 4px; }
+.topnav a {
+  color: var(--ink-dim);
+  font-size: 13px;
+  padding: 7px 12px;
+  border-radius: var(--radius);
+  transition: color 0.18s ease, background-color 0.18s ease;
+}
+.topnav a:hover { color: var(--ink); background: var(--bg-hover); text-decoration: none; }
+
+/* ============================================================
+   HERO
+   ============================================================ */
+.hero {
+  padding: 68px 0 52px;
+  border-bottom: 1px solid var(--border-soft);
+  display: grid;
+  grid-template-columns: 1fr auto;
+  gap: 32px;
+  align-items: center;
+  position: relative;
+}
+.hero-eyebrow {
+  font-size: 12px;
+  color: var(--brand-red);
+  font-family: 'IBM Plex Mono', monospace;
+  margin-bottom: 14px;
+}
+.hero h1 {
+  font-size: 40px;
+  font-weight: 600;
+  letter-spacing: -0.02em;
+  margin: 0 0 14px;
+  max-width: 560px;
+}
+.hero p.lede {
+  font-size: 16px;
+  color: var(--ink-dim);
+  max-width: 520px;
+  margin: 0 0 26px;
+}
+.hero-art {
+  position: relative;
+  width: 220px;
+  flex-shrink: 0;
+  display: flex;
+  align-items: flex-end;
+  justify-content: center;
+  overflow: visible;
+}
+.hero-art::before {
+  content: '';
+  position: absolute;
+  top: 50%;
+  left: 50%;
+  width: 340px;
+  height: 340px;
+  transform: translate(-50%, -50%);
+  background: radial-gradient(circle, var(--brand-red-glow), transparent 70%);
+  pointer-events: none;
+  z-index: 0;
+}
+.hero-art img {
+  position: relative;
+  z-index: 1;
+  width: 100%;
+  image-rendering: pixelated;
+  filter: drop-shadow(0 12px 24px rgba(0,0,0,0.4));
+}
+.hero-actions { display: flex; gap: 10px; flex-wrap: wrap; }
+.btn-primary {
+  background: var(--brand-red-dim);
+  color: #fff;
+  border: none;
+  padding: 10px 18px;
+  border-radius: var(--radius);
+  font-size: 13.5px;
+  font-weight: 500;
+  display: inline-block;
+  transition: background-color 0.18s ease, transform 0.18s ease;
+}
+.btn-primary:hover { background: var(--brand-red); text-decoration: none; transform: translateY(-1px); }
+.btn-secondary {
+  background: none;
+  border: 1px solid var(--border);
+  color: var(--ink-dim);
+  padding: 10px 18px;
+  border-radius: var(--radius);
+  font-size: 13.5px;
+  display: inline-block;
+  transition: color 0.18s ease, border-color 0.18s ease;
+}
+.btn-secondary:hover { color: var(--ink); border-color: var(--ink-faint); text-decoration: none; }
+
+.hero-stats {
+  display: flex;
+  gap: 32px;
+  margin-top: 40px;
+  flex-wrap: wrap;
+  grid-column: 1 / -1;
+}
+.hero-stat .num {
+  font-family: 'IBM Plex Mono', monospace;
+  font-size: 22px;
+  font-weight: 500;
+  color: var(--ink);
+}
+.hero-stat .label {
+  font-size: 11.5px;
+  color: var(--ink-faint);
+  text-transform: uppercase;
+  letter-spacing: 0.04em;
+  margin-top: 3px;
+}
+.hero-text { grid-column: 1; }
+
+/* ============================================================
+   SECTION SCAFFOLDING
+   ============================================================ */
+.section { padding: 56px 0; border-bottom: 1px solid var(--border-soft); }
+.section:last-of-type { border-bottom: none; }
+.section-head {
+  display: flex;
+  align-items: baseline;
+  justify-content: space-between;
+  margin-bottom: 26px;
+  gap: 16px;
+  flex-wrap: wrap;
+}
+.section-head h2 {
+  font-size: 21px;
+  font-weight: 600;
+  letter-spacing: -0.01em;
+  margin: 0;
+}
+.section-head .section-sub {
+  font-size: 13px;
+  color: var(--ink-faint);
+  margin-top: 4px;
+}
+.section-head .section-link { font-size: 13px; color: var(--ink-dim); white-space: nowrap; }
+.section-head .section-link:hover { color: var(--accent); }
+
+/* ============================================================
+   VIDEO GRID
+   ============================================================ */
+.video-grid {
+  display: grid;
+  grid-template-columns: repeat(auto-fill, minmax(270px, 1fr));
+  gap: 16px;
+}
+.video-card {
+  background: var(--bg-raised);
+  border: 1px solid var(--border-soft);
+  border-radius: var(--radius);
+  overflow: hidden;
+  display: flex;
+  flex-direction: column;
+  transition: border-color 0.2s ease, transform 0.2s ease, box-shadow 0.2s ease;
+}
+.video-card:hover { border-color: var(--border); transform: translateY(-2px); box-shadow: 0 8px 20px rgba(0,0,0,0.25); }
+.video-thumb-wrap {
+  position: relative;
+  aspect-ratio: 16 / 9;
+  background: var(--bg);
+  border-bottom: 1px solid var(--border-soft);
+  overflow: hidden;
+}
+.video-thumb-wrap img {
+  width: 100%; height: 100%;
+  object-fit: cover;
+  transition: transform 0.35s ease;
+}
+.video-card:hover .video-thumb-wrap img { transform: scale(1.05); }
+.play-badge {
+  position: absolute;
+  inset: 0;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  opacity: 0.9;
+  transition: opacity 0.2s ease, transform 0.2s ease;
+}
+.video-card:hover .play-badge { opacity: 1; transform: scale(1.06); }
+.play-badge svg {
+  width: 44px; height: 44px;
+  filter: drop-shadow(0 2px 6px rgba(0,0,0,0.5));
+}
+.video-body { padding: 13px 14px 15px; }
+.video-title {
+  font-size: 14px;
+  font-weight: 500;
+  color: var(--ink);
+  margin-bottom: 4px;
+  display: -webkit-box;
+  -webkit-line-clamp: 2;
+  -webkit-box-orient: vertical;
+  overflow: hidden;
+}
+.video-meta {
+  font-size: 12px;
+  color: var(--ink-faint);
+}
+
+/* ============================================================
+   ADDON LIST (row pattern, left accent bar)
+   ============================================================ */
+.addon-list { display: flex; flex-direction: column; }
+.addon-row {
+  display: flex;
+  gap: 16px;
+  padding: 18px 14px;
+  border-bottom: 1px solid var(--border-soft);
+  border-left: 3px solid transparent;
+  align-items: flex-start;
+  transition: background-color 0.2s ease, padding-left 0.2s ease;
+}
+.addon-row:first-child { border-top: 1px solid var(--border-soft); }
+.addon-row:hover { background: var(--bg-raised); padding-left: 18px; }
+.addon-row.a1 { border-left-color: var(--brand-red); }
+.addon-row.a2 { border-left-color: var(--amber); }
+.addon-row.a3 { border-left-color: var(--sage); }
+
+.addon-icon {
+  width: 52px; height: 52px;
+  border-radius: var(--radius);
+  flex-shrink: 0;
+  overflow: hidden;
+  border: 1px solid var(--border-soft);
+  background: var(--bg-raised);
+}
+.addon-icon img { width: 100%; height: 100%; object-fit: cover; }
+
+.addon-body { flex: 1; min-width: 0; }
+.addon-top {
+  display: flex;
+  align-items: baseline;
+  justify-content: space-between;
+  gap: 12px;
+  flex-wrap: wrap;
+}
+.addon-name { font-size: 15px; font-weight: 600; color: var(--ink); }
+.addon-desc {
+  font-size: 13.5px;
+  color: var(--ink-dim);
+  margin-top: 5px;
+  max-width: 560px;
+}
+.addon-meta {
+  display: flex;
+  gap: 14px;
+  margin-top: 10px;
+  font-size: 12px;
+  color: var(--ink-faint);
+  flex-wrap: wrap;
+}
+.addon-meta .tag { display: flex; align-items: center; gap: 5px; }
+.addon-meta .dot { width: 6px; height: 6px; border-radius: 50%; flex-shrink: 0; }
+.addon-cta { flex-shrink: 0; margin-top: 2px; }
+
+/* ============================================================
+   TOOLS GRID
+   ============================================================ */
+.tools-grid {
+  display: grid;
+  grid-template-columns: repeat(auto-fill, minmax(240px, 1fr));
+  gap: 14px;
+}
+.tool-card {
+  background: var(--bg-raised);
+  border: 1px solid var(--border-soft);
+  border-radius: var(--radius);
+  padding: 18px 18px 16px;
+  display: flex;
+  flex-direction: column;
+  min-height: 128px;
+  transition: border-color 0.2s ease, transform 0.2s ease, box-shadow 0.2s ease;
+}
+.tool-card:hover { border-color: var(--border); transform: translateY(-2px); box-shadow: 0 8px 20px rgba(0,0,0,0.25); }
+.tool-icon {
+  width: 30px; height: 30px;
+  border-radius: var(--radius);
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  margin-bottom: 12px;
+  flex-shrink: 0;
+}
+.tool-icon svg { width: 16px; height: 16px; }
+.tool-name { font-size: 14.5px; font-weight: 600; color: var(--ink); margin-bottom: 5px; }
+.tool-desc { font-size: 13px; color: var(--ink-dim); flex: 1; margin-bottom: 14px; }
+.tool-btn { align-self: flex-start; }
+.tool-card.coming-soon {
+  border-style: dashed;
+  align-items: flex-start;
+  justify-content: center;
+}
+.tool-card.coming-soon .tool-desc { color: var(--ink-faint); margin-bottom: 0; }
+
+/* ============================================================
+   ABOUT SECTION
+   ============================================================ */
+.about-layout {
+  display: grid;
+  grid-template-columns: 1.4fr 1fr;
+  gap: 40px;
+  align-items: start;
+}
+.about-body p { color: var(--ink-dim); margin: 0 0 14px; max-width: 560px; }
+.about-body p:last-child { margin-bottom: 0; }
+.about-body strong { color: var(--ink); font-weight: 600; }
+
+.about-card {
+  background: var(--bg-raised);
+  border: 1px solid var(--border-soft);
+  border-radius: var(--radius);
+  padding: 18px 20px;
+}
+.about-card .card-label {
+  font-size: 11px;
+  color: var(--ink-faint);
+  text-transform: uppercase;
+  letter-spacing: 0.05em;
+  margin-bottom: 12px;
+}
+.focus-item {
+  display: flex;
+  gap: 10px;
+  padding: 9px 0;
+  border-bottom: 1px solid var(--border-soft);
+  font-size: 13px;
+  color: var(--ink-dim);
+}
+.focus-item:last-child { border-bottom: none; padding-bottom: 0; }
+.focus-item .dot { width: 6px; height: 6px; border-radius: 50%; margin-top: 6px; flex-shrink: 0; }
+
+/* ============================================================
+   FOOTER
+   ============================================================ */
+.site-footer {
+  padding: 32px 0 40px;
+  padding-bottom: calc(40px + env(safe-area-inset-bottom, 0px));
+}
+.footer-inner {
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+  gap: 16px;
+  flex-wrap: wrap;
+  font-size: 12.5px;
+  color: var(--ink-faint);
+}
+.footer-links { display: flex; gap: 16px; }
+.footer-links a { color: var(--ink-faint); }
+.footer-links a:hover { color: var(--accent); }
+
+/* ============================================================
+   RESPONSIVE
+   ============================================================ */
+@media (max-width: 760px) {
+  .page-wrap { padding: 0 18px; }
+  .topbar-inner { padding: 14px 18px; }
+  .topnav a { padding: 6px 9px; font-size: 12.5px; }
+  .hero { padding: 40px 0 32px; grid-template-columns: 1fr; }
+  .hero h1 { font-size: 30px; }
+  .hero-art { width: 140px; order: -1; margin: 0 auto 8px; }
+  .hero-stats { grid-column: 1; }
+  .about-layout { grid-template-columns: 1fr; }
+  .addon-top { flex-direction: column; align-items: flex-start; }
+  .addon-cta { margin-top: 8px; }
+  .section { padding: 42px 0; }
+}
+
+:focus-visible { outline: 2px solid var(--accent); outline-offset: 2px; }
+
+@keyframes rise-in {
+  from { opacity: 0; transform: translateY(10px); }
+  to { opacity: 1; transform: translateY(0); }
+}
+.hero-eyebrow, .hero h1, .hero p.lede, .hero-actions, .hero-stats {
+  animation: rise-in 0.5s ease both;
+}
+.hero h1 { animation-delay: 0.05s; }
+.hero p.lede { animation-delay: 0.1s; }
+.hero-actions { animation-delay: 0.15s; }
+.hero-stats { animation-delay: 0.2s; }
+
+@media (prefers-reduced-motion: reduce) {
+  * { transition: none !important; animation: none !important; scroll-behavior: auto !important; }
+}
+</style>
+</head>
+<body id="top">
+
+<div class="topbar">
+  <div class="topbar-inner">
+    <a class="brand" href="#top">
+      <img class="brand-icon" src="https://kaidaz18yt.github.io/assets/channels4_profile.jpg" alt="Kaidaz18">
+      CaughLive Helper <span class="brand-handle">Tools Website</span>
+    </a>
+    <nav class="topnav">
+   <a href="#tools">Tools</a>
+    </nav>
+  </div>
+</div>
+
+<div class="page-wrap">
+
+
+  <section class="section" id="tools">
+    <div class="section-head">
+      <div>
+        <h2>Tools</h2>
+        <div class="section-sub">Web tools for Minecraft Bedrock &amp; Education Edition</div>
+      </div>
+    </div>
+
+    <div class="tools-grid">
+
+      <!-- ============================================================
+           TOOL CARD TEMPLATE — copy this whole <div> block to add a new
+           tool. Just change: href (in two places), tool-icon color,
+           name, and desc.
+           Icon colors cycle through: var(--accent) var(--amber)
+           var(--sage) var(--brand-red) var(--project-color-5) etc.
+           ============================================================ -->
+
+      <div class="tool-card">
+        <div class="tool-icon" style="background:rgba(124,147,204,0.15)">
+          <svg viewBox="0 0 24 24" fill="none" stroke="var(--accent)" stroke-width="1.6"><rect x="3" y="3" width="7" height="7" rx="1"/><rect x="14" y="3" width="7" height="7" rx="1"/><rect x="3" y="14" width="7" height="7" rx="1"/><path d="M14 14h7M14 18h7M14 21h4"/></svg>
+        </div>
+        <div class="tool-name">Video Clipper</div>
+        <div class="tool-desc">Clip Ze end of ze videos!</div>
+        <a class="btn-secondary tool-btn" href="https://kaidaz18yt.github.io/joincode-maker" target="_blank" rel="noopener">Open tool</a>
+      </div>
+
+      <div class="tool-card">
+        <div class="tool-icon" style="background:rgba(201,161,92,0.15)">
+          <svg viewBox="0 0 24 24" fill="none" stroke="var(--amber)" stroke-width="1.6"><path d="M12 2 3 7v6c0 5 4 8.5 9 9 5-.5 9-4 9-9V7l-9-5Z"/><path d="M9 12l2 2 4-4"/></svg>
+        </div>
+        <div class="tool-name">YouTube video clip downloader</div>
+        <div class="tool-desc">Select a part of a YouTube video and the website will download it for you.</div>
+        <a class="btn-secondary tool-btn" href="https://kaidaz18yt.github.io/beta-api-enable" target="_blank" rel="noopener">Open tool</a>
+      </div>
+
+      <!-- End of tool cards. To add another, paste a copy of one <div class="tool-card">
+           block above this line and edit it. -->
+
+      <div class="tool-card coming-soon">
+        <div class="tool-name" style="color:var(--ink-faint)">More on the way</div>
+        <div class="tool-desc">More Bedrock &amp; Education Edition tools are planned for this site.</div>
+      </div>
+
+    </div>
+  </section>
+
+
+</div>
+
+<footer class="site-footer">
+  <div class="page-wrap footer-inner">
+    <div>© 2026 Kaidaz18</div>
+    <div class="footer-links">
+      <a href="https://youtube.com/@Kaidaz18" target="_blank" rel="noopener">YouTube</a>
+      <a href="https://www.curseforge.com/members/kaidaz18" target="_blank" rel="noopener">CurseForge</a>
+    </div>
+  </div>
+</footer>
+
+</body>
+</html>
