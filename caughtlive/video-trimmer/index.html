@@ -536,15 +536,18 @@ async function getFFmpeg(onLog) {
     // SharedArrayBuffer, which needs cross-origin-isolation response headers
     // (COOP/COEP) that GitHub Pages doesn't send. This build works without them.
     const coreBaseURL = "https://cdn.jsdelivr.net/npm/@ffmpeg/core@0.12.6/dist/umd";
-    // ffmpeg internally spawns a Worker from a script URL. Browsers block
-    // constructing a Worker from a script hosted on a different origin than
-    // the page, even though a normal <script>/fetch to that same URL is
-    // allowed. Pulling the worker script down ourselves and handing it back
-    // as a blob: URL (same-origin by definition) works around that.
+    // `new Worker(url)` is blocked cross-origin by browsers, so the worker's
+    // own script has to be fetched and handed back as a same-origin blob:
+    // URL. But once ffmpeg-core.js is ALSO wrapped as a blob, the worker's
+    // internal importScripts() for it can't resolve the matching .wasm file
+    // relative to its own (blob) location and throws "failed to import
+    // ffmpeg-core.js". importScripts() to a different origin is allowed by
+    // spec (unlike constructing the Worker itself), so leave the core/wasm
+    // as plain remote URLs and only blob-wrap the worker script.
     const ffmpegBaseURL = "https://cdn.jsdelivr.net/npm/@ffmpeg/ffmpeg@0.12.10/dist/umd";
     await ffmpeg.load({
-      coreURL: await toBlobURL(`${coreBaseURL}/ffmpeg-core.js`, "text/javascript"),
-      wasmURL: await toBlobURL(`${coreBaseURL}/ffmpeg-core.wasm`, "application/wasm"),
+      coreURL: `${coreBaseURL}/ffmpeg-core.js`,
+      wasmURL: `${coreBaseURL}/ffmpeg-core.wasm`,
       classWorkerURL: await toBlobURL(`${ffmpegBaseURL}/814.ffmpeg.js`, "text/javascript"),
     });
     console.log("ffmpeg core loaded");
