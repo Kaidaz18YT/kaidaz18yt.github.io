@@ -247,8 +247,8 @@
   <div class="footnote" id="footnote">Processing happens entirely in your browser — nothing is uploaded anywhere. Each video is decoded frame-by-frame (not played back live) so the output isn't affected by playback stutter, then combined with the original audio and packaged as .mp4. The first run downloads a small conversion engine, which is cached after that and makes the first trim slower than the rest.</div>
 </div>
 
-<script src="https://cdnjs.cloudflare.com/ajax/libs/ffmpeg/0.12.10/ffmpeg.min.js"></script>
-<script src="https://cdnjs.cloudflare.com/ajax/libs/ffmpeg-util/0.12.1/util.min.js"></script>
+<script src="https://cdn.jsdelivr.net/npm/@ffmpeg/ffmpeg@0.12.10/dist/umd/ffmpeg.min.js"></script>
+<script src="https://cdn.jsdelivr.net/npm/@ffmpeg/util@0.12.1/dist/umd/index.min.js"></script>
 <script>
 const state = {
   items: [],       // {id, file, url, duration, name, fps}
@@ -532,7 +532,7 @@ async function getFFmpeg(onLog) {
     if (onLog) {
       ffmpeg.on("log", ({ message }) => onLog(message));
     }
-    const coreBaseURL = "https://cdnjs.cloudflare.com/ajax/libs/ffmpeg-core/0.12.6/umd";
+    const coreBaseURL = "https://cdn.jsdelivr.net/npm/@ffmpeg/core@0.12.6/dist/umd";
     await ffmpeg.load({
       coreURL: await toBlobURL(`${coreBaseURL}/ffmpeg-core.js`, "text/javascript"),
       wasmURL: await toBlobURL(`${coreBaseURL}/ffmpeg-core.wasm`, "application/wasm"),
