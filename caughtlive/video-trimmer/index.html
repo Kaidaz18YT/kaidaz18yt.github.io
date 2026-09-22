@@ -532,11 +532,15 @@ async function getFFmpeg(onLog) {
     if (onLog) {
       ffmpeg.on("log", ({ message }) => onLog(message));
     }
+    // Single-threaded core deliberately: the multi-threaded core needs
+    // SharedArrayBuffer, which needs cross-origin-isolation response headers
+    // (COOP/COEP) that GitHub Pages doesn't send. This build works without them.
     const coreBaseURL = "https://cdn.jsdelivr.net/npm/@ffmpeg/core@0.12.6/dist/umd";
     await ffmpeg.load({
       coreURL: await toBlobURL(`${coreBaseURL}/ffmpeg-core.js`, "text/javascript"),
       wasmURL: await toBlobURL(`${coreBaseURL}/ffmpeg-core.wasm`, "application/wasm"),
     });
+    console.log("ffmpeg core loaded");
     ffmpegInstance = ffmpeg;
     return ffmpeg;
   })();
@@ -717,7 +721,8 @@ applyBtn.addEventListener("click", async () => {
   try {
     ffmpeg = await getFFmpeg();
   } catch (err) {
-    statusLabel.textContent = "Couldn't load the mp4 conversion engine.";
+    console.error("ffmpeg load failed:", err);
+    statusLabel.textContent = "Couldn't load the mp4 conversion engine: " + (err && err.message ? err.message : err);
     applyBtn.disabled = false;
     return;
   }
