@@ -204,7 +204,7 @@
 
 <div class="mono" style="font-size:12px; color:var(--brand-red); margin-bottom:14px;">TOOL / VIDEO</div>
 <h1>Batch ending trimmer</h1>
-<p class="sub">Upload several videos, then drag the trim handle on one reference clip to mark where its ending should be cut. That same cut length is removed from the end of every other video.</p>
+<p class="sub">Upload several videos, then drag the trim handle on one reference clip to mark where its ending should be cut. That same cut length is removed from the end of every other video. Output is .mp4.</p>
 
 <div class="card">
   <div class="drop" id="dropZone">
@@ -244,9 +244,11 @@
   </div>
 
   <div class="progress-list" id="progressList"></div>
-  <div class="footnote">Processing happens entirely in your browser — nothing is uploaded anywhere, and each video re-plays briefly while it's being trimmed. Output files are .webm.</div>
+  <div class="footnote" id="footnote">Processing happens entirely in your browser — nothing is uploaded anywhere. Each video is decoded frame-by-frame (not played back live) so the output isn't affected by playback stutter, then combined with the original audio and packaged as .mp4. The first run downloads a small conversion engine, which is cached after that and makes the first trim slower than the rest.</div>
 </div>
 
+<script src="https://cdnjs.cloudflare.com/ajax/libs/ffmpeg/0.12.10/ffmpeg.min.js"></script>
+<script src="https://cdnjs.cloudflare.com/ajax/libs/ffmpeg-util/0.12.1/util.min.js"></script>
 <script>
 const state = {
   items: [],       // {id, file, url, duration, name, fps}
@@ -255,7 +257,10 @@ const state = {
 };
 
 const ASSUMED_FPS = 30; // used for frame-step size when real fps isn't known
+const CAPTURE_FPS = 30; // fixed output frame rate so timing can't drift
 let idCounter = 0;
+let ffmpegInstance = null;
+let ffmpegLoading = null;
 
 const dropZone = document.getElementById("dropZone");
 const fileInput = document.getElementById("fileInput");
@@ -514,53 +519,74 @@ function updateTrimUI() {
   frameReadout.textContent = `frame ${frameIdx} / ${totalFrames}`;
 }
 
-// --- Trimming via play-through + MediaRecorder (no ffmpeg, no workers) ---
+// --- ffmpeg.wasm setup (loaded lazily, cached across trims) ---
 
-function pickMimeType() {
-  const candidates = [
-    "video/webm;codecs=vp9,opus",
-    "video/webm;codecs=vp8,opus",
-    "video/webm",
-  ];
-  for (const c of candidates) {
-    if (window.MediaRecorder && MediaRecorder.isTypeSupported(c)) return c;
-  }
-  return "";
+async function getFFmpeg(onLog) {
+  if (ffmpegInstance) return ffmpegInstance;
+  if (ffmpegLoading) return ffmpegLoading;
+
+  ffmpegLoading = (async () => {
+    const { FFmpeg } = FFmpegWASM;
+    const { toBlobURL } = FFmpegUtil;
+    const ffmpeg = new FFmpeg();
+    if (onLog) {
+      ffmpeg.on("log", ({ message }) => onLog(message));
+    }
+    const coreBaseURL = "https://cdnjs.cloudflare.com/ajax/libs/ffmpeg-core/0.12.6/umd";
+    await ffmpeg.load({
+      coreURL: await toBlobURL(`${coreBaseURL}/ffmpeg-core.js`, "text/javascript"),
+      wasmURL: await toBlobURL(`${coreBaseURL}/ffmpeg-core.wasm`, "application/wasm"),
+    });
+    ffmpegInstance = ffmpeg;
+    return ffmpeg;
+  })();
+
+  return ffmpegLoading;
 }
 
-function trimOneVideo(item, outDuration, onProgress) {
+// --- Trimming: decode via an offscreen canvas at a fixed rate, capture that
+// canvas's stream (not the live-playing element), then encode to mp4. Driving
+// capture from a canvas painted on a fixed timer — instead of recording the
+// video element's own real-time playback — is what removes the stutter,
+// since the output frame rate no longer depends on how smoothly the browser
+// happens to paint playback in that moment. ---
+
+function recordViaCanvas(item, outDuration, onProgress) {
   return new Promise((resolve, reject) => {
     if (!window.MediaRecorder) {
       reject(new Error("MediaRecorder not supported"));
       return;
     }
     const vid = document.createElement("video");
-    vid.muted = false;
+    vid.muted = true; // canvas capture carries no audio path here; audio is remuxed separately below
     vid.src = item.url;
     vid.playsInline = true;
     vid.preload = "auto";
 
-    vid.addEventListener("loadedmetadata", () => {
-      vid.currentTime = 0;
-    });
+    vid.addEventListener("loadedmetadata", () => { vid.currentTime = 0; });
 
     vid.addEventListener("canplay", () => {
+      const canvas = document.createElement("canvas");
+      canvas.width = vid.videoWidth || 640;
+      canvas.height = vid.videoHeight || 360;
+      const ctx = canvas.getContext("2d", { alpha: false });
+
       let stream;
       try {
-        stream = vid.captureStream ? vid.captureStream() : vid.mozCaptureStream();
+        stream = canvas.captureStream(CAPTURE_FPS);
       } catch (err) {
         reject(err);
         return;
       }
-      if (!stream) {
-        reject(new Error("captureStream unsupported"));
-        return;
-      }
 
-      const mimeType = pickMimeType();
+      const mimeType = ["video/webm;codecs=vp9", "video/webm;codecs=vp8", "video/webm"]
+        .find(c => window.MediaRecorder && MediaRecorder.isTypeSupported(c)) || "";
+
       let recorder;
       try {
-        recorder = mimeType ? new MediaRecorder(stream, { mimeType }) : new MediaRecorder(stream);
+        recorder = mimeType
+          ? new MediaRecorder(stream, { mimeType, videoBitsPerSecond: 8_000_000 })
+          : new MediaRecorder(stream, { videoBitsPerSecond: 8_000_000 });
       } catch (err) {
         reject(err);
         return;
@@ -570,36 +596,74 @@ function trimOneVideo(item, outDuration, onProgress) {
       recorder.ondataavailable = (e) => { if (e.data && e.data.size > 0) chunks.push(e.data); };
       recorder.onerror = (e) => reject(e.error || new Error("recorder error"));
       recorder.onstop = () => {
+        clearInterval(paintTimer);
         const blob = new Blob(chunks, { type: mimeType || "video/webm" });
         resolve(blob);
       };
 
       let started = false;
-      let rafId = null;
+      const frameInterval = 1000 / CAPTURE_FPS;
+      let paintTimer = null;
 
-      const tick = () => {
+      const paintFrame = () => {
         if (vid.currentTime >= outDuration || vid.ended) {
           if (recorder.state !== "inactive") recorder.stop();
           vid.pause();
-          if (rafId) cancelAnimationFrame(rafId);
           return;
         }
+        ctx.drawImage(vid, 0, 0, canvas.width, canvas.height);
         onProgress(Math.min(0.98, vid.currentTime / outDuration));
-        rafId = requestAnimationFrame(tick);
       };
 
       vid.addEventListener("playing", () => {
         if (started) return;
         started = true;
         recorder.start(100);
-        rafId = requestAnimationFrame(tick);
+        // Fixed-rate paint loop decoupled from the display's own refresh
+        // timing — this is the piece that keeps the exported frame pacing
+        // even if the tab's rendering briefly stutters.
+        paintTimer = setInterval(paintFrame, frameInterval);
       }, { once: true });
 
+      // Decode as fast as the browser allows; the canvas paint loop above
+      // (not this playback) determines the actual output timing/frame rate.
       vid.play().catch((err) => reject(err));
     }, { once: true });
 
     vid.addEventListener("error", () => reject(new Error("video load failed")));
   });
+}
+
+async function transcodeToMp4(webmBlob, originalFile, outDuration, ffmpeg, videoInName, srcInName, outputName) {
+  const { fetchFile } = FFmpegUtil;
+  await ffmpeg.writeFile(videoInName, await fetchFile(webmBlob));
+  await ffmpeg.writeFile(srcInName, await fetchFile(originalFile));
+
+  // Trim the ORIGINAL file's audio to the same output duration, and mux it
+  // with the canvas-captured (stutter-free) video track. The source's audio
+  // decode/encode is untouched by the video capture method, so this keeps
+  // sync without inheriting any of the original video jank.
+  await ffmpeg.exec([
+    "-i", videoInName,
+    "-i", srcInName,
+    "-map", "0:v:0",
+    "-map", "1:a:0?",
+    "-t", String(outDuration),
+    "-c:v", "libx264",
+    "-preset", "veryfast",
+    "-crf", "20",
+    "-pix_fmt", "yuv420p",
+    "-c:a", "aac",
+    "-b:a", "192k",
+    "-movflags", "+faststart",
+    "-shortest",
+    outputName,
+  ]);
+  const data = await ffmpeg.readFile(outputName);
+  await ffmpeg.deleteFile(videoInName);
+  await ffmpeg.deleteFile(srcInName);
+  await ffmpeg.deleteFile(outputName);
+  return new Blob([data.buffer], { type: "video/mp4" });
 }
 
 function setRowProgress(id, pct, stateText, kind) {
@@ -640,26 +704,51 @@ applyBtn.addEventListener("click", async () => {
     statusLabel.textContent = "This browser doesn't support in-browser video recording.";
     return;
   }
+  if (typeof FFmpegWASM === "undefined" || typeof FFmpegUtil === "undefined") {
+    statusLabel.textContent = "Couldn't load the mp4 conversion engine — check your connection and reload.";
+    return;
+  }
 
   applyBtn.disabled = true;
-  statusLabel.textContent = "Processing...";
+  statusLabel.textContent = "Loading mp4 engine...";
   buildProgressRows();
+
+  let ffmpeg;
+  try {
+    ffmpeg = await getFFmpeg();
+  } catch (err) {
+    statusLabel.textContent = "Couldn't load the mp4 conversion engine.";
+    applyBtn.disabled = false;
+    return;
+  }
+
+  statusLabel.textContent = "Processing...";
 
   for (const item of state.items) {
     const outDuration = Math.max(0.1, item.duration - state.cutSeconds);
-    setRowProgress(item.id, 0.02, "Preparing...");
+    setRowProgress(item.id, 0.02, "Decoding...");
     try {
-      const blob = await trimOneVideo(item, outDuration, (p) => {
-        setRowProgress(item.id, p, "Trimming...");
+      const webmBlob = await recordViaCanvas(item, outDuration, (p) => {
+        setRowProgress(item.id, p * 0.7, "Decoding...");
       });
-      const url = URL.createObjectURL(blob);
+      setRowProgress(item.id, 0.72, "Converting to mp4...");
+      const mp4Blob = await transcodeToMp4(
+        webmBlob,
+        item.file,
+        outDuration,
+        ffmpeg,
+        `vid_${item.id}.webm`,
+        `src_${item.id}.${(item.file.name.split(".").pop() || "mp4")}`,
+        `out_${item.id}.mp4`
+      );
+      const url = URL.createObjectURL(mp4Blob);
       setRowProgress(item.id, 1, "Done", "done");
       const label = document.getElementById("state_" + item.id);
       if (label) {
         label.innerHTML = "";
         const a = document.createElement("a");
         a.href = url;
-        a.download = item.name.replace(/\.[^.]+$/, "") + "_trimmed.webm";
+        a.download = item.name.replace(/\.[^.]+$/, "") + "_trimmed.mp4";
         a.className = "dl-link";
         a.textContent = "Download";
         label.appendChild(a);
