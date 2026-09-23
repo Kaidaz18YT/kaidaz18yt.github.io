@@ -551,6 +551,7 @@ function upsertLocal(list, rec, atFront){
   if (i > -1) list[i] = rec; else if (atFront) list.unshift(rec); else list.push(rec);
 }
 function refresh(){ renderCategoryList(); renderCurrentView(); }
+function toArr(v){ if (Array.isArray(v)) return v; if (v === null || v === undefined || v === '') return []; return [v]; }
 function isImageName(name){ return /\.(png|jpe?g|gif|webp|svg)$/i.test(name || ''); }
 function extOf(name){ const m = /\.([a-z0-9]+)$/i.exec(name || ''); return m ? m[1].toUpperCase() : 'FILE'; }
 
@@ -741,7 +742,7 @@ function fmtWhen(iso){
 const FILE_ICON = `<svg viewBox="0 0 16 16" fill="none"><path d="M3 2h7l3 3v9a1 1 0 0 1-1 1H3a1 1 0 0 1-1-1V3a1 1 0 0 1 1-1Z" stroke="currentColor" stroke-width="1.3"/><path d="M10 2v3h3" stroke="currentColor" stroke-width="1.3"/></svg>`;
 const PIN_ICON = `<svg viewBox="0 0 16 16" fill="none"><path d="M8 2l1.5 4.5L14 8l-4.5 1.5L8 14l-1.5-4.5L2 8l4.5-1.5L8 2Z" fill="currentColor"/></svg>`;
 
-function ideaFileCount(idea){ return (idea.attachments || []).filter(id => files.some(f=>f.id===id)).length; }
+function ideaFileCount(idea){ return toArr(idea.attachments).filter(id => files.some(f=>f.id===id)).length; }
 
 function renderIdeas(){
   const filtered = ideas.filter(x => currentCategoryId==='all' || x.category===currentCategoryId);
@@ -799,7 +800,7 @@ async function duplicateIdea(id){
   try {
     const rec = await pb.collection('yt_ideas').create({
       title: (x.title || 'Untitled') + ' (copy)', content: x.content || '', category: x.category || null,
-      status: x.status || 'Idea', pinned: false, attachments: [...(x.attachments || [])],
+      status: x.status || 'Idea', pinned: false, attachments: toArr(x.attachments),
     });
     upsertLocal(ideas, rec, true); refresh(); toast('Idea duplicated');
   } catch(e){ console.error(e); toast('Could not duplicate idea'); }
@@ -818,7 +819,7 @@ function openIdeaModal(id){
     $('idea-pinned').checked = !!x.pinned;
     setEditorHtml(x.content || '');
     $('idea-delete-btn').style.display = '';
-    ideaLinkedFileIds = (x.attachments || []).filter(fid => files.some(f=>f.id===fid));
+    ideaLinkedFileIds = toArr(x.attachments).filter(fid => files.some(f=>f.id===fid));
   } else {
     $('idea-modal-title').textContent = 'New Idea';
     $('idea-title').value = '';
@@ -927,7 +928,7 @@ $('idea-delete-btn').addEventListener('click', async ()=>{
 });
 
 // ---------- Files center ----------
-function fileIdeaCount(fileId){ return ideas.filter(x => (x.attachments||[]).includes(fileId)).length; }
+function fileIdeaCount(fileId){ return ideas.filter(x => toArr(x.attachments).includes(fileId)).length; }
 function renderFiles(){
   const filtered = files.filter(f => currentCategoryId==='all' || f.category===currentCategoryId);
   if (!filtered.length) { $('files-view').innerHTML = `<div class="empty-state">No files here yet. Click "Upload File" to add one.</div>`; return; }
@@ -962,8 +963,8 @@ async function deleteFile(id){
   if (usedIn) msg += ` It's linked from ${usedIn} idea(s) — it will be removed from those too.`;
   if (!confirm(msg)) return;
   try {
-    await Promise.all(ideas.filter(x=>(x.attachments||[]).includes(id)).map(x =>
-      pb.collection('yt_ideas').update(x.id, { attachments: x.attachments.filter(fid=>fid!==id) })));
+    await Promise.all(ideas.filter(x=>toArr(x.attachments).includes(id)).map(x =>
+      pb.collection('yt_ideas').update(x.id, { attachments: toArr(x.attachments).filter(fid=>fid!==id) })));
     await pb.collection('yt_files').delete(id);
     files = files.filter(f=>f.id!==id);
     await loadIdeas(); refresh(); toast('File deleted');
@@ -984,7 +985,7 @@ function openFileModal(id, ctx){
     $('file-picked-group').hidden = false;
     $('upload-file-drop').textContent = f.file ? `Current file: ${f.file}` : 'Click, drop, or paste a file here';
     $('file-delete-btn').style.display = '';
-    const usedIn = ideas.filter(x=>(x.attachments||[]).includes(id));
+    const usedIn = ideas.filter(x=>toArr(x.attachments).includes(id));
     $('file-linked-ideas-group').hidden = !usedIn.length;
     $('file-linked-ideas').textContent = usedIn.map(x=>x.title || 'Untitled').join(', ');
   } else {
