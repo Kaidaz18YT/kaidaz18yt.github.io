@@ -1,0 +1,1495 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1, viewport-fit=cover">
+<title>IdeaBoard</title>
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link href="https://fonts.googleapis.com/css2?family=IBM+Plex+Sans:ital,wght@0,400;0,500;0,600;0,700;1,400&family=IBM+Plex+Mono:wght@400;500&display=swap" rel="stylesheet">
+<style>
+  :root {
+    --bg: #1C1B1A;
+    --bg-raised: #242321;
+    --bg-hover: #2C2B28;
+    --border: #38362f;
+    --border-soft: #2c2b27;
+    --ink: #EDEAE3;
+    --ink-dim: #A8A399;
+    --ink-faint: #6f6b62;
+    --accent: #C1443A;
+    --accent-dim: #8B322A;
+    --amber: #C9A15C;
+    --sage: #8FA184;
+    --danger: #C97C6E;
+    --purple: #B490C0;
+    --radius: 3px;
+    color-scheme: dark;
+  }
+  * { box-sizing: border-box; }
+  [hidden] { display: none !important; }
+  html, body { height: 100%; margin: 0; }
+  body {
+    background: var(--bg);
+    color: var(--ink);
+    font-family: 'IBM Plex Sans', system-ui, sans-serif;
+    font-size: 14.5px;
+    line-height: 1.5;
+    -webkit-font-smoothing: antialiased;
+    padding-top: env(safe-area-inset-top, 0px);
+    padding-bottom: env(safe-area-inset-bottom, 0px);
+  }
+  ::selection { background: var(--accent-dim); color: #fff; }
+  ::-webkit-scrollbar { width: 10px; height: 10px; }
+  ::-webkit-scrollbar-thumb { background: var(--border); border-radius: 5px; }
+  ::-webkit-scrollbar-thumb:hover { background: var(--ink-faint); }
+  ::-webkit-scrollbar-track { background: transparent; }
+  button { font-family: inherit; cursor: pointer; transition: background-color .12s, color .12s, border-color .12s, opacity .12s; }
+  input, textarea, select { font-family: inherit; color: inherit; background: none; border: none; outline: none; }
+  a { color: var(--accent); }
+  :focus-visible { outline: 2px solid var(--accent); outline-offset: 1px; }
+  input:focus-visible, textarea:focus-visible, select:focus-visible, #idea-content:focus-visible { outline: none; }
+
+  /* ---------- Login ---------- */
+  #login-screen { position: fixed; inset: 0; display: flex; align-items: center; justify-content: center; background: var(--bg); z-index: 100; }
+  #login-screen.hidden { display: none; }
+  .login-box { width: 300px; padding: 0 8px; }
+  .login-box h1 { font-size: 20px; font-weight: 600; margin: 0 0 4px; letter-spacing: -0.01em; }
+  .login-box p { color: var(--ink-dim); font-size: 13px; margin: 0 0 24px; }
+  .login-box input { width: 100%; padding: 10px 12px; border: 1px solid var(--border); border-radius: var(--radius); background: var(--bg-raised); margin-bottom: 10px; font-size: 14px; transition: border-color .12s; }
+  .login-box input:hover { border-color: var(--ink-faint); }
+  .login-box input:focus { border-color: var(--accent-dim); }
+  .login-box button { width: 100%; padding: 10px 12px; background: var(--accent-dim); color: #fff; border: none; border-radius: var(--radius); font-size: 14px; font-weight: 500; margin-top: 4px; }
+  .login-box button:hover { background: var(--accent); }
+  .login-error { color: var(--danger); font-size: 13px; margin-top: 10px; min-height: 16px; }
+
+  /* ---------- App shell ---------- */
+  #app { display: none; height: 100%; flex-direction: column; }
+  #app.visible { display: flex; }
+
+  #rail {
+    position: fixed; top: 0; bottom: 0; left: 0; width: min(300px, 86vw);
+    background: var(--bg-raised); border-right: 1px solid var(--border-soft);
+    display: flex; flex-direction: column; overflow: hidden;
+    transform: translateX(-100%); visibility: hidden;
+    transition: transform .22s ease, visibility 0s linear .22s; z-index: 40;
+    padding-top: env(safe-area-inset-top, 0px); padding-bottom: env(safe-area-inset-bottom, 0px);
+  }
+  #rail.open { transform: none; visibility: visible; transition: transform .22s ease, visibility 0s; box-shadow: 10px 0 36px rgba(0,0,0,.4); }
+  #rail-scrim { position: fixed; inset: 0; background: rgba(0,0,0,0.45); z-index: 39; opacity: 0; pointer-events: none; transition: opacity .2s; }
+  #rail-scrim.open { opacity: 1; pointer-events: auto; }
+  @media (prefers-reduced-motion: reduce) { #rail, #rail.open, #rail-scrim { transition: none; } }
+
+  .rail-head { padding: 18px 12px 14px 16px; display: flex; align-items: center; justify-content: space-between; border-bottom: 1px solid var(--border-soft); }
+  .rail-head .mark { font-weight: 700; font-size: 15px; letter-spacing: -0.01em; }
+  .rail-head .mark::before { content: ''; display: inline-block; width: 8px; height: 8px; background: var(--accent); margin-right: 8px; border-radius: 1px; }
+  .rail-head-actions { display: flex; align-items: center; gap: 2px; }
+  #logout-btn, #rail-close { background: none; border: none; color: var(--ink-faint); font-size: 12px; padding: 5px 8px; border-radius: var(--radius); }
+  #rail-close { font-size: 18px; line-height: 1; padding: 3px 8px; }
+  #logout-btn:hover, #rail-close:hover { color: var(--ink); background: var(--bg-hover); }
+
+  .view-switch { display: flex; padding: 10px 12px; gap: 4px; }
+  .view-switch button { flex: 1; padding: 7px 0; background: none; border: 1px solid var(--border); color: var(--ink-dim); border-radius: var(--radius); font-size: 12.5px; font-weight: 500; }
+  .view-switch button:hover { background: var(--bg-hover); color: var(--ink); border-color: var(--ink-faint); }
+  .view-switch button.active { background: var(--accent-dim); border-color: var(--accent-dim); color: #fff; }
+
+  .rail-label { padding: 14px 16px 6px; font-size: 11px; color: var(--ink-faint); font-weight: 500; text-transform: uppercase; letter-spacing: 0.04em; }
+  #category-list { overflow-y: auto; flex: 1; padding-bottom: 12px; }
+  .category-item, .idea-row, .file-card { -webkit-touch-callout: none; -webkit-user-select: none; user-select: none; }
+  .category-item { display: flex; align-items: center; gap: 9px; padding: 8px 12px 8px 14px; cursor: pointer; color: var(--ink-dim); font-size: 13.5px; border-left: 2px solid transparent; transition: background-color .12s, color .12s; }
+  .category-item:hover, .category-item.ctx-target { background: var(--bg-hover); color: var(--ink); }
+  .category-item.active { background: var(--bg-hover); color: var(--ink); border-left-color: var(--accent); }
+  .category-dot { width: 7px; height: 7px; border-radius: 50%; flex-shrink: 0; }
+  .category-name { flex: 1; min-width: 0; overflow: hidden; text-overflow: ellipsis; white-space: nowrap; }
+  .category-item .count { margin-left: auto; font-size: 11px; color: var(--ink-faint); font-family: 'IBM Plex Mono', monospace; flex-shrink: 0; min-width: 24px; text-align: right; }
+  .category-item.all .category-dot { background: var(--ink-faint); }
+
+  .row-more { background: none; border: none; color: var(--ink-faint); width: 26px; height: 26px; padding: 0; border-radius: 4px; display: flex; align-items: center; justify-content: center; flex-shrink: 0; opacity: 0; }
+  .row-more svg { width: 15px; height: 15px; }
+  .row-more:hover { background: var(--border); color: var(--ink); }
+  .category-item .row-more { display: none; }
+  .category-item:hover .row-more, .category-item:focus-within .row-more, .category-item.ctx-target .row-more { display: flex; opacity: 1; }
+  .category-item:hover .count, .category-item:focus-within .count, .category-item.ctx-target .count { display: none; }
+  .idea-row:hover .row-more, .idea-row:focus-within .row-more, .idea-row.ctx-target .row-more,
+  .file-card:hover .row-more, .file-card:focus-within .row-more, .file-card.ctx-target .row-more { opacity: 1; }
+
+  #new-category-row { display: flex; gap: 6px; padding: 8px 12px 4px; }
+  #new-category-row input { flex: 1; min-width: 0; padding: 6px 8px; border: 1px solid var(--border); border-radius: var(--radius); font-size: 12.5px; background: var(--bg); transition: border-color .12s; }
+  #new-category-row input:hover { border-color: var(--ink-faint); }
+  #new-category-row input:focus { border-color: var(--accent-dim); }
+  #new-category-row button { padding: 6px 10px; background: var(--bg-hover); border: 1px solid var(--border); color: var(--ink-dim); border-radius: var(--radius); font-size: 12.5px; }
+  #new-category-row button:hover { color: var(--ink); border-color: var(--ink-faint); background: var(--border); }
+
+  .rail-foot { padding: 10px 16px; border-top: 1px solid var(--border-soft); font-size: 11.5px; color: var(--ink-faint); }
+
+  #main { flex: 1; min-height: 0; overflow: hidden; display: flex; flex-direction: column; }
+  #main-head { flex-shrink: 0; border-bottom: 1px solid var(--border-soft); }
+  .head-inner { max-width: 900px; margin: 0 auto; padding: 14px 24px; display: flex; align-items: center; gap: 10px; }
+  #menu-btn { display: flex; align-items: center; justify-content: center; width: 36px; height: 36px; margin-left: -8px; background: none; border: 1px solid transparent; border-radius: var(--radius); color: var(--ink-dim); flex-shrink: 0; }
+  #menu-btn svg { width: 18px; height: 18px; }
+  #menu-btn:hover { background: var(--bg-hover); color: var(--ink); border-color: var(--border); }
+  #main-title { flex: 1; min-width: 0; font-size: 19px; font-weight: 600; letter-spacing: -0.01em; overflow: hidden; text-overflow: ellipsis; white-space: nowrap; }
+  .primary-btn { background: var(--accent-dim); color: #fff; border: none; padding: 8px 14px; border-radius: var(--radius); font-size: 13px; font-weight: 500; flex-shrink: 0; }
+  .primary-btn:hover { background: var(--accent); }
+  .primary-btn:disabled { opacity: .6; cursor: default; }
+
+  #content-scroll { flex: 1; overflow-y: auto; }
+  .content-inner { max-width: 900px; margin: 0 auto; padding: 20px 24px 80px; }
+  .empty-state { color: var(--ink-faint); font-size: 13.5px; padding: 40px 0; text-align: center; }
+
+  .group-label { font-size: 11px; color: var(--ink-faint); text-transform: uppercase; letter-spacing: 0.05em; font-weight: 500; margin: 28px 0 10px; padding: 0 2px; }
+  .group-label:first-child { margin-top: 0; }
+
+  /* idea cards */
+  .idea-row { display: flex; align-items: flex-start; gap: 12px; padding: 14px 10px 14px 14px; margin-bottom: 10px; background: var(--bg-raised); border: 1px solid var(--border-soft); border-left: 3px solid transparent; border-radius: 5px; cursor: pointer; transition: background-color .12s, border-color .12s; }
+  .idea-row:hover, .idea-row.ctx-target { background: var(--bg-hover); border-color: var(--border); }
+  .idea-row.s-idea { border-left-color: var(--ink-faint); }
+  .idea-row.s-planning { border-left-color: var(--accent); }
+  .idea-row.s-scripting { border-left-color: var(--amber); }
+  .idea-row.s-filming { border-left-color: var(--sage); }
+  .idea-row.s-editing { border-left-color: var(--purple); }
+  .idea-row.s-published { border-left-color: var(--sage); }
+  .idea-row-icon { width: 18px; height: 18px; flex-shrink: 0; margin-top: 2px; color: var(--ink-faint); display: flex; align-items: center; justify-content: center; }
+  .idea-row-icon svg { width: 16px; height: 16px; }
+  .idea-row.pinned .idea-row-icon { color: var(--amber); }
+  .idea-row-body { flex: 1; min-width: 0; }
+  .idea-row-title { font-size: 15px; font-weight: 600; color: var(--ink); margin-bottom: 3px; overflow-wrap: anywhere; }
+  .idea-row-snippet { font-size: 13px; line-height: 1.5; color: var(--ink-dim); display: -webkit-box; -webkit-line-clamp: 2; -webkit-box-orient: vertical; overflow: hidden; overflow-wrap: anywhere; }
+  .idea-row-snippet.empty { color: var(--ink-faint); font-style: italic; }
+  .idea-row-meta { display: flex; align-items: center; gap: 12px; margin-top: 8px; font-size: 11.5px; color: var(--ink-faint); flex-wrap: wrap; }
+  .idea-row-meta .category-tag { display: flex; align-items: center; gap: 5px; }
+  .idea-row-meta .dot { width: 6px; height: 6px; border-radius: 50%; }
+  .idea-row-meta .status-word { font-weight: 600; }
+  .idea-row-meta .mono { font-family: 'IBM Plex Mono', monospace; }
+  .idea-row-meta .when { margin-left: auto; }
+  .status-s-idea { color: var(--ink-faint); }
+  .status-s-planning { color: var(--accent); }
+  .status-s-scripting { color: var(--amber); }
+  .status-s-filming { color: var(--sage); }
+  .status-s-editing { color: var(--purple); }
+  .status-s-published { color: var(--sage); }
+
+  /* file cards */
+  .files-grid { display: grid; grid-template-columns: repeat(auto-fill, minmax(220px, 1fr)); gap: 12px; }
+  .file-card { position: relative; background: var(--bg-raised); border: 1px solid var(--border-soft); border-radius: 5px; overflow: hidden; cursor: pointer; transition: background-color .12s, border-color .12s; }
+  .file-card:hover, .file-card.ctx-target { background: var(--bg-hover); border-color: var(--border); }
+  .file-thumb { aspect-ratio: 16/10; background: var(--bg); display: flex; align-items: center; justify-content: center; border-bottom: 1px solid var(--border-soft); overflow: hidden; }
+  .file-thumb img { width: 100%; height: 100%; object-fit: cover; }
+  .file-thumb .file-ext { font-family: 'IBM Plex Mono', monospace; font-size: 12px; color: var(--ink-faint); border: 1px solid var(--border); border-radius: 3px; padding: 4px 10px; }
+  .file-card-body { padding: 10px 12px 12px; }
+  .file-card-name { font-size: 13px; font-weight: 600; overflow: hidden; text-overflow: ellipsis; white-space: nowrap; }
+  .file-card-meta { display: flex; align-items: center; gap: 8px; margin-top: 5px; font-size: 11px; color: var(--ink-faint); flex-wrap: wrap; }
+  .file-card .row-more { position: absolute; top: 6px; right: 6px; background: rgba(20,19,18,.55); }
+  .file-card:hover .row-more, .file-card.ctx-target .row-more { opacity: 1; }
+
+  /* ---------- Modal / editor ---------- */
+  .modal-overlay { position: fixed; inset: 0; background: rgba(10,10,9,0.6); display: none; align-items: flex-start; justify-content: center; z-index: 50; overflow-y: auto; padding: 40px 16px; }
+  .modal-overlay.open { display: flex; }
+  .modal { background: var(--bg-raised); border: 1px solid var(--border); border-radius: 6px; width: 100%; max-width: 620px; padding: 24px 28px 28px; }
+  @media (max-width: 560px) { .modal-overlay { padding: 16px 10px; } .modal { padding: 20px 18px 22px; } }
+
+  .modal-overlay.fullscreen { padding: 0; align-items: stretch; }
+  .modal-overlay.fullscreen .modal { max-width: none; width: 100%; min-height: 100%; border: none; border-radius: 0; padding: 0; display: flex; flex-direction: column; }
+  .modal-overlay.fullscreen .modal-head { padding: 18px 24px; margin-bottom: 0; border-bottom: 1px solid var(--border-soft); flex-shrink: 0; padding-top: calc(18px + env(safe-area-inset-top, 0px)); }
+  .modal-overlay.fullscreen .modal-body { flex: 1; overflow-y: auto; padding: 24px; max-width: 780px; width: 100%; margin: 0 auto; }
+  .modal-overlay.fullscreen .modal-actions { flex-shrink: 0; margin-top: 0; padding: 14px 24px; padding-bottom: calc(14px + env(safe-area-inset-bottom, 0px)); border-top: 1px solid var(--border-soft); background: var(--bg-raised); }
+  .modal-overlay.fullscreen #idea-content { min-height: 320px; max-height: none; }
+  @media (min-width: 900px) { .modal-overlay.fullscreen .modal-body { padding: 40px 24px; } }
+  .modal-head { display: flex; justify-content: space-between; align-items: center; margin-bottom: 18px; }
+  .modal-head h2 { font-size: 17px; margin: 0; font-weight: 600; }
+  .modal-close { background: none; border: none; color: var(--ink-faint); font-size: 20px; line-height: 1; padding: 4px 8px; border-radius: var(--radius); }
+  .modal-close:hover { color: var(--ink); background: var(--bg-hover); }
+  .field-group { margin-bottom: 14px; }
+  .field-label { font-size: 11.5px; color: var(--ink-faint); margin-bottom: 5px; display: block; text-transform: uppercase; letter-spacing: 0.03em; }
+  .field-group input[type=text], .field-group select, .field-group textarea {
+    width: 100%; padding: 9px 10px; border: 1px solid var(--border); border-radius: var(--radius); background: var(--bg); font-size: 14px; transition: border-color .12s;
+  }
+  .field-group input:hover, .field-group select:hover, .field-group textarea:hover { border-color: var(--ink-faint); }
+  .field-group input:focus, .field-group select:focus, .field-group textarea:focus { border-color: var(--accent-dim); }
+  .field-row { display: flex; gap: 10px; }
+  .field-row .field-group { flex: 1; min-width: 0; }
+  @media (max-width: 480px) { .field-row { flex-direction: column; gap: 0; } }
+  select { appearance: none; -webkit-appearance: none; cursor: pointer; background-image: url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' width='10' height='6'%3E%3Cpath d='M0 0l5 6 5-6z' fill='%23A8A399'/%3E%3C/svg%3E"); background-repeat: no-repeat; background-position: right 10px center; padding-right: 28px !important; }
+  .idea-title-input { width: 100%; font-size: 22px !important; font-weight: 600; padding: 6px 2px !important; border: none !important; border-bottom: 1px solid var(--border) !important; border-radius: 0 !important; background: none !important; letter-spacing: -0.01em; }
+  .idea-title-input:hover { border-bottom-color: var(--ink-faint) !important; }
+  .idea-title-input:focus { border-bottom-color: var(--accent-dim) !important; }
+
+  /* ---------- Editor toolbar ---------- */
+  .content-field { position: relative; }
+  .rte-toolbar { position: sticky; top: 0; z-index: 6; display: flex; gap: 2px; padding: 6px; border: 1px solid var(--border); border-bottom: none; border-radius: var(--radius) var(--radius) 0 0; background: var(--bg); flex-wrap: wrap; align-items: center; }
+  .rte-toolbar button { background: none; border: none; color: var(--ink-dim); min-width: 28px; height: 28px; padding: 0 4px; border-radius: 3px; font-size: 13px; font-weight: 600; display: inline-flex; align-items: center; justify-content: center; }
+  .rte-toolbar button svg { width: 16px; height: 16px; fill: none; stroke: currentColor; stroke-width: 1.4; stroke-linecap: round; stroke-linejoin: round; }
+  .rte-toolbar button svg .fill { fill: currentColor; stroke: none; }
+  .rte-toolbar button:hover { background: var(--bg-hover); color: var(--ink); }
+  .rte-toolbar button.active { background: var(--accent-dim); color: #fff; }
+  .rte-toolbar .tb-txt { font-size: 11.5px; font-weight: 700; letter-spacing: -.02em; }
+  .rte-toolbar .sep { width: 1px; height: 18px; background: var(--border); margin: 0 4px; }
+
+  #idea-content { min-height: 220px; padding: 16px 16px 24px; border: 1px solid var(--border); border-top: none; border-radius: 0 0 var(--radius) var(--radius); background: var(--bg); font-size: 15px; line-height: 1.65; overflow-wrap: anywhere; }
+  #idea-content:focus { outline: none; }
+  #idea-content p, #idea-content div { margin: 0 0 6px; }
+  #idea-content h1 { font-size: 26px; line-height: 1.25; font-weight: 700; letter-spacing: -0.015em; margin: 22px 0 8px; }
+  #idea-content h2 { font-size: 21px; line-height: 1.3; font-weight: 600; letter-spacing: -0.01em; margin: 18px 0 6px; }
+  #idea-content h3 { font-size: 17px; line-height: 1.35; font-weight: 600; margin: 14px 0 4px; }
+  #idea-content > :first-child { margin-top: 0; }
+  #idea-content ul, #idea-content ol { padding-left: 24px; margin: 4px 0 8px; }
+  #idea-content li { margin: 2px 0; }
+  #idea-content a { color: var(--accent); text-decoration: underline; text-underline-offset: 2px; cursor: text; }
+  #idea-content blockquote { margin: 10px 0; padding: 2px 0 2px 16px; border-left: 3px solid var(--accent-dim); color: var(--ink-dim); }
+  #idea-content pre { margin: 10px 0; padding: 12px 14px; background: var(--bg-raised); border: 1px solid var(--border-soft); border-radius: 4px; font-family: 'IBM Plex Mono', monospace; font-size: 13px; line-height: 1.55; white-space: pre-wrap; overflow-x: auto; }
+  #idea-content code { font-family: 'IBM Plex Mono', monospace; font-size: .88em; background: var(--bg-hover); padding: 1px 5px; border-radius: 3px; color: var(--amber); }
+  #idea-content pre code { background: none; padding: 0; color: inherit; font-size: inherit; }
+  #idea-content hr { border: none; border-top: 1px solid var(--border); margin: 18px 0; }
+  #idea-content ul.checklist { list-style: none; padding-left: 0; }
+  #idea-content ul.checklist > li { position: relative; padding-left: 28px; margin: 3px 0; }
+  #idea-content ul.checklist > li::before { content: ''; position: absolute; left: 0; top: .3em; width: 16px; height: 16px; border: 1.5px solid var(--ink-faint); border-radius: 50%; cursor: pointer; transition: border-color .12s, background-color .12s; }
+  #idea-content ul.checklist > li:hover::before { border-color: var(--accent); }
+  #idea-content ul.checklist > li[data-checked="true"]::before { background: var(--sage) url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 12 12' fill='none'%3E%3Cpath d='M2 6l3 3 5-6' stroke='white' stroke-width='2' stroke-linecap='round' stroke-linejoin='round'/%3E%3C/svg%3E") center / 10px no-repeat; border-color: var(--sage); }
+  #idea-content ul.checklist > li[data-checked="true"] { color: var(--ink-faint); text-decoration: line-through; }
+  #idea-content.empty > p:first-child { position: relative; }
+  #idea-content.empty > p:first-child::before { content: 'Start writing — try "# " for a heading or "- " for a bullet'; position: absolute; left: 0; top: 0; color: var(--ink-faint); pointer-events: none; white-space: nowrap; }
+
+  /* Files section inside idea modal */
+  .linked-file { display: flex; align-items: center; gap: 10px; padding: 8px 10px 8px 10px; margin-bottom: 6px; background: var(--bg); border: 1px solid var(--border-soft); border-radius: var(--radius); cursor: pointer; transition: background-color .12s, border-color .12s; }
+  .linked-file:hover { background: var(--bg-hover); border-color: var(--border); }
+  .linked-file-thumb { width: 30px; height: 30px; border-radius: 3px; background: var(--bg-hover); display: flex; align-items: center; justify-content: center; flex-shrink: 0; overflow: hidden; font-size: 9px; color: var(--ink-faint); font-family: 'IBM Plex Mono', monospace; }
+  .linked-file-thumb img { width: 100%; height: 100%; object-fit: cover; }
+  .linked-file-main { flex: 1; min-width: 0; }
+  .linked-file-name { font-size: 13px; font-weight: 500; overflow: hidden; text-overflow: ellipsis; white-space: nowrap; }
+  .unlink { background: none; border: none; color: var(--ink-faint); font-size: 16px; line-height: 1; padding: 3px 7px; border-radius: 3px; flex-shrink: 0; }
+  .unlink:hover { color: var(--danger); background: var(--bg-raised); }
+  .linked-empty { font-size: 12.5px; color: var(--ink-faint); padding: 2px 0 8px; }
+  .link-actions { display: flex; gap: 8px; flex-wrap: wrap; }
+  .btn-sm { padding: 6px 11px !important; font-size: 12.5px !important; }
+  .file-picker { margin-top: 8px; border: 1px solid var(--border); border-radius: var(--radius); background: var(--bg); overflow: hidden; }
+  .file-picker input { width: 100%; padding: 9px 11px; font-size: 13.5px; border-bottom: 1px solid var(--border-soft); }
+  #file-picker-list { max-height: 210px; overflow-y: auto; }
+  .picker-item { display: flex; align-items: center; gap: 8px; padding: 8px 11px; cursor: pointer; transition: background-color .12s; }
+  .picker-item:hover { background: var(--bg-hover); }
+  .picker-item .t { font-size: 13.5px; font-weight: 500; }
+  .picker-empty { padding: 12px; font-size: 12.5px; color: var(--ink-faint); text-align: center; }
+
+  .file-drop { border: 1.5px dashed var(--border); border-radius: var(--radius); padding: 16px; text-align: center; color: var(--ink-faint); font-size: 12.5px; cursor: pointer; transition: border-color .12s, color .12s, background-color .12s; }
+  .file-drop:hover { border-color: var(--accent-dim); color: var(--ink-dim); background: var(--bg-hover); }
+  .file-drop.drag { border-color: var(--accent); background: var(--bg-hover); }
+  #new-file-input, #upload-file-input { display: none; }
+  .pending-list { margin-top: 8px; display: flex; flex-direction: column; gap: 6px; }
+  .pending-item { display: flex; align-items: center; gap: 8px; padding: 6px 8px; background: var(--bg); border: 1px solid var(--border-soft); border-radius: var(--radius); font-size: 12.5px; }
+  .pending-item .remove-attach { background: none; border: none; color: var(--ink-faint); font-size: 15px; padding: 0 6px; border-radius: 3px; margin-left: auto; }
+  .pending-item .remove-attach:hover { color: var(--danger); background: var(--bg-raised); }
+
+  .swatch-row { display: flex; gap: 8px; flex-wrap: wrap; }
+  .swatch { width: 26px; height: 26px; border-radius: 50%; border: none; padding: 0; }
+  .swatch:hover { transform: scale(1.12); }
+  .swatch.selected { outline: 2px solid var(--ink); outline-offset: 2px; }
+
+  .modal-actions { display: flex; justify-content: space-between; align-items: center; margin-top: 20px; padding-top: 16px; border-top: 1px solid var(--border-soft); }
+  .modal-actions-right { display: flex; gap: 8px; }
+  .btn-secondary { background: none; border: 1px solid var(--border); color: var(--ink-dim); padding: 8px 14px; border-radius: var(--radius); font-size: 13px; }
+  .btn-secondary:hover { color: var(--ink); border-color: var(--ink-faint); background: var(--bg-hover); }
+  .btn-danger { background: none; border: none; color: var(--danger); font-size: 13px; opacity: 0.85; padding: 6px 8px; border-radius: var(--radius); }
+  .btn-danger:hover { opacity: 1; background: rgba(201,124,110,.12); }
+  label.check-label { display: flex; align-items: center; gap: 8px; font-size: 13px; color: var(--ink-dim); cursor: pointer; }
+  label.check-label:hover { color: var(--ink); }
+  label.check-label input { width: 15px; height: 15px; accent-color: var(--accent-dim); }
+
+  .ctx-menu { position: fixed; z-index: 300; min-width: 200px; background: var(--bg-raised); border: 1px solid var(--border); border-radius: 6px; padding: 5px; box-shadow: 0 10px 32px rgba(0,0,0,.5); font-size: 13.5px; outline: none; }
+  .ctx-item { position: relative; display: flex; align-items: center; gap: 8px; padding: 7px 10px 7px 6px; border-radius: 4px; cursor: pointer; color: var(--ink-dim); outline: none; white-space: nowrap; }
+  .ctx-item:hover, .ctx-item:focus, .ctx-item.open { background: var(--bg-hover); color: var(--ink); }
+  .ctx-item.danger { color: var(--danger); }
+  .ctx-item.danger:hover, .ctx-item.danger:focus { background: rgba(201,124,110,.14); color: var(--danger); }
+  .ctx-item.disabled { opacity: .45; cursor: default; pointer-events: none; }
+  .ctx-lead { width: 14px; text-align: center; font-size: 12px; color: var(--accent); flex-shrink: 0; }
+  .ctx-dot { width: 7px; height: 7px; border-radius: 50%; flex-shrink: 0; }
+  .ctx-label { flex: 1; min-width: 0; overflow: hidden; text-overflow: ellipsis; }
+  .ctx-chev { color: var(--ink-faint); font-size: 15px; line-height: 1; margin-left: 12px; }
+  .ctx-sep { height: 1px; background: var(--border-soft); margin: 5px 4px; }
+  .ctx-sub { display: none; position: absolute; left: 100%; top: -6px; margin-left: 2px; min-width: 180px; max-width: 280px; max-height: min(60vh, 360px); overflow-y: auto; background: var(--bg-raised); border: 1px solid var(--border); border-radius: 6px; padding: 5px; box-shadow: 0 10px 32px rgba(0,0,0,.5); cursor: default; }
+  .ctx-sub.left { left: auto; right: 100%; margin-left: 0; margin-right: 2px; }
+  .ctx-item.open > .ctx-sub { display: block; }
+
+  .toast { position: fixed; bottom: calc(20px + env(safe-area-inset-bottom, 0px)); left: 50%; transform: translateX(-50%) translateY(10px); background: var(--bg-hover); border: 1px solid var(--border); color: var(--ink); padding: 9px 16px; border-radius: var(--radius); font-size: 13px; max-width: min(440px, 90vw); text-align: center; opacity: 0; transition: opacity 0.2s, transform 0.2s; pointer-events: none; z-index: 400; }
+  .toast.show { opacity: 1; transform: translateX(-50%) translateY(0); }
+
+  @media (max-width: 560px) {
+    .head-inner { padding: 12px 16px; }
+    .content-inner { padding: 16px 16px 80px; }
+    .modal-overlay.fullscreen .modal-body { padding: 18px 16px; }
+    .modal-overlay.fullscreen .modal-head, .modal-overlay.fullscreen .modal-actions { padding-left: 16px; padding-right: 16px; }
+  }
+</style>
+</head>
+<body>
+
+<div id="login-screen">
+  <div class="login-box">
+    <h1>IdeaBoard</h1>
+    <p>Sign in to add your ideas.</p>
+    <input type="password" id="login-password" placeholder="Password" autocomplete="current-password">
+    <button id="login-btn">Sign in</button>
+    <div class="login-error" id="login-error"></div>
+  </div>
+</div>
+
+<div id="app">
+  <div id="rail-scrim"></div>
+  <aside id="rail" aria-label="Menu">
+    <div class="rail-head">
+      <div class="mark">IdeaBoard</div>
+      <div class="rail-head-actions">
+        <button id="logout-btn">Sign out</button>
+        <button id="rail-close" aria-label="Close menu">&times;</button>
+      </div>
+    </div>
+    <div class="view-switch">
+      <button id="switch-ideas" class="active">Ideas</button>
+      <button id="switch-files">Files</button>
+    </div>
+    <div class="rail-label">Categories</div>
+    <div id="category-list"></div>
+    <div id="new-category-row">
+      <input type="text" id="new-category-name" placeholder="New category" maxlength="60">
+      <button id="new-category-btn">Add</button>
+    </div>
+    <div class="rail-foot">Shared board — anyone signed in can edit anything.</div>
+  </aside>
+
+  <main id="main">
+    <header id="main-head">
+      <div class="head-inner">
+        <button id="menu-btn" aria-label="Open menu" aria-expanded="false">
+          <svg viewBox="0 0 18 18" fill="none" stroke="currentColor" stroke-width="1.6" stroke-linecap="round"><path d="M2.5 4.5h13M2.5 9h13M2.5 13.5h13"/></svg>
+        </button>
+        <span id="main-title">All Ideas</span>
+        <button class="primary-btn" id="add-btn">+ New Idea</button>
+      </div>
+    </header>
+    <div id="content-scroll">
+      <div class="content-inner">
+        <div id="ideas-view"></div>
+        <div id="files-view" style="display:none"></div>
+      </div>
+    </div>
+  </main>
+</div>
+
+<!-- Idea modal -->
+<div class="modal-overlay fullscreen" id="idea-modal-overlay">
+  <div class="modal">
+    <div class="modal-head">
+      <h2 id="idea-modal-title">New Idea</h2>
+      <button class="modal-close" data-close="idea" aria-label="Close">&times;</button>
+    </div>
+    <div class="modal-body">
+      <div class="field-group">
+        <input type="text" id="idea-title" class="idea-title-input" maxlength="200" placeholder="Untitled idea">
+      </div>
+      <div class="field-row">
+        <div class="field-group">
+          <label class="field-label">Category</label>
+          <select id="idea-category"></select>
+        </div>
+        <div class="field-group">
+          <label class="field-label">Status</label>
+          <select id="idea-status">
+            <option value="Idea" selected>Idea</option>
+            <option value="Planning">Planning</option>
+            <option value="Scripting">Scripting</option>
+            <option value="Filming">Filming</option>
+            <option value="Editing">Editing</option>
+            <option value="Published">Published</option>
+          </select>
+        </div>
+        <div class="field-group" style="display:flex; align-items:flex-end; padding-bottom:9px; flex:0 0 auto;">
+          <label class="check-label"><input type="checkbox" id="idea-pinned"> Pin</label>
+        </div>
+      </div>
+      <div class="field-group content-field">
+        <div class="rte-toolbar" id="rte-toolbar"></div>
+        <div id="idea-content" contenteditable="true" spellcheck="true"></div>
+      </div>
+      <div class="field-group">
+        <label class="field-label">Files</label>
+        <div id="idea-files-list"></div>
+        <div class="link-actions">
+          <button type="button" class="btn-secondary btn-sm" id="idea-link-existing">Link a file</button>
+          <button type="button" class="btn-secondary btn-sm" id="idea-upload-new">Upload a new file</button>
+        </div>
+        <div class="file-picker" id="file-picker" hidden>
+          <input type="text" id="file-picker-search" placeholder="Search the files center">
+          <div id="file-picker-list"></div>
+        </div>
+        <input type="file" id="new-file-input" multiple>
+        <div class="pending-list" id="idea-pending-list"></div>
+      </div>
+    </div>
+    <div class="modal-actions">
+      <button class="btn-danger" id="idea-delete-btn" style="display:none">Delete idea</button>
+      <div class="modal-actions-right" style="margin-left:auto">
+        <button class="btn-secondary" data-close="idea">Cancel</button>
+        <button class="primary-btn" id="idea-save-btn">Save</button>
+      </div>
+    </div>
+  </div>
+</div>
+
+<!-- File modal (files center upload / edit) -->
+<div class="modal-overlay" id="file-modal-overlay">
+  <div class="modal" style="max-width:480px">
+    <div class="modal-head">
+      <h2 id="file-modal-title">Upload File</h2>
+      <button class="modal-close" data-close="file" aria-label="Close">&times;</button>
+    </div>
+    <div class="field-group" id="file-picked-group">
+      <label class="field-label">File</label>
+      <div class="file-drop" id="upload-file-drop">Click, drop, or paste a file here. Any type, no size limit</div>
+      <input type="file" id="upload-file-input">
+      <div class="pending-list" id="upload-pending-list"></div>
+    </div>
+    <div class="field-group">
+      <label class="field-label">Name</label>
+      <input type="text" id="file-name" maxlength="200" placeholder="File name">
+    </div>
+    <div class="field-group">
+      <label class="field-label">Description</label>
+      <textarea id="file-description" rows="2" placeholder="What is this file for? (optional)"></textarea>
+    </div>
+    <div class="field-group">
+      <label class="field-label">Category</label>
+      <select id="file-category"></select>
+    </div>
+    <div class="field-group" id="file-linked-ideas-group" hidden>
+      <label class="field-label">Used in</label>
+      <div id="file-linked-ideas" style="font-size:13px; color:var(--ink-dim);"></div>
+    </div>
+    <div class="modal-actions">
+      <button class="btn-danger" id="file-delete-btn" style="display:none">Delete file</button>
+      <div class="modal-actions-right" style="margin-left:auto">
+        <button class="btn-secondary" data-close="file">Cancel</button>
+        <button class="primary-btn" id="file-save-btn">Save</button>
+      </div>
+    </div>
+  </div>
+</div>
+
+<!-- Category modal -->
+<div class="modal-overlay" id="category-modal-overlay">
+  <div class="modal" style="max-width:420px">
+    <div class="modal-head">
+      <h2>Edit category</h2>
+      <button class="modal-close" data-close="category" aria-label="Close">&times;</button>
+    </div>
+    <div class="field-group">
+      <label class="field-label">Name</label>
+      <input type="text" id="category-name-input" maxlength="60" placeholder="Category name">
+    </div>
+    <div class="field-group">
+      <label class="field-label">Colour</label>
+      <div class="swatch-row" id="category-swatches"></div>
+    </div>
+    <div class="modal-actions">
+      <button class="btn-danger" id="category-delete-btn">Delete category</button>
+      <div class="modal-actions-right">
+        <button class="btn-secondary" data-close="category">Cancel</button>
+        <button class="primary-btn" id="category-save-btn">Save</button>
+      </div>
+    </div>
+  </div>
+</div>
+
+<div class="toast" id="toast" role="status"></div>
+
+<script src="https://cdnjs.cloudflare.com/ajax/libs/pocketbase/0.21.3/pocketbase.umd.js"></script>
+<script>
+const pb = new PocketBase("https://kaidaz18.duckdns.org");
+const LOGIN_EMAIL = "jasonpratt148@gmail.com";
+
+const CATEGORY_COLORS = ['#C1443A','#C9A15C','#8FA184','#B490C0','#7C93CC','#6FB3B8','#D0A868','#9AAF6E'];
+function colorForIndex(i){ return CATEGORY_COLORS[i % CATEGORY_COLORS.length]; }
+const STATUS_KEYS = { Idea:'s-idea', Planning:'s-planning', Scripting:'s-scripting', Filming:'s-filming', Editing:'s-editing', Published:'s-published' };
+const STATUS_ORDER = { Planning:0, Scripting:1, Filming:2, Editing:3, Idea:4, Published:5 };
+
+let categories = [], ideas = [], files = [];
+let currentCategoryId = 'all';
+let currentView = 'ideas';
+let editingIdeaId = null, editingFileId = null, editingCategoryId = null;
+let ideaLinkedFileIds = [];
+let pendingNewFiles = [];
+let categoryDraftColor = null;
+let uploadPickedFile = null;
+let fileModalCtx = 'standalone'; // 'standalone' | 'from-idea'
+
+const $ = (id) => document.getElementById(id);
+function toast(msg, ms = 2200){
+  const t = $('toast'); t.textContent = msg; t.classList.add('show');
+  clearTimeout(toast._h); toast._h = setTimeout(()=>t.classList.remove('show'), ms);
+}
+function escapeHtml(str){ if (str==null) return ''; return String(str).replace(/[&<>"']/g, m => ({'&':'&amp;','<':'&lt;','>':'&gt;','"':'&quot;',"'":'&#39;'}[m])); }
+function parseDate(s){ if (!s) return null; const d = new Date(String(s).replace(' ', 'T')); return isNaN(d) ? null : d; }
+function fileUrl(rec, name, query){ const f = pb.files; const fn = f.getURL || f.getUrl; return fn.call(f, rec, name, query); }
+function stripHtml(html){
+  if (!html) return '';
+  const spaced = String(html).replace(/<\/(p|div|h[1-6]|li|blockquote|pre|tr)>|<br\s*\/?>|<hr\s*\/?>/gi, ' ');
+  const doc = new DOMParser().parseFromString(spaced, 'text/html');
+  return (doc.body.textContent || '').replace(/[\s\u00a0\u200b]+/g, ' ').trim();
+}
+function sanitizeStored(html){
+  if (!html) return '';
+  const doc = new DOMParser().parseFromString('<div>' + html + '</div>', 'text/html');
+  const root = doc.body.firstChild;
+  root.querySelectorAll('script,iframe,object,embed,style,link,meta,base,form').forEach(n => n.remove());
+  root.querySelectorAll('*').forEach(el => {
+    Array.from(el.attributes).forEach(a => {
+      const n = a.name.toLowerCase();
+      if (n.startsWith('on')) el.removeAttribute(a.name);
+      else if ((n === 'href' || n === 'src') && /^\s*(javascript|vbscript|data):/i.test(a.value) && !(n === 'src' && /^\s*data:image\//i.test(a.value))) el.removeAttribute(a.name);
+    });
+  });
+  return root.innerHTML;
+}
+function upsertLocal(list, rec, atFront){
+  const i = list.findIndex(x => x.id === rec.id);
+  if (i > -1) list[i] = rec; else if (atFront) list.unshift(rec); else list.push(rec);
+}
+function refresh(){ renderCategoryList(); renderCurrentView(); }
+function isImageName(name){ return /\.(png|jpe?g|gif|webp|svg)$/i.test(name || ''); }
+function extOf(name){ const m = /\.([a-z0-9]+)$/i.exec(name || ''); return m ? m[1].toUpperCase() : 'FILE'; }
+
+// ---------- Overlay manager ----------
+let zTop = 50;
+const overlayStack = [];
+const dirty = { idea: false };
+function openOverlay(el){
+  closeRail(); closeCtx();
+  zTop += 2; el.style.zIndex = zTop; el.classList.add('open');
+  const i = overlayStack.indexOf(el); if (i > -1) overlayStack.splice(i, 1);
+  overlayStack.push(el);
+}
+function closeOverlay(el){
+  el.classList.remove('open');
+  const i = overlayStack.indexOf(el); if (i > -1) overlayStack.splice(i, 1);
+}
+function confirmDiscard(kind){ return !dirty[kind] || confirm('Discard your changes?'); }
+
+// ---------- Auth ----------
+let booted = false;
+function showApp(){ $('login-screen').classList.add('hidden'); $('app').classList.add('visible'); boot(); }
+function showLogin(){ $('login-screen').classList.remove('hidden'); $('app').classList.remove('visible'); }
+if (pb.authStore.isValid) showApp(); else showLogin();
+
+$('login-btn').addEventListener('click', doLogin);
+$('login-password').addEventListener('keydown', (e)=>{ if(e.key==='Enter') doLogin(); });
+async function doLogin(){
+  const pw = $('login-password').value;
+  $('login-error').textContent = '';
+  try { await pb.collection('users').authWithPassword(LOGIN_EMAIL, pw); $('login-password').value = ''; showApp(); }
+  catch (err) { $('login-error').textContent = 'Incorrect password.'; }
+}
+$('logout-btn').addEventListener('click', ()=>{ pb.authStore.clear(); closeRail(); showLogin(); });
+
+// ---------- Boot ----------
+async function boot(){
+  if (booted) return; booted = true;
+  await loadCategories(); await loadIdeas(); await loadFiles();
+  renderCategoryList(); renderCurrentView(); populateCategorySelects();
+  subscribeRealtime();
+}
+async function loadCategories(){ try { categories = await pb.collection('yt_categories').getFullList({ sort: 'name' }); } catch(e){ console.error(e); categories = []; } }
+async function loadIdeas(){ try { ideas = await pb.collection('yt_ideas').getFullList({ sort: '-updated' }); } catch(e){ console.error(e); ideas = []; } }
+async function loadFiles(){ try { files = await pb.collection('yt_files').getFullList({ sort: '-created' }); } catch(e){ console.error(e); files = []; } }
+function subscribeRealtime(){
+  pb.collection('yt_ideas').subscribe('*', async () => { await loadIdeas(); refresh(); });
+  pb.collection('yt_files').subscribe('*', async () => {
+    await loadFiles(); refresh();
+    if ($('idea-modal-overlay').classList.contains('open')) { renderIdeaFiles(); renderFilePicker(); }
+  });
+  pb.collection('yt_categories').subscribe('*', async () => { await loadCategories(); refresh(); populateCategorySelects(); });
+}
+
+// ---------- Drawer ----------
+function openRail(){ $('rail').classList.add('open'); $('rail-scrim').classList.add('open'); $('menu-btn').setAttribute('aria-expanded', 'true'); }
+function closeRail(){ $('rail').classList.remove('open'); $('rail-scrim').classList.remove('open'); $('menu-btn').setAttribute('aria-expanded', 'false'); }
+$('menu-btn').addEventListener('click', ()=> $('rail').classList.contains('open') ? closeRail() : openRail());
+$('rail-close').addEventListener('click', closeRail);
+$('rail-scrim').addEventListener('click', closeRail);
+
+// ---------- Category list ----------
+const DOTS_ICON = `<svg viewBox="0 0 16 16" fill="currentColor"><circle cx="3.5" cy="8" r="1.3"/><circle cx="8" cy="8" r="1.3"/><circle cx="12.5" cy="8" r="1.3"/></svg>`;
+
+function renderCategoryList(){
+  const list = $('category-list');
+  const allCount = currentView === 'ideas' ? ideas.length : files.length;
+  let html = `<div class="category-item all ${currentCategoryId==='all'?'active':''}" data-id="all" tabindex="0">
+    <span class="category-dot"></span><span class="category-name">All ${currentView}</span><span class="count">${allCount}</span>
+  </div>`;
+  categories.forEach((c, i) => {
+    const count = currentView === 'ideas' ? ideas.filter(x=>x.category===c.id).length : files.filter(x=>x.category===c.id).length;
+    const color = c.color || colorForIndex(i);
+    html += `<div class="category-item ${currentCategoryId===c.id?'active':''}" data-id="${c.id}" tabindex="0" title="${escapeHtml(c.name)}">
+      <span class="category-dot" style="background:${color}"></span>
+      <span class="category-name">${escapeHtml(c.name)}</span>
+      <span class="count">${count}</span>
+      <button class="row-more" aria-label="Category options" aria-haspopup="menu">${DOTS_ICON}</button>
+    </div>`;
+  });
+  list.innerHTML = html;
+}
+$('category-list').addEventListener('click', (e)=>{
+  const el = e.target.closest('.category-item'); if (!el) return;
+  const more = e.target.closest('.row-more');
+  if (more) { openMenuAtButton(el, more, e.detail === 0); return; }
+  currentCategoryId = el.dataset.id;
+  refresh(); closeRail();
+});
+$('category-list').addEventListener('keydown', (e)=>{ if (e.key === 'Enter' && e.target.classList.contains('category-item')) e.target.click(); });
+
+function categoryColor(id){ const idx = categories.findIndex(c=>c.id===id); if (idx===-1) return null; return categories[idx].color || colorForIndex(idx); }
+function categoryName(id){ const c = categories.find(c=>c.id===id); return c ? c.name : null; }
+
+$('new-category-btn').addEventListener('click', createCategory);
+$('new-category-name').addEventListener('keydown', (e)=>{ if(e.key==='Enter') createCategory(); });
+async function createCategory(){
+  const name = $('new-category-name').value.trim(); if (!name) return;
+  try {
+    const rec = await pb.collection('yt_categories').create({ name, color: colorForIndex(categories.length) });
+    upsertLocal(categories, rec); categories.sort((a,b)=>a.name.localeCompare(b.name));
+    $('new-category-name').value = ''; refresh(); populateCategorySelects(); toast('Category added');
+  } catch(e){ console.error(e); toast('Could not add category'); }
+}
+async function deleteCategory(id){
+  const c = categories.find(x=>x.id===id); if (!c) return;
+  const ideaCount = ideas.filter(x=>x.category===id).length;
+  const fileCount = files.filter(x=>x.category===id).length;
+  let msg = `Delete category "${c.name}"?`;
+  if (ideaCount || fileCount) msg += ` It has ${ideaCount} idea(s) and ${fileCount} file(s). They will NOT be deleted, just unassigned.`;
+  if (!confirm(msg)) return;
+  try {
+    await Promise.all([
+      ...ideas.filter(x=>x.category===id).map(x => pb.collection('yt_ideas').update(x.id, { category: null })),
+      ...files.filter(x=>x.category===id).map(x => pb.collection('yt_files').update(x.id, { category: null })),
+    ]);
+    await pb.collection('yt_categories').delete(id);
+    categories = categories.filter(x=>x.id!==id);
+    if (currentCategoryId === id) currentCategoryId = 'all';
+    await Promise.all([loadIdeas(), loadFiles()]);
+    refresh(); populateCategorySelects(); toast('Category deleted');
+  } catch(e){ console.error(e); toast('Could not delete category'); }
+}
+function populateCategorySelects(){
+  const opts = '<option value="">No category</option>' + categories.map(c=>`<option value="${c.id}">${escapeHtml(c.name)}</option>`).join('');
+  const iv = $('idea-category').value, fv = $('file-category').value;
+  $('idea-category').innerHTML = opts; $('file-category').innerHTML = opts;
+  $('idea-category').value = iv; $('file-category').value = fv;
+}
+
+// ---------- Category modal ----------
+function openCategoryModal(id){
+  const c = categories.find(x=>x.id===id); if (!c) return;
+  editingCategoryId = id; $('category-name-input').value = c.name;
+  categoryDraftColor = c.color || categoryColor(id) || CATEGORY_COLORS[0];
+  renderCategorySwatches(); openOverlay($('category-modal-overlay'));
+  setTimeout(()=>$('category-name-input').select(), 50);
+}
+function renderCategorySwatches(){
+  $('category-swatches').innerHTML = CATEGORY_COLORS.map(c =>
+    `<button type="button" class="swatch ${c.toLowerCase()===String(categoryDraftColor).toLowerCase()?'selected':''}" data-color="${c}" style="background:${c}" aria-label="Colour ${c}"></button>`
+  ).join('');
+}
+$('category-swatches').addEventListener('click', (e)=>{
+  const b = e.target.closest('.swatch'); if (!b) return;
+  categoryDraftColor = b.dataset.color; renderCategorySwatches();
+});
+function closeCategoryModal(){ closeOverlay($('category-modal-overlay')); editingCategoryId = null; }
+$('category-save-btn').addEventListener('click', async ()=>{
+  const name = $('category-name-input').value.trim();
+  if (!name) { toast('Name required'); return; }
+  try {
+    const rec = await pb.collection('yt_categories').update(editingCategoryId, { name, color: categoryDraftColor });
+    upsertLocal(categories, rec); categories.sort((a,b)=>a.name.localeCompare(b.name));
+    closeCategoryModal(); refresh(); populateCategorySelects(); toast('Category saved');
+  } catch(e){ console.error(e); toast('Could not save category'); }
+});
+$('category-name-input').addEventListener('keydown', (e)=>{ if (e.key === 'Enter') $('category-save-btn').click(); });
+$('category-delete-btn').addEventListener('click', ()=>{ const id = editingCategoryId; closeCategoryModal(); deleteCategory(id); });
+
+// ---------- View switching ----------
+$('switch-ideas').addEventListener('click', ()=>{ currentView='ideas'; currentCategoryId='all'; setActiveSwitch(); });
+$('switch-files').addEventListener('click', ()=>{ currentView='files'; currentCategoryId='all'; setActiveSwitch(); });
+function setActiveSwitch(){
+  $('switch-ideas').classList.toggle('active', currentView==='ideas');
+  $('switch-files').classList.toggle('active', currentView==='files');
+  $('ideas-view').style.display = currentView==='ideas' ? '' : 'none';
+  $('files-view').style.display = currentView==='files' ? '' : 'none';
+  $('add-btn').textContent = currentView==='ideas' ? '+ New Idea' : '+ Upload File';
+  refresh();
+}
+$('add-btn').addEventListener('click', ()=>{
+  if (currentView==='ideas') openIdeaModal(null);
+  else openFileModal(null, 'standalone');
+});
+function renderCurrentView(){
+  const catLabel = currentCategoryId==='all' ? 'All' : (categoryName(currentCategoryId) || '');
+  $('main-title').textContent = `${catLabel} ${currentView==='ideas' ? 'Ideas' : 'Files'}`;
+  if (currentView==='ideas') renderIdeas(); else renderFiles();
+}
+
+// ---------- Ideas rendering ----------
+function fmtWhen(iso){
+  const d = parseDate(iso); if (!d) return '';
+  if (d.toDateString() === new Date().toDateString()) return d.toLocaleTimeString(undefined, { hour: 'numeric', minute: '2-digit' });
+  return d.toLocaleDateString(undefined, { month: 'short', day: 'numeric' });
+}
+const FILE_ICON = `<svg viewBox="0 0 16 16" fill="none"><path d="M3 2h7l3 3v9a1 1 0 0 1-1 1H3a1 1 0 0 1-1-1V3a1 1 0 0 1 1-1Z" stroke="currentColor" stroke-width="1.3"/><path d="M10 2v3h3" stroke="currentColor" stroke-width="1.3"/></svg>`;
+const PIN_ICON = `<svg viewBox="0 0 16 16" fill="none"><path d="M8 2l1.5 4.5L14 8l-4.5 1.5L8 14l-1.5-4.5L2 8l4.5-1.5L8 2Z" fill="currentColor"/></svg>`;
+
+function ideaFileCount(idea){ return (idea.attachments || []).filter(id => files.some(f=>f.id===id)).length; }
+
+function renderIdeas(){
+  const filtered = ideas.filter(x => currentCategoryId==='all' || x.category===currentCategoryId);
+  if (!filtered.length) { $('ideas-view').innerHTML = `<div class="empty-state">No ideas here yet. Click "New Idea" to start.</div>`; return; }
+  const byUpdated = (a,b)=> (parseDate(b.updated)||0) - (parseDate(a.updated)||0);
+  const pinned = filtered.filter(x=>x.pinned).sort(byUpdated);
+  const rest = filtered.filter(x=>!x.pinned).sort((a,b)=>{
+    const sd = (STATUS_ORDER[a.status]??9) - (STATUS_ORDER[b.status]??9);
+    return sd !== 0 ? sd : byUpdated(a,b);
+  });
+  let html = '';
+  if (pinned.length) html += `<div class="group-label">Pinned</div>` + pinned.map(ideaRowHtml).join('');
+  if (rest.length) html += `<div class="group-label">${pinned.length ? 'Everything else' : 'Ideas'}</div>` + rest.map(ideaRowHtml).join('');
+  $('ideas-view').innerHTML = html;
+}
+function ideaRowHtml(x){
+  const sClass = STATUS_KEYS[x.status] || 's-idea';
+  const color = categoryColor(x.category), cname = categoryName(x.category);
+  const plain = stripHtml(x.content);
+  const fc = ideaFileCount(x);
+  return `<div class="idea-row ${sClass} ${x.pinned?'pinned':''}" data-id="${x.id}" tabindex="0">
+    <div class="idea-row-icon">${x.pinned ? PIN_ICON : FILE_ICON}</div>
+    <div class="idea-row-body">
+      <div class="idea-row-title">${escapeHtml(x.title || 'Untitled')}</div>
+      <div class="idea-row-snippet ${plain?'':'empty'}">${escapeHtml(plain) || 'No details yet'}</div>
+      <div class="idea-row-meta">
+        <span class="status-word ${sClass}">${escapeHtml(x.status || 'Idea')}</span>
+        ${cname ? `<span class="category-tag"><span class="dot" style="background:${color}"></span>${escapeHtml(cname)}</span>` : ''}
+        ${fc ? `<span class="mono">${fc} file${fc>1?'s':''}</span>` : ''}
+        <span class="when">${fmtWhen(x.updated)}</span>
+      </div>
+    </div>
+    <button class="row-more" aria-label="Idea options" aria-haspopup="menu">${DOTS_ICON}</button>
+  </div>`;
+}
+$('ideas-view').addEventListener('click', (e)=>{
+  const row = e.target.closest('.idea-row'); if (!row) return;
+  const more = e.target.closest('.row-more');
+  if (more) { openMenuAtButton(row, more, e.detail === 0); return; }
+  openIdeaModal(row.dataset.id);
+});
+$('ideas-view').addEventListener('keydown', (e)=>{ if (e.key === 'Enter' && e.target.classList.contains('idea-row')) openIdeaModal(e.target.dataset.id); });
+
+async function updateIdea(id, patch){
+  try { const rec = await pb.collection('yt_ideas').update(id, patch); upsertLocal(ideas, rec); refresh(); return rec; }
+  catch(e){ console.error(e); toast('Could not update idea'); }
+}
+async function deleteIdea(id){
+  if (!confirm('Delete this idea? (Linked files stay in the Files Center.)')) return;
+  try { await pb.collection('yt_ideas').delete(id); ideas = ideas.filter(x=>x.id!==id); refresh(); toast('Idea deleted'); }
+  catch(e){ console.error(e); toast('Could not delete'); }
+}
+async function duplicateIdea(id){
+  const x = ideas.find(v=>v.id===id); if (!x) return;
+  try {
+    const rec = await pb.collection('yt_ideas').create({
+      title: (x.title || 'Untitled') + ' (copy)', content: x.content || '', category: x.category || null,
+      status: x.status || 'Idea', pinned: false, attachments: [...(x.attachments || [])],
+    });
+    upsertLocal(ideas, rec, true); refresh(); toast('Idea duplicated');
+  } catch(e){ console.error(e); toast('Could not duplicate idea'); }
+}
+
+// ---------- Idea modal ----------
+function openIdeaModal(id){
+  editingIdeaId = id; pendingNewFiles = [];
+  populateCategorySelects();
+  const x = id ? ideas.find(v=>v.id===id) : null;
+  if (x) {
+    $('idea-modal-title').textContent = 'Edit Idea';
+    $('idea-title').value = x.title || '';
+    $('idea-category').value = x.category || '';
+    $('idea-status').value = x.status || 'Idea';
+    $('idea-pinned').checked = !!x.pinned;
+    setEditorHtml(x.content || '');
+    $('idea-delete-btn').style.display = '';
+    ideaLinkedFileIds = (x.attachments || []).filter(fid => files.some(f=>f.id===fid));
+  } else {
+    $('idea-modal-title').textContent = 'New Idea';
+    $('idea-title').value = '';
+    $('idea-category').value = currentCategoryId==='all' ? '' : currentCategoryId;
+    $('idea-status').value = 'Idea';
+    $('idea-pinned').checked = false;
+    setEditorHtml('');
+    $('idea-delete-btn').style.display = 'none';
+    ideaLinkedFileIds = [];
+  }
+  $('file-picker').hidden = true; $('file-picker-search').value = '';
+  renderIdeaFiles(); renderPendingList();
+  dirty.idea = false;
+  openOverlay($('idea-modal-overlay'));
+  setTimeout(()=>$('idea-title').focus(), 50);
+}
+function closeIdeaModal(){ closeOverlay($('idea-modal-overlay')); editingIdeaId = null; dirty.idea = false; pendingNewFiles = []; }
+function requestCloseIdea(){ if (confirmDiscard('idea')) closeIdeaModal(); }
+$('idea-modal-overlay').addEventListener('input', ()=>{ dirty.idea = true; });
+$('idea-modal-overlay').addEventListener('change', ()=>{ dirty.idea = true; });
+
+function renderIdeaFiles(){
+  const linked = ideaLinkedFileIds.map(id => files.find(f=>f.id===id)).filter(Boolean);
+  if (!linked.length) { $('idea-files-list').innerHTML = `<div class="linked-empty">No files linked yet.</div>`; return; }
+  $('idea-files-list').innerHTML = linked.map(f => `
+    <div class="linked-file" data-id="${f.id}">
+      <div class="linked-file-thumb">${isImageName(f.file) ? `<img src="${fileUrl(f, f.file, {thumb:'80x80'})}" alt="">` : extOf(f.file)}</div>
+      <div class="linked-file-main"><div class="linked-file-name">${escapeHtml(f.name || f.file)}</div></div>
+      <button type="button" class="unlink" title="Unlink from this idea" aria-label="Unlink file">&times;</button>
+    </div>`).join('');
+}
+$('idea-files-list').addEventListener('click', (e)=>{
+  const row = e.target.closest('.linked-file'); if (!row) return;
+  const id = row.dataset.id;
+  if (e.target.closest('.unlink')) { ideaLinkedFileIds = ideaLinkedFileIds.filter(x=>x!==id); dirty.idea = true; renderIdeaFiles(); renderFilePicker(); return; }
+  openFileModal(id, 'from-idea');
+});
+
+function renderFilePicker(){
+  if ($('file-picker').hidden) return;
+  const q = $('file-picker-search').value.trim().toLowerCase();
+  const items = files.filter(f => !ideaLinkedFileIds.includes(f.id))
+    .filter(f => !q || (f.name||'').toLowerCase().includes(q) || (f.file||'').toLowerCase().includes(q))
+    .slice(0, 40);
+  $('file-picker-list').innerHTML = items.length
+    ? items.map(f => `<div class="picker-item" data-id="${f.id}">
+        <div class="linked-file-thumb">${isImageName(f.file) ? `<img src="${fileUrl(f, f.file, {thumb:'80x80'})}" alt="">` : extOf(f.file)}</div>
+        <div class="t">${escapeHtml(f.name || f.file)}</div>
+      </div>`).join('')
+    : `<div class="picker-empty">${q ? 'No files match.' : 'No other files in the Files Center yet.'}</div>`;
+}
+$('idea-link-existing').addEventListener('click', ()=>{
+  $('file-picker').hidden = !$('file-picker').hidden;
+  if (!$('file-picker').hidden) { renderFilePicker(); setTimeout(()=>$('file-picker-search').focus(), 30); }
+});
+$('file-picker-search').addEventListener('input', renderFilePicker);
+$('file-picker-list').addEventListener('click', (e)=>{
+  const it = e.target.closest('.picker-item'); if (!it) return;
+  ideaLinkedFileIds.push(it.dataset.id); dirty.idea = true;
+  $('file-picker').hidden = true; $('file-picker-search').value = '';
+  renderIdeaFiles();
+});
+$('idea-upload-new').addEventListener('click', ()=> $('new-file-input').click());
+$('new-file-input').addEventListener('change', (e)=>{
+  pendingNewFiles.push(...Array.from(e.target.files)); e.target.value = '';
+  dirty.idea = true; renderPendingList();
+});
+function renderPendingList(){
+  $('idea-pending-list').innerHTML = pendingNewFiles.map((f,i)=>`
+    <div class="pending-item"><span>${escapeHtml(f.name)} (new — will be added to the Files Center)</span>
+    <button type="button" class="remove-attach" data-i="${i}">&times;</button></div>`).join('');
+}
+$('idea-pending-list').addEventListener('click', (e)=>{
+  const b = e.target.closest('.remove-attach'); if (!b) return;
+  pendingNewFiles.splice(Number(b.dataset.i), 1); dirty.idea = true; renderPendingList();
+});
+
+$('idea-save-btn').addEventListener('click', async ()=>{
+  const title = $('idea-title').value.trim() || 'Untitled';
+  $('idea-save-btn').disabled = true; $('idea-save-btn').textContent = 'Saving...';
+  try {
+    let finalFileIds = [...ideaLinkedFileIds];
+    for (const f of pendingNewFiles) {
+      const fd = new FormData();
+      fd.append('name', f.name); fd.append('file', f);
+      if ($('idea-category').value) fd.append('category', $('idea-category').value);
+      const rec = await pb.collection('yt_files').create(fd);
+      upsertLocal(files, rec, true);
+      finalFileIds.push(rec.id);
+    }
+    const data = {
+      title, content: getEditorHtml(), category: $('idea-category').value || null,
+      status: $('idea-status').value, pinned: $('idea-pinned').checked, attachments: finalFileIds,
+    };
+    const rec = editingIdeaId ? await pb.collection('yt_ideas').update(editingIdeaId, data) : await pb.collection('yt_ideas').create(data);
+    upsertLocal(ideas, rec, true);
+    closeIdeaModal(); refresh(); toast('Idea saved');
+  } catch(e){ console.error(e); toast('Could not save idea'); }
+  finally { $('idea-save-btn').disabled = false; $('idea-save-btn').textContent = 'Save'; }
+});
+$('idea-delete-btn').addEventListener('click', async ()=>{
+  if (!editingIdeaId) return;
+  if (!confirm('Delete this idea? (Linked files stay in the Files Center.)')) return;
+  try { await pb.collection('yt_ideas').delete(editingIdeaId); ideas = ideas.filter(x=>x.id!==editingIdeaId); closeIdeaModal(); refresh(); toast('Idea deleted'); }
+  catch(e){ console.error(e); toast('Could not delete'); }
+});
+
+// ---------- Files center ----------
+function fileIdeaCount(fileId){ return ideas.filter(x => (x.attachments||[]).includes(fileId)).length; }
+function renderFiles(){
+  const filtered = files.filter(f => currentCategoryId==='all' || f.category===currentCategoryId);
+  if (!filtered.length) { $('files-view').innerHTML = `<div class="empty-state">No files here yet. Click "Upload File" to add one.</div>`; return; }
+  $('files-view').innerHTML = `<div class="files-grid">${filtered.map(fileCardHtml).join('')}</div>`;
+}
+function fileCardHtml(f){
+  const cname = categoryName(f.category), color = categoryColor(f.category);
+  const usedIn = fileIdeaCount(f.id);
+  return `<div class="file-card" data-id="${f.id}" tabindex="0">
+    <div class="file-thumb">${isImageName(f.file) ? `<img src="${fileUrl(f, f.file, {thumb:'400x0'})}" alt="">` : `<span class="file-ext">${extOf(f.file)}</span>`}</div>
+    <div class="file-card-body">
+      <div class="file-card-name">${escapeHtml(f.name || f.file)}</div>
+      <div class="file-card-meta">
+        ${cname ? `<span style="display:flex;align-items:center;gap:5px"><span class="dot" style="width:6px;height:6px;border-radius:50%;background:${color}"></span>${escapeHtml(cname)}</span>` : ''}
+        ${usedIn ? `<span class="mono">${usedIn} idea${usedIn>1?'s':''}</span>` : ''}
+      </div>
+    </div>
+    <button class="row-more" aria-label="File options" aria-haspopup="menu">${DOTS_ICON}</button>
+  </div>`;
+}
+$('files-view').addEventListener('click', (e)=>{
+  const card = e.target.closest('.file-card'); if (!card) return;
+  const more = e.target.closest('.row-more');
+  if (more) { openMenuAtButton(card, more, e.detail === 0); return; }
+  openFileModal(card.dataset.id, 'standalone');
+});
+$('files-view').addEventListener('keydown', (e)=>{ if (e.key === 'Enter' && e.target.classList.contains('file-card')) openFileModal(e.target.dataset.id, 'standalone'); });
+
+async function deleteFile(id){
+  const usedIn = fileIdeaCount(id);
+  let msg = 'Delete this file?';
+  if (usedIn) msg += ` It's linked from ${usedIn} idea(s) — it will be removed from those too.`;
+  if (!confirm(msg)) return;
+  try {
+    await Promise.all(ideas.filter(x=>(x.attachments||[]).includes(id)).map(x =>
+      pb.collection('yt_ideas').update(x.id, { attachments: x.attachments.filter(fid=>fid!==id) })));
+    await pb.collection('yt_files').delete(id);
+    files = files.filter(f=>f.id!==id);
+    await loadIdeas(); refresh(); toast('File deleted');
+  } catch(e){ console.error(e); toast('Could not delete file'); }
+}
+
+// ---------- File modal ----------
+function openFileModal(id, ctx){
+  editingFileId = id; fileModalCtx = ctx || 'standalone';
+  uploadPickedFile = null;
+  populateCategorySelects();
+  const f = id ? files.find(x=>x.id===id) : null;
+  if (f) {
+    $('file-modal-title').textContent = 'Edit File';
+    $('file-name').value = f.name || '';
+    $('file-description').value = f.description || '';
+    $('file-category').value = f.category || '';
+    $('file-picked-group').hidden = false;
+    $('upload-file-drop').textContent = f.file ? `Current file: ${f.file}` : 'Click, drop, or paste a file here';
+    $('file-delete-btn').style.display = '';
+    const usedIn = ideas.filter(x=>(x.attachments||[]).includes(id));
+    $('file-linked-ideas-group').hidden = !usedIn.length;
+    $('file-linked-ideas').textContent = usedIn.map(x=>x.title || 'Untitled').join(', ');
+  } else {
+    $('file-modal-title').textContent = 'Upload File';
+    $('file-name').value = '';
+    $('file-description').value = '';
+    $('file-category').value = currentCategoryId==='all' ? '' : currentCategoryId;
+    $('upload-file-drop').textContent = 'Click, drop, or paste a file here. Any type, no size limit';
+    $('file-delete-btn').style.display = 'none';
+    $('file-linked-ideas-group').hidden = true;
+  }
+  renderUploadPending();
+  openOverlay($('file-modal-overlay'));
+  if (!f) setTimeout(()=>$('file-name').focus(), 50);
+}
+function closeFileModal(){ closeOverlay($('file-modal-overlay')); editingFileId = null; uploadPickedFile = null; }
+function renderUploadPending(){
+  $('upload-pending-list').innerHTML = uploadPickedFile
+    ? `<div class="pending-item"><span>${escapeHtml(uploadPickedFile.name)} (will replace/attach)</span>
+       <button type="button" class="remove-attach" id="clear-upload-pick">&times;</button></div>` : '';
+}
+$('upload-pending-list').addEventListener('click', (e)=>{ if (e.target.id === 'clear-upload-pick') { uploadPickedFile = null; renderUploadPending(); } });
+function pickUploadFile(f){
+  uploadPickedFile = f;
+  if (!$('file-name').value.trim()) $('file-name').value = f.name;
+  renderUploadPending();
+}
+$('upload-file-drop').addEventListener('click', ()=>$('upload-file-input').click());
+$('upload-file-input').addEventListener('change', (e)=>{ if (e.target.files[0]) pickUploadFile(e.target.files[0]); e.target.value=''; });
+['dragover','dragenter'].forEach(ev=> $('upload-file-drop').addEventListener(ev, (e)=>{ e.preventDefault(); $('upload-file-drop').classList.add('drag'); }));
+['dragleave','drop'].forEach(ev=> $('upload-file-drop').addEventListener(ev, (e)=>{ e.preventDefault(); $('upload-file-drop').classList.remove('drag'); }));
+$('upload-file-drop').addEventListener('drop', (e)=>{ if (e.dataTransfer.files[0]) pickUploadFile(e.dataTransfer.files[0]); });
+
+$('file-save-btn').addEventListener('click', async ()=>{
+  if (!editingFileId && !uploadPickedFile) { toast('Choose a file first'); return; }
+  const name = $('file-name').value.trim() || (uploadPickedFile ? uploadPickedFile.name : 'Untitled file');
+  $('file-save-btn').disabled = true; $('file-save-btn').textContent = 'Saving...';
+  try {
+    const fd = new FormData();
+    fd.append('name', name);
+    fd.append('description', $('file-description').value.trim());
+    fd.append('category', $('file-category').value || '');
+    if (uploadPickedFile) fd.append('file', uploadPickedFile);
+    const rec = editingFileId ? await pb.collection('yt_files').update(editingFileId, fd) : await pb.collection('yt_files').create(fd);
+    upsertLocal(files, rec, true);
+    const wasNew = !editingFileId;
+    closeFileModal(); refresh();
+    toast('File saved');
+    if (wasNew && fileModalCtx === 'from-idea' && $('idea-modal-overlay').classList.contains('open')) {
+      ideaLinkedFileIds.push(rec.id); dirty.idea = true; renderIdeaFiles();
+    }
+  } catch(e){ console.error(e); toast('Could not save file'); }
+  finally { $('file-save-btn').disabled = false; $('file-save-btn').textContent = 'Save'; }
+});
+$('file-delete-btn').addEventListener('click', async ()=>{
+  if (!editingFileId) return;
+  const id = editingFileId; closeFileModal();
+  await deleteFile(id);
+});
+
+// =====================================================================
+//  Rich-text editor
+// =====================================================================
+const editor = $('idea-content');
+const toolbarEl = $('rte-toolbar');
+const BLOCK_RE = /^(P|DIV|H[1-6]|UL|OL|LI|BLOCKQUOTE|PRE|HR)$/;
+try { document.execCommand('defaultParagraphSeparator', false, 'p'); } catch(_) {}
+
+const ICON = {
+  undo: '<svg viewBox="0 0 16 16"><path d="M3.5 6.5h5.5a3.5 3.5 0 0 1 0 7H6"/><path d="M6 3.8L3.3 6.5 6 9.2"/></svg>',
+  redo: '<svg viewBox="0 0 16 16"><path d="M12.5 6.5H7a3.5 3.5 0 0 0 0 7h3"/><path d="M10 3.8l2.7 2.7L10 9.2"/></svg>',
+  code: '<svg viewBox="0 0 16 16"><path d="M6 4.5L2.5 8 6 11.5"/><path d="M10 4.5L13.5 8 10 11.5"/></svg>',
+  codeblock: '<svg viewBox="0 0 16 16"><rect x="2" y="3" width="12" height="10" rx="1.5"/><path d="M6.2 6.6L4.8 8l1.4 1.4"/><path d="M9.8 6.6L11.2 8 9.8 9.4"/></svg>',
+  ul: '<svg viewBox="0 0 16 16"><path d="M6.5 4h7M6.5 8h7M6.5 12h7"/><circle class="fill" cx="3" cy="4" r="1"/><circle class="fill" cx="3" cy="8" r="1"/><circle class="fill" cx="3" cy="12" r="1"/></svg>',
+  check: '<svg viewBox="0 0 16 16"><rect x="2" y="2.5" width="4.5" height="4.5" rx="1.2"/><path d="M3.2 4.8l1 1 1.4-1.8"/><path d="M8.5 4.8h5"/><rect x="2" y="9" width="4.5" height="4.5" rx="1.2"/><path d="M8.5 11.3h5"/></svg>',
+  quote: '<svg viewBox="0 0 16 16"><path d="M3 3v10" stroke-width="2"/><path d="M7 5h6.5M7 8h6.5M7 11h4"/></svg>',
+  hr: '<svg viewBox="0 0 16 16"><path d="M2 8h12"/></svg>',
+  link: '<svg viewBox="0 0 16 16"><path d="M7 9a3 3 0 0 0 4.2 0l2-2A3 3 0 0 0 9 2.8l-1 1"/><path d="M9 7a3 3 0 0 0-4.2 0l-2 2A3 3 0 0 0 7 13.2l1-1"/></svg>',
+};
+const TB_ITEMS = [
+  ['undo','Undo (Ctrl+Z)',ICON.undo], ['redo','Redo (Ctrl+Shift+Z)',ICON.redo], '|',
+  ['h1','Heading 1','<span class="tb-txt">H1</span>'], ['h2','Heading 2','<span class="tb-txt">H2</span>'], ['h3','Heading 3','<span class="tb-txt">H3</span>'], '|',
+  ['bold','Bold (Ctrl+B)','<b>B</b>'], ['italic','Italic (Ctrl+I)','<i>I</i>'], ['underline','Underline (Ctrl+U)','<u>U</u>'],
+  ['strike','Strikethrough','<s>S</s>'], ['code','Inline code',ICON.code], '|',
+  ['ul','Bulleted list',ICON.ul], ['ol','Numbered list','<span class="tb-txt">1.</span>'], ['check','Checklist',ICON.check], '|',
+  ['quote','Quote',ICON.quote], ['codeblock','Code block',ICON.codeblock], ['hr','Divider',ICON.hr], ['link','Link (Ctrl+K)',ICON.link], '|',
+  ['clear','Clear formatting','<span class="tb-txt">Tx</span>'],
+];
+(function buildToolbar(){
+  toolbarEl.innerHTML = TB_ITEMS.map(it => it === '|' ? '<div class="sep"></div>' :
+    `<button type="button" data-act="${it[0]}" title="${it[1]}" aria-label="${it[1]}">${it[2]}</button>`).join('');
+})();
+
+let savedRange = null;
+function saveSel(){ const s = window.getSelection(); if (s && s.rangeCount && editor.contains(s.anchorNode)) savedRange = s.getRangeAt(0).cloneRange(); }
+function restoreSel(){ if (!savedRange) return; const s = window.getSelection(); s.removeAllRanges(); s.addRange(savedRange); }
+function selElement(){ const s = window.getSelection(); if (!s || !s.rangeCount) return null; const n = s.anchorNode; const el = n && (n.nodeType === 1 ? n : n.parentElement); return el && editor.contains(el) ? el : null; }
+function closestIn(selector){ const el = selElement(); if (!el) return null; const c = el.closest(selector); return c && c !== editor && editor.contains(c) ? c : null; }
+function topBlockOf(node){ let n = node; while (n && n.parentNode !== editor) n = n.parentNode; return n || null; }
+function focusEditor(){ if (document.activeElement !== editor) { editor.focus(); restoreSel(); } }
+function exec(name, val){ focusEditor(); try { return document.execCommand(name, false, val === undefined ? null : val); } catch(_) { return false; } }
+function markDirty(){ dirty.idea = true; }
+function updateEmptyState(){
+  const hasContent = editor.textContent.replace(/[\u200b\u00a0\s]/g, '') !== '' || editor.querySelector('img,hr,li,pre,blockquote');
+  editor.classList.toggle('empty', !hasContent);
+}
+function setCaret(node, offset){ const r = document.createRange(); r.setStart(node, offset); r.collapse(true); const s = window.getSelection(); s.removeAllRanges(); s.addRange(r); }
+function setEditorHtml(html){ editor.innerHTML = sanitizeStored(html) || '<p><br></p>'; savedRange = null; updateEmptyState(); updateToolbarState(); }
+function getEditorHtml(){
+  const clone = editor.cloneNode(true);
+  clone.querySelectorAll('a[href]').forEach(a => { a.setAttribute('target', '_blank'); a.setAttribute('rel', 'noopener noreferrer'); });
+  const empty = clone.textContent.replace(/[\u200b\u00a0\s]/g, '') === '' && !clone.querySelector('img,hr,li,pre,blockquote');
+  return empty ? '' : clone.innerHTML;
+}
+function ensureRootBlocks(){
+  if (!editor.firstChild || editor.innerHTML === '<br>') { editor.innerHTML = '<p><br></p>'; setCaret(editor.firstChild, 0); return; }
+  const loose = Array.from(editor.childNodes).some(n => (n.nodeType === 3 && n.textContent.trim() !== '') || (n.nodeType === 1 && !BLOCK_RE.test(n.tagName)));
+  if (loose) exec('formatBlock', 'p');
+}
+function unwrap(el){
+  const parent = el.parentNode; const kids = Array.from(el.childNodes);
+  const s = window.getSelection(); const saved = s.rangeCount ? s.getRangeAt(0).cloneRange() : null;
+  const hasBlock = kids.some(k => k.nodeType === 1 && BLOCK_RE.test(k.tagName));
+  if (!hasBlock) { const p = document.createElement('p'); kids.forEach(k => p.appendChild(k)); if (!p.childNodes.length) p.innerHTML = '<br>'; parent.insertBefore(p, el); }
+  else kids.forEach(k => parent.insertBefore(k, el));
+  el.remove();
+  if (saved) { try { s.removeAllRanges(); s.addRange(saved); } catch(_) {} }
+}
+function toParagraph(block){ if (block.tagName === 'BLOCKQUOTE') unwrap(block); else exec('formatBlock', 'p'); }
+function setBlock(kind){
+  const cur = closestIn('h1,h2,h3,blockquote,pre');
+  const tagFor = { h1:'H1', h2:'H2', h3:'H3', quote:'BLOCKQUOTE', code:'PRE' };
+  if (cur && tagFor[kind] === cur.tagName) { toParagraph(cur); return; }
+  if (kind === 'p') { if (cur) toParagraph(cur); else exec('formatBlock', 'p'); return; }
+  if (cur && cur.tagName === 'BLOCKQUOTE') unwrap(cur);
+  const map = { h1:'h1', h2:'h2', h3:'h3', quote:'blockquote', code:'pre' };
+  exec('formatBlock', map[kind]);
+}
+function checkify(ul){ ul.classList.add('checklist'); ul.querySelectorAll('li').forEach(li => { if (!li.hasAttribute('data-checked')) li.setAttribute('data-checked', 'false'); }); }
+function uncheckify(ul){ ul.classList.remove('checklist'); ul.querySelectorAll('li').forEach(li => li.removeAttribute('data-checked')); }
+function setList(kind){
+  const ul = closestIn('ul'), ol = closestIn('ol');
+  if (kind === 'check') {
+    if (ul) { ul.classList.contains('checklist') ? uncheckify(ul) : checkify(ul); return; }
+    if (ol) exec('insertOrderedList');
+    exec('insertUnorderedList');
+    const u = closestIn('ul'); if (u) checkify(u);
+    return;
+  }
+  if (kind === 'ul') { if (ul && ul.classList.contains('checklist')) { uncheckify(ul); return; } exec('insertUnorderedList'); return; }
+  if (ul && ul.classList.contains('checklist')) uncheckify(ul);
+  exec('insertOrderedList');
+}
+function toggleInlineCode(){
+  const c = closestIn('code');
+  if (c && !c.closest('pre')) { unwrap(c); return; }
+  const text = window.getSelection().toString();
+  if (!text) { toast('Select some text first'); return; }
+  exec('insertHTML', '<code>' + escapeHtml(text) + '</code>&#8203;');
+}
+function insertLink(){
+  const a = closestIn('a'); const s = window.getSelection(); const selText = s.toString().trim();
+  saveSel();
+  const cur = a ? a.getAttribute('href') : (/^https?:\/\/\S+$/i.test(selText) ? selText : '');
+  const url = prompt('Link URL (leave empty to remove the link):', cur || 'https://');
+  if (url === null) return;
+  focusEditor(); restoreSel();
+  let href = url.trim();
+  if (!href || href === 'https://') { if (a) exec('unlink'); return; }
+  if (!/^[a-z][a-z0-9+.-]*:/i.test(href)) href = 'https://' + href;
+  if (/^(javascript|data|vbscript):/i.test(href)) { toast('That link type is not allowed'); return; }
+  if (s.isCollapsed && !a) exec('insertHTML', `<a href="${escapeHtml(href)}">${escapeHtml(href)}</a>&#8203;`);
+  else exec('createLink', href);
+}
+const ACTIONS = {
+  undo(){ exec('undo'); }, redo(){ exec('redo'); },
+  h1(){ setBlock('h1'); }, h2(){ setBlock('h2'); }, h3(){ setBlock('h3'); },
+  bold(){ exec('bold'); }, italic(){ exec('italic'); }, underline(){ exec('underline'); }, strike(){ exec('strikeThrough'); },
+  code(){ toggleInlineCode(); },
+  ul(){ setList('ul'); }, ol(){ setList('ol'); }, check(){ setList('check'); },
+  quote(){ setBlock('quote'); }, codeblock(){ setBlock('code'); }, hr(){ exec('insertHorizontalRule'); },
+  link(){ insertLink(); }, clear(){ exec('removeFormat'); },
+};
+function afterAction(){ markDirty(); updateEmptyState(); updateToolbarState(); }
+toolbarEl.addEventListener('mousedown', (e)=>{ e.preventDefault(); });
+toolbarEl.addEventListener('click', (e)=>{
+  const b = e.target.closest('button[data-act]'); if (!b) return;
+  focusEditor(); ACTIONS[b.dataset.act](); afterAction();
+});
+const qcs = (c) => { try { return document.queryCommandState(c); } catch(_) { return false; } };
+function updateToolbarState(){
+  const set = (act, on) => { const b = toolbarEl.querySelector(`[data-act="${act}"]`); if (b) b.classList.toggle('active', !!on); };
+  const inEditor = !!selElement();
+  set('bold', inEditor && qcs('bold')); set('italic', inEditor && qcs('italic'));
+  set('underline', inEditor && qcs('underline')); set('strike', inEditor && qcs('strikeThrough'));
+  set('code', inEditor && closestIn('code'));
+  set('h1', inEditor && closestIn('h1')); set('h2', inEditor && closestIn('h2')); set('h3', inEditor && closestIn('h3'));
+  set('quote', inEditor && closestIn('blockquote')); set('codeblock', inEditor && closestIn('pre'));
+  set('ul', inEditor && closestIn('ul:not(.checklist)')); set('ol', inEditor && closestIn('ol'));
+  set('check', inEditor && closestIn('ul.checklist'));
+}
+let tbRaf = 0;
+document.addEventListener('selectionchange', ()=>{
+  if (!$('idea-modal-overlay').classList.contains('open')) return;
+  cancelAnimationFrame(tbRaf);
+  tbRaf = requestAnimationFrame(()=>{ if (selElement()) { saveSel(); updateToolbarState(); } });
+});
+
+// markdown-style shortcuts: "# ", "- ", "1. ", "[] ", "> ", "``` "
+function handleMarkdownShortcut(e){
+  if (e.inputType !== 'insertText' || !/^[\s\u00a0]$/.test(e.data || '')) return;
+  const s = window.getSelection(); if (!s.rangeCount || !s.isCollapsed) return;
+  const r = s.getRangeAt(0); const block = topBlockOf(r.startContainer);
+  if (!block || block.nodeType !== 1 || !/^(P|DIV)$/.test(block.tagName)) return;
+  const pre = document.createRange(); pre.selectNodeContents(block); pre.setEnd(r.startContainer, r.startOffset);
+  const text = pre.toString().replace(/\u00a0/g, ' ');
+  const m = text.match(/^(#{1,3}|-|\*|1\.|\[\s?\]|>|```)\s$/);
+  if (!m) return;
+  const key = m[1].replace(/\s/g, '');
+  s.removeAllRanges(); s.addRange(pre); document.execCommand('delete');
+  if (!block.textContent && !block.querySelector('br')) block.innerHTML = '<br>';
+  const map = { '#':'h1', '##':'h2', '###':'h3', '-':'ul', '*':'ul', '1.':'ol', '[]':'check', '>':'quote', '```':'code' };
+  runBlockAction(map[key]);
+}
+function runBlockAction(id){
+  if (id === 'p') setBlock('p');
+  else if (id === 'ul' || id === 'ol' || id === 'check') setList(id);
+  else if (id === 'hr') exec('insertHorizontalRule');
+  else setBlock(id);
+}
+function handleEnterInPre(pre){
+  const s = window.getSelection(); const r = s.getRangeAt(0);
+  const tail = document.createRange(); tail.selectNodeContents(pre); tail.setStart(r.endContainer, r.endOffset);
+  const atEnd = tail.toString().replace(/\n$/, '') === '';
+  const head = document.createRange(); head.selectNodeContents(pre); head.setEnd(r.startContainer, r.startOffset);
+  const before = head.toString();
+  if (atEnd && (before === '' || /\n$/.test(before))) {
+    const p = document.createElement('p'); p.innerHTML = '<br>';
+    const trimmed = pre.textContent.replace(/\n+$/, '');
+    if (!trimmed) pre.replaceWith(p); else { pre.textContent = trimmed; pre.after(p); }
+    setCaret(p, 0); return;
+  }
+  r.deleteContents(); const nl = document.createTextNode(atEnd ? '\n\n' : '\n'); r.insertNode(nl); setCaret(nl, 1);
+}
+function caretAtBlockStart(block){
+  const s = window.getSelection(); if (!s.rangeCount || !s.isCollapsed) return false;
+  const r = s.getRangeAt(0); const pre = document.createRange(); pre.selectNodeContents(block); pre.setEnd(r.startContainer, r.startOffset);
+  return pre.toString() === '' && !pre.cloneContents().querySelector('img,hr');
+}
+editor.addEventListener('keydown', (e)=>{
+  const mod = e.ctrlKey || e.metaKey;
+  if (mod && !e.shiftKey && e.key.toLowerCase() === 'k') { e.preventDefault(); ACTIONS.link(); afterAction(); return; }
+  if (e.key === 'Enter' && !e.shiftKey && !e.isComposing) {
+    const pre = closestIn('pre');
+    if (pre) { e.preventDefault(); handleEnterInPre(pre); markDirty(); return; }
+    if (closestIn('ul.checklist > li')) setTimeout(()=>{ const li = closestIn('ul.checklist > li'); if (li) li.setAttribute('data-checked', 'false'); }, 0);
+  }
+  if (e.key === 'Backspace' && !mod && !e.altKey) {
+    const b = closestIn('h1,h2,h3,blockquote,pre');
+    if (b && b.parentNode === editor && caretAtBlockStart(b)) { e.preventDefault(); toParagraph(b); afterAction(); }
+  }
+});
+editor.addEventListener('input', (e)=>{ markDirty(); ensureRootBlocks(); handleMarkdownShortcut(e); updateEmptyState(); });
+editor.addEventListener('click', (e)=>{
+  const li = e.target.closest && e.target.closest('ul.checklist > li');
+  if (li && editor.contains(li)) {
+    const r = li.getBoundingClientRect();
+    if (e.clientX >= r.left && e.clientX - r.left <= 24 && e.clientY - r.top <= 30) {
+      e.preventDefault(); li.setAttribute('data-checked', li.getAttribute('data-checked') === 'true' ? 'false' : 'true'); markDirty(); return;
+    }
+  }
+  const a = e.target.closest && e.target.closest('a[href]');
+  if (a && (e.ctrlKey || e.metaKey)) { e.preventDefault(); window.open(a.getAttribute('href'), '_blank', 'noopener'); }
+});
+editor.addEventListener('focus', ()=>{ updateToolbarState(); });
+
+function safeHref(h){ h = (h || '').trim(); return /^(https?:|mailto:|tel:)/i.test(h) ? h : null; }
+function sanitizePaste(html){
+  const doc = new DOMParser().parseFromString(html, 'text/html');
+  const out = document.createElement('div');
+  const DROP = new Set(['SCRIPT','STYLE','IFRAME','OBJECT','EMBED','META','LINK','IMG','SVG','CANVAS','VIDEO','AUDIO','NOSCRIPT','TEMPLATE','HEAD','TITLE','BUTTON','INPUT','SELECT','TEXTAREA']);
+  const KEEP = new Set(['P','DIV','BR','B','STRONG','I','EM','U','S','STRIKE','DEL','CODE','PRE','A','UL','OL','LI','H1','H2','H3','H4','H5','H6','BLOCKQUOTE','HR']);
+  function walk(src, dest){
+    src.childNodes.forEach(n => {
+      if (n.nodeType === 3) { dest.appendChild(document.createTextNode(n.textContent)); return; }
+      if (n.nodeType !== 1) return;
+      const t = n.tagName;
+      if (DROP.has(t)) return;
+      const st = (n.getAttribute('style') || '').toLowerCase();
+      if (t === 'B' && /font-weight:\s*normal/.test(st)) { walk(n, dest); return; }
+      if (KEEP.has(t)) {
+        const el = document.createElement(/^H[4-6]$/.test(t) ? 'h3' : t.toLowerCase());
+        if (t === 'A') { const h = safeHref(n.getAttribute('href')); if (h) { el.setAttribute('href', h); el.setAttribute('target', '_blank'); el.setAttribute('rel', 'noopener noreferrer'); } }
+        walk(n, el); dest.appendChild(el); return;
+      }
+      if (t === 'TR') { const d = document.createElement('div'); walk(n, d); dest.appendChild(d); return; }
+      if (t === 'TD' || t === 'TH') { walk(n, dest); dest.appendChild(document.createTextNode(' ')); return; }
+      if (t === 'SPAN') {
+        let wrap = dest;
+        if (/font-weight:\s*(bold|[6-9]00)/.test(st)) { const b = document.createElement('b'); wrap.appendChild(b); wrap = b; }
+        if (/font-style:\s*italic/.test(st)) { const i = document.createElement('i'); wrap.appendChild(i); wrap = i; }
+        if (/text-decoration[^;]*underline/.test(st)) { const u = document.createElement('u'); wrap.appendChild(u); wrap = u; }
+        walk(n, wrap); return;
+      }
+      walk(n, dest);
+    });
+  }
+  walk(doc.body, out);
+  return out.innerHTML;
+}
+editor.addEventListener('paste', (e)=>{
+  const cd = e.clipboardData; if (!cd) return;
+  const html = cd.getData('text/html'); const text = cd.getData('text/plain');
+  if (cd.files && cd.files.length && !html && !text) {
+    e.preventDefault();
+    pendingNewFiles.push(...Array.from(cd.files)); dirty.idea = true; renderPendingList();
+    toast(`Added ${cd.files.length} file${cd.files.length>1?'s':''} to be uploaded`);
+    return;
+  }
+  e.preventDefault();
+  if (text && /^https?:\/\/\S+$/i.test(text.trim()) && !window.getSelection().isCollapsed) document.execCommand('createLink', false, text.trim());
+  else if (html) document.execCommand('insertHTML', false, sanitizePaste(html));
+  else if (text) document.execCommand('insertText', false, text);
+  markDirty(); updateEmptyState();
+});
+
+// =====================================================================
+//  Context menus
+// =====================================================================
+let ctxEl = null, ctxTarget = null, lastMenuAt = 0;
+function closeCtx(){ if (ctxEl) { ctxEl.remove(); ctxEl = null; } if (ctxTarget) { ctxTarget.classList.remove('ctx-target'); ctxTarget = null; } }
+function fitSub(row){
+  const sub = row.querySelector(':scope > .ctx-sub'); if (!sub) return;
+  sub.classList.remove('left'); sub.style.top = '';
+  let r = sub.getBoundingClientRect();
+  if (r.right > window.innerWidth - 6) { sub.classList.add('left'); r = sub.getBoundingClientRect(); }
+  if (r.bottom > window.innerHeight - 8) sub.style.top = (-6 - (r.bottom - (window.innerHeight - 8))) + 'px';
+  r = sub.getBoundingClientRect();
+  if (r.top < 8) sub.style.top = (parseFloat(sub.style.top || '-6') + (8 - r.top)) + 'px';
+}
+function buildMenu(items, parent){
+  items.forEach(it => {
+    if (it === 'sep') { const s = document.createElement('div'); s.className = 'ctx-sep'; parent.appendChild(s); return; }
+    const row = document.createElement('div');
+    row.className = 'ctx-item' + (it.danger ? ' danger' : '') + (it.disabled ? ' disabled' : '');
+    row.setAttribute('role', 'menuitem'); row.tabIndex = -1;
+    const lead = document.createElement('span'); lead.className = 'ctx-lead'; lead.textContent = it.checked ? '✓' : ''; row.appendChild(lead);
+    if (it.dot) { const d = document.createElement('span'); d.className = 'ctx-dot'; d.style.background = it.dot; row.appendChild(d); }
+    const lab = document.createElement('span'); lab.className = 'ctx-label'; lab.textContent = it.label; row.appendChild(lab);
+    if (it.children) {
+      const chev = document.createElement('span'); chev.className = 'ctx-chev'; chev.textContent = '›'; row.appendChild(chev);
+      const sub = document.createElement('div'); sub.className = 'ctx-sub'; sub.setAttribute('role', 'menu');
+      buildMenu(it.children.length ? it.children : [{ label: 'Nothing here yet', disabled: true }], sub);
+      row.appendChild(sub);
+      row.addEventListener('click', (e)=>{
+        e.stopPropagation(); if (e.target.closest('.ctx-sub')) return;
+        const open = !row.classList.contains('open');
+        Array.from(row.parentElement.children).forEach(s => s.classList && s.classList.remove('open'));
+        if (open) { row.classList.add('open'); fitSub(row); }
+      });
+    } else {
+      row.addEventListener('click', (e)=>{ e.stopPropagation(); if (it.disabled) return; closeCtx(); if (it.onClick) it.onClick(); });
+    }
+    row.addEventListener('mouseenter', ()=>{
+      Array.from(row.parentElement.children).forEach(s => { if (s !== row && s.classList) s.classList.remove('open'); });
+      if (it.children) { row.classList.add('open'); fitSub(row); }
+    });
+    parent.appendChild(row);
+  });
+}
+function showCtx(items, x, y, targetEl, focusFirst){
+  closeCtx(); lastMenuAt = Date.now();
+  const m = document.createElement('div'); m.className = 'ctx-menu'; m.setAttribute('role', 'menu'); m.tabIndex = -1;
+  buildMenu(items, m); document.body.appendChild(m);
+  const w = m.offsetWidth, h = m.offsetHeight, pad = 8;
+  const left = Math.max(pad, Math.min(x, window.innerWidth - w - pad));
+  const top = Math.max(pad, Math.min(y, window.innerHeight - h - pad));
+  m.style.left = left + 'px'; m.style.top = top + 'px';
+  ctxEl = m;
+  if (targetEl) { ctxTarget = targetEl; targetEl.classList.add('ctx-target'); }
+  if (focusFirst) { const f = m.querySelector('.ctx-item:not(.disabled)'); if (f) f.focus(); }
+}
+function categoryChoices(currentId, onPick){
+  return [{ label: 'No category', checked: !currentId, onClick: () => onPick(null) }].concat(
+    categories.map((c, i) => ({ label: c.name, dot: c.color || colorForIndex(i), checked: c.id === currentId, onClick: () => onPick(c.id) })));
+}
+function menuItemsFor(el){
+  if (el.classList.contains('category-item')) {
+    const id = el.dataset.id;
+    if (id === 'all') return [
+      { label: 'New idea', onClick: () => { currentCategoryId=''; openIdeaModal(null); } },
+      { label: 'Upload file', onClick: () => openFileModal(null, 'standalone') },
+    ];
+    return [
+      { label: 'New idea here', onClick: () => { currentCategoryId = id; openIdeaModal(null); } },
+      { label: 'Upload file here', onClick: () => { currentCategoryId = id; openFileModal(null, 'standalone'); } },
+      'sep', { label: 'Edit category…', onClick: () => openCategoryModal(id) },
+      'sep', { label: 'Delete category', danger: true, onClick: () => deleteCategory(id) },
+    ];
+  }
+  if (el.classList.contains('idea-row')) {
+    const x = ideas.find(v => v.id === el.dataset.id); if (!x) return null;
+    return [
+      { label: 'Open', onClick: () => openIdeaModal(x.id) },
+      { label: x.pinned ? 'Unpin' : 'Pin to top', onClick: () => updateIdea(x.id, { pinned: !x.pinned }) },
+      { label: 'Status', children: Object.keys(STATUS_KEYS).map(s => ({ label: s, checked: x.status === s, onClick: () => updateIdea(x.id, { status: s }) })) },
+      { label: 'Move to category', children: categoryChoices(x.category, cid => updateIdea(x.id, { category: cid })) },
+      { label: 'Duplicate', onClick: () => duplicateIdea(x.id) },
+      'sep', { label: 'Delete idea', danger: true, onClick: () => deleteIdea(x.id) },
+    ];
+  }
+  if (el.classList.contains('file-card')) {
+    const f = files.find(v => v.id === el.dataset.id); if (!f) return null;
+    return [
+      { label: 'Open', onClick: () => openFileModal(f.id, 'standalone') },
+      { label: 'Download', onClick: () => window.open(fileUrl(f, f.file), '_blank', 'noopener') },
+      { label: 'Move to category', children: categoryChoices(f.category, cid => { pb.collection('yt_files').update(f.id, { category: cid }).then(rec=>{ upsertLocal(files, rec); refresh(); }); }) },
+      'sep', { label: 'Delete file', danger: true, onClick: () => deleteFile(f.id) },
+    ];
+  }
+  return null;
+}
+function openMenuFor(el, x, y, focusFirst){ const items = menuItemsFor(el); if (items) showCtx(items, x, y, el, focusFirst); }
+function openMenuAtButton(row, btn, viaKeyboard){ const r = btn.getBoundingClientRect(); openMenuFor(row, r.left, r.bottom + 4, viaKeyboard); }
+
+const MENU_TARGETS = '.category-item,.idea-row,.file-card';
+document.addEventListener('contextmenu', (e)=>{
+  if (e.target.closest('.ctx-menu')) { e.preventDefault(); return; }
+  if (e.target.closest('input,textarea,select,[contenteditable="true"],.modal-overlay')) return;
+  const el = e.target.closest(MENU_TARGETS); if (!el) return;
+  e.preventDefault();
+  if (ctxEl && Date.now() - lastMenuAt < 800) return;
+  let x = e.clientX, y = e.clientY, kb = false;
+  if (!x && !y) { const r = el.getBoundingClientRect(); x = r.left + 28; y = r.top + r.height / 2; kb = true; }
+  openMenuFor(el, x, y, kb);
+});
+let lpTimer = null, lpStart = null, lpFired = false, suppressClickUntil = 0;
+document.addEventListener('touchstart', (e)=>{
+  if (e.touches.length !== 1) return;
+  const el = e.target.closest && e.target.closest(MENU_TARGETS);
+  if (!el || e.target.closest('.modal-overlay')) return;
+  const t = e.touches[0]; lpStart = { x: t.clientX, y: t.clientY }; lpFired = false;
+  clearTimeout(lpTimer);
+  lpTimer = setTimeout(()=>{ lpFired = true; suppressClickUntil = Date.now() + 900; openMenuFor(el, lpStart.x, lpStart.y, false); try { if (navigator.vibrate) navigator.vibrate(8); } catch(_) {} }, 520);
+}, { passive: true });
+document.addEventListener('touchmove', (e)=>{
+  if (!lpTimer) return; const t = e.touches[0];
+  if (Math.abs(t.clientX - lpStart.x) > 10 || Math.abs(t.clientY - lpStart.y) > 10) { clearTimeout(lpTimer); lpTimer = null; }
+}, { passive: true });
+['touchend', 'touchcancel'].forEach(ev => document.addEventListener(ev, ()=>{ clearTimeout(lpTimer); lpTimer = null; if (lpFired) { suppressClickUntil = Date.now() + 450; lpFired = false; } }, { passive: true }));
+document.addEventListener('click', (e)=>{ if (Date.now() < suppressClickUntil) { e.preventDefault(); e.stopPropagation(); } }, true);
+
+document.addEventListener('mousedown', (e)=>{ if (ctxEl && !ctxEl.contains(e.target)) closeCtx(); }, true);
+document.addEventListener('touchstart', (e)=>{ if (ctxEl && !ctxEl.contains(e.target)) closeCtx(); }, { capture: true, passive: true });
+window.addEventListener('scroll', (e)=>{ if (ctxEl && !ctxEl.contains(e.target)) closeCtx(); }, true);
+window.addEventListener('resize', closeCtx);
+window.addEventListener('blur', closeCtx);
+document.addEventListener('keydown', (e)=>{
+  if (!ctxEl) return;
+  const active = document.activeElement && document.activeElement.closest ? document.activeElement.closest('.ctx-item') : null;
+  const cur = active && ctxEl.contains(active) ? active : null;
+  const siblings = () => Array.from((cur ? cur.parentElement : ctxEl).children).filter(c => c.classList.contains('ctx-item') && !c.classList.contains('disabled'));
+  if (e.key === 'Escape') { e.preventDefault(); e.stopPropagation(); closeCtx(); return; }
+  if (e.key === 'ArrowDown' || e.key === 'ArrowUp') {
+    e.preventDefault(); const list = siblings(); if (!list.length) return;
+    let i = cur ? list.indexOf(cur) : -1; i = e.key === 'ArrowDown' ? (i + 1) % list.length : (i - 1 + list.length) % list.length; list[i].focus();
+  } else if (e.key === 'ArrowRight' && cur && cur.querySelector(':scope > .ctx-sub')) {
+    e.preventDefault(); cur.classList.add('open'); fitSub(cur);
+    const f = cur.querySelector(':scope > .ctx-sub > .ctx-item:not(.disabled)'); if (f) f.focus();
+  } else if (e.key === 'ArrowLeft' && cur && cur.parentElement.classList.contains('ctx-sub')) {
+    e.preventDefault(); const parent = cur.parentElement.parentElement; parent.classList.remove('open'); parent.focus();
+  } else if ((e.key === 'Enter' || e.key === ' ') && cur) { e.preventDefault(); cur.click(); }
+}, true);
+
+// ---------- Modal close handlers ----------
+document.querySelectorAll('[data-close]').forEach(el=>{
+  el.addEventListener('click', ()=>{
+    const k = el.dataset.close;
+    if (k === 'idea') requestCloseIdea();
+    else if (k === 'file') closeFileModal();
+    else closeCategoryModal();
+  });
+});
+document.querySelectorAll('.modal-overlay').forEach(ov=>{
+  let downOnOverlay = false;
+  ov.addEventListener('mousedown', (e)=>{ downOnOverlay = e.target === ov; });
+  ov.addEventListener('click', (e)=>{
+    if (e.target !== ov || !downOnOverlay) return;
+    if (ov.id === 'idea-modal-overlay') requestCloseIdea();
+    else if (ov.id === 'file-modal-overlay') closeFileModal();
+    else if (ov.id === 'category-modal-overlay') closeCategoryModal();
+  });
+});
+document.addEventListener('keydown', (e)=>{
+  if (e.key !== 'Escape' || e.defaultPrevented) return;
+  if (ctxEl) return;
+  const top = overlayStack[overlayStack.length - 1];
+  if (top) {
+    if (top.id === 'idea-modal-overlay') { if (!$('file-picker').hidden) { $('file-picker').hidden = true; return; } requestCloseIdea(); }
+    else if (top.id === 'file-modal-overlay') closeFileModal();
+    else if (top.id === 'category-modal-overlay') closeCategoryModal();
+    return;
+  }
+  if ($('rail').classList.contains('open')) closeRail();
+});
+</script>
+</body>
+</html>
