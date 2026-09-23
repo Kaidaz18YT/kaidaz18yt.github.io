@@ -1,0 +1,370 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1, viewport-fit=cover">
+<title>Beta APIs Enabler — kaidaz18</title>
+<meta name="description" content="Turn on Beta APIs in a Minecraft Bedrock or Education world by dropping in its .mcworld file. Runs entirely in your browser.">
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+<link href="https://fonts.googleapis.com/css2?family=IBM+Plex+Mono:wght@400;500&family=IBM+Plex+Sans:wght@400;500;600;700&display=swap" rel="stylesheet">
+<style>
+/* ============================================================
+   MEDIA ASSETS — swap these two URLs when your GitHub Pages
+   images are live (search "assets/head.png" and "assets/bust.png").
+   HEAD_ICON: 500x500 PNG, top nav.  BUST_IMG: ~800x1000 PNG, hero.
+   ============================================================ */
+
+/* LEDGER THEME — from the supplied stylesheet */
+:root{
+  --bg:#1C1B1A;--bg-raised:#242321;--bg-hover:#2C2B28;--border:#38362f;--border-soft:#2c2b27;
+  --ink:#EDEAE3;--ink-dim:#A8A399;--ink-faint:#6f6b62;
+  --accent:#7C93CC;--accent-dim:#4A5D8A;--amber:#C9A15C;--sage:#8FA184;--danger:#C97C6E;
+  --brand-red:#C1443A;--brand-red-dim:#8B322A;--brand-red-glow:rgba(193,68,58,0.18);
+  --radius:3px;color-scheme:dark;
+}
+*{box-sizing:border-box}
+html,body{height:100%;margin:0}
+html{scroll-padding-top:calc(64px + env(safe-area-inset-top,0px));scroll-behavior:smooth}
+body{background:var(--bg);color:var(--ink);font-family:'IBM Plex Sans',system-ui,sans-serif;font-size:15px;line-height:1.55;-webkit-font-smoothing:antialiased;padding-top:env(safe-area-inset-top,0px);padding-bottom:env(safe-area-inset-bottom,0px)}
+::selection{background:var(--accent-dim);color:#fff}
+a{color:var(--accent);text-decoration:none;transition:color .18s ease}
+a:hover{text-decoration:underline}
+button{font-family:inherit;cursor:pointer}
+.mono{font-family:'IBM Plex Mono',monospace}
+img{max-width:100%;display:block}
+:focus-visible{outline:2px solid var(--accent);outline-offset:2px}
+
+.page-wrap{max-width:980px;margin:0 auto;padding:0 28px}
+.topbar{border-bottom:1px solid var(--border-soft);background:var(--bg);position:sticky;top:env(safe-area-inset-top,0px);z-index:30;box-shadow:0 4px 16px rgba(0,0,0,.2)}
+.topbar-inner{max-width:980px;margin:0 auto;padding:16px 28px;display:flex;align-items:center;justify-content:space-between;gap:16px}
+.brand{display:flex;align-items:center;gap:10px;font-weight:700;font-size:15px;letter-spacing:-.01em;color:var(--ink)}
+.brand:hover{text-decoration:none;color:var(--ink);opacity:.85}
+.brand-icon{width:26px;height:26px;border-radius:4px;image-rendering:pixelated;flex-shrink:0;box-shadow:0 0 0 1px var(--border-soft)}
+.brand-handle{color:var(--ink-faint);font-weight:400;font-size:12.5px}
+.topnav{display:flex;gap:4px}
+.topnav a{color:var(--ink-dim);font-size:13px;padding:7px 12px;border-radius:var(--radius);transition:color .18s ease,background-color .18s ease}
+.topnav a:hover{color:var(--ink);background:var(--bg-hover);text-decoration:none}
+
+.hero{padding:68px 0 52px;border-bottom:1px solid var(--border-soft);display:grid;grid-template-columns:1fr auto;gap:32px;align-items:center}
+.hero-eyebrow{font-size:12px;color:var(--brand-red);font-family:'IBM Plex Mono',monospace;margin-bottom:14px}
+.hero h1{font-size:40px;font-weight:600;letter-spacing:-.02em;margin:0 0 14px;max-width:560px}
+.hero p.lede{font-size:16px;color:var(--ink-dim);max-width:520px;margin:0 0 26px}
+.hero-art{position:relative;width:220px;display:flex;align-items:flex-end;justify-content:center}
+.hero-art::before{content:'';position:absolute;top:50%;left:50%;width:340px;height:340px;transform:translate(-50%,-50%);background:radial-gradient(circle,var(--brand-red-glow),transparent 70%);pointer-events:none}
+.hero-art img{position:relative;width:100%;image-rendering:pixelated;filter:drop-shadow(0 12px 24px rgba(0,0,0,.4))}
+.hero-actions{display:flex;gap:10px;flex-wrap:wrap}
+.btn-primary{background:var(--brand-red-dim);color:#fff;border:none;padding:10px 18px;border-radius:var(--radius);font-size:13.5px;font-weight:500;display:inline-block;transition:background-color .18s ease,transform .18s ease}
+.btn-primary:hover{background:var(--brand-red);text-decoration:none;transform:translateY(-1px)}
+.btn-primary:disabled{background:var(--border);color:var(--ink-faint);cursor:not-allowed;transform:none}
+.btn-secondary{background:none;border:1px solid var(--border);color:var(--ink-dim);padding:10px 18px;border-radius:var(--radius);font-size:13.5px;display:inline-block;transition:color .18s ease,border-color .18s ease}
+.btn-secondary:hover{color:var(--ink);border-color:var(--ink-faint);text-decoration:none}
+
+.section{padding:56px 0;border-bottom:1px solid var(--border-soft)}
+.section:last-of-type{border-bottom:none}
+.section-head{margin-bottom:26px}
+.section-head h2{font-size:21px;font-weight:600;letter-spacing:-.01em;margin:0}
+.section-sub{font-size:13px;color:var(--ink-faint);margin-top:4px}
+
+/* Tool: dropzone + result panel */
+.dropzone{display:block;border:1px dashed var(--border);border-radius:var(--radius);background:var(--bg-raised);padding:44px 24px;text-align:center;transition:border-color .2s ease,background-color .2s ease}
+.dropzone:hover,.dropzone.over{border-color:var(--brand-red);background:var(--bg-hover)}
+.dropzone strong{display:block;font-size:15px;font-weight:600;margin-bottom:4px}
+.dropzone span{font-size:13px;color:var(--ink-dim)}
+.dropzone input{position:absolute;width:1px;height:1px;opacity:0}
+.dropzone:focus-within{outline:2px solid var(--accent);outline-offset:2px}
+.panel{background:var(--bg-raised);border:1px solid var(--border-soft);border-radius:var(--radius);padding:20px 22px;margin-top:16px}
+.panel h3{font-size:16px;font-weight:600;margin:0 0 4px}
+.panel .file-meta{font-size:12.5px;color:var(--ink-faint);margin-bottom:16px}
+.toggle{display:flex;gap:12px;align-items:flex-start;padding:12px 0;border-top:1px solid var(--border-soft);font-size:13.5px}
+.toggle input{margin-top:4px;accent-color:var(--brand-red);width:16px;height:16px;flex-shrink:0}
+.toggle b{display:block;font-weight:600;color:var(--ink)}
+.toggle small{color:var(--ink-dim);font-size:12.5px}
+.state{margin-left:auto;font-size:11.5px;font-family:'IBM Plex Mono',monospace;padding:2px 8px;border-radius:var(--radius);border:1px solid var(--border);color:var(--ink-faint);white-space:nowrap;align-self:flex-start}
+.state.on{color:var(--sage);border-color:var(--sage)}
+details{border-top:1px solid var(--border-soft);margin-top:4px}
+summary{padding:12px 0;font-size:13px;color:var(--ink-dim);cursor:pointer}
+.actions{display:flex;gap:10px;align-items:center;flex-wrap:wrap;margin-top:16px}
+.bar{height:3px;background:var(--border-soft);border-radius:2px;overflow:hidden;flex:1;min-width:120px;display:none}
+.bar i{display:block;height:100%;width:0;background:var(--brand-red)}
+.msg{font-size:13px;margin-top:14px;color:var(--ink-dim)}
+.msg.err{color:var(--danger)}
+.msg.ok{color:var(--sage)}
+
+.steps{counter-reset:s;list-style:none;margin:0;padding:0}
+.steps li{counter-increment:s;display:flex;gap:14px;padding:14px 0;border-bottom:1px solid var(--border-soft);color:var(--ink-dim);font-size:14px}
+.steps li::before{content:counter(s);font-family:'IBM Plex Mono',monospace;color:var(--brand-red);width:18px;flex-shrink:0}
+.steps li strong{color:var(--ink);font-weight:600}
+.about-layout{display:grid;grid-template-columns:1.4fr 1fr;gap:40px;align-items:start}
+.about-body p{color:var(--ink-dim);margin:0 0 14px;max-width:560px}
+.about-body strong{color:var(--ink);font-weight:600}
+.about-card{background:var(--bg-raised);border:1px solid var(--border-soft);border-radius:var(--radius);padding:18px 20px}
+.card-label{font-size:11px;color:var(--ink-faint);text-transform:uppercase;letter-spacing:.05em;margin-bottom:12px}
+.focus-item{display:flex;gap:10px;padding:9px 0;border-bottom:1px solid var(--border-soft);font-size:13px;color:var(--ink-dim)}
+.focus-item:last-child{border-bottom:none;padding-bottom:0}
+.focus-item .dot{width:6px;height:6px;border-radius:50%;margin-top:6px;flex-shrink:0}
+
+.site-footer{padding:32px 0 40px}
+.footer-inner{display:flex;justify-content:space-between;align-items:center;gap:16px;flex-wrap:wrap;font-size:12.5px;color:var(--ink-faint)}
+.footer-links{display:flex;gap:16px}
+.footer-links a{color:var(--ink-faint)}
+.footer-links a:hover{color:var(--accent)}
+
+@media (max-width:760px){
+  .page-wrap{padding:0 18px}.topbar-inner{padding:14px 18px}
+  .topnav a{padding:6px 9px;font-size:12.5px}
+  .hero{padding:40px 0 32px;grid-template-columns:1fr}.hero h1{font-size:30px}
+  .hero-art{width:140px;order:-1;margin:0 auto 8px}
+  .about-layout{grid-template-columns:1fr}.section{padding:42px 0}
+}
+@keyframes rise-in{from{opacity:0;transform:translateY(10px)}to{opacity:1;transform:none}}
+.hero-eyebrow,.hero h1,.hero p.lede,.hero-actions{animation:rise-in .5s ease both}
+.hero h1{animation-delay:.05s}.hero p.lede{animation-delay:.1s}.hero-actions{animation-delay:.15s}
+@media (prefers-reduced-motion:reduce){*{transition:none!important;animation:none!important;scroll-behavior:auto!important}}
+</style>
+</head>
+<body>
+
+<main class="page-wrap" id="top">
+  <section class="hero">
+    <div class="hero-text">
+      <div class="hero-eyebrow">minecraft bedrock &amp; education</div>
+      <h1>Turn on Beta APIs in any world.</h1>
+      <p class="lede">Drop in your .mcworld file, get the same world back with Beta APIs switched on. Nothing is uploaded — it all happens in your browser.</p>
+      <div class="hero-actions">
+        <a class="btn-primary" href="#tool">Choose a world</a>
+        <a class="btn-secondary" href="#how">How it works</a>
+      </div>
+    </div>
+    <div class="hero-art"><img src="https://kaidaz18yt.github.io/assets/lay_down.png" alt="" onerror="this.parentNode.style.display='none'"></div>
+  </section>
+
+  <section class="section" id="tool">
+    <div class="section-head">
+      <h2>Enable Beta APIs</h2>
+      <div class="section-sub">Accepts .mcworld and .zip exports from Bedrock and Education Edition.</div>
+    </div>
+
+    <label class="dropzone" id="drop">
+      <strong id="dropTitle">Drop your .mcworld here, or click to browse</strong>
+      <span>Your original file is never changed.</span>
+      <input type="file" id="file" accept=".mcworld,.zip">
+    </label>
+
+    <div class="panel" id="panel" hidden>
+      <h3 id="wName">World</h3>
+      <div class="file-meta mono" id="wMeta"></div>
+
+      <label class="toggle">
+        <input type="checkbox" id="t-gametest" checked>
+        <span><b>Beta APIs</b><small>Lets add-ons use @minecraft/server beta modules and GameTest.</small></span>
+        <span class="state" id="s-gametest"></span>
+      </label>
+
+      <details>
+        <summary>Other experiments (advanced)</summary>
+        <div id="extra"></div>
+      </details>
+
+      <div class="actions">
+        <button class="btn-primary" id="go" type="button">Enable and download</button>
+        <div class="bar" id="bar"><i id="barFill"></i></div>
+      </div>
+      <div class="msg" id="msg" role="status" aria-live="polite"></div>
+    </div>
+    <div class="msg err" id="topErr" role="alert"></div>
+  </section>
+
+  <section class="section" id="how">
+    <div class="section-head">
+      <h2>How it works</h2>
+      <div class="section-sub">Four steps, about a minute.</div>
+    </div>
+    <ol class="steps">
+      <li><span><strong>Export your world.</strong> In Minecraft, edit the world, scroll to the bottom of settings and choose Export World. Save the .mcworld file.</span></li>
+      <li><span><strong>Drop it in above.</strong> The site reads the world's level.dat and shows which experiments are already on.</span></li>
+      <li><span><strong>Enable and download.</strong> You get a new file called <span class="mono">yourworld-beta-apis.mcworld</span>.</span></li>
+      <li><span><strong>Open it.</strong> Double-click the new file to import it into Minecraft. It appears as a separate world next to your original.</span></li>
+    </ol>
+  </section>
+
+  <section class="section" id="faq">
+    <div class="section-head"><h2>Good to know</h2></div>
+    <div class="about-layout">
+      <div class="about-body">
+        <p><strong>Your world stays private.</strong> The file is opened, edited and re-packed locally in your browser. There is no server and no upload.</p>
+        <p><strong>Achievements turn off.</strong> Minecraft disables achievements in any world that has experiments enabled. That is a game rule, not something this site adds.</p>
+        <p><strong>Your add-on still needs a beta version.</strong> The world toggle only permits beta modules. The behavior pack's manifest must also depend on a beta version of @minecraft/server.</p>
+        <p><strong>Bedrock only.</strong> Java worlds don't have Beta APIs, and the site will tell you if it sees one.</p>
+      </div>
+      <div class="about-card">
+        <div class="card-label">What gets changed</div>
+        <div class="focus-item"><span class="dot" style="background:var(--brand-red)"></span>Only level.dat inside the world</div>
+        <div class="focus-item"><span class="dot" style="background:var(--amber)"></span>The gametest flag under experiments</div>
+        <div class="focus-item"><span class="dot" style="background:var(--sage)"></span>Two bookkeeping flags Minecraft expects</div>
+        <div class="focus-item"><span class="dot" style="background:var(--accent)"></span>Every other byte is left as it was</div>
+      </div>
+    </div>
+  </section>
+</main>
+
+<footer class="page-wrap site-footer">
+  <div class="footer-inner">
+    <span>Made by kaidaz18. Not affiliated with Mojang or Microsoft.</span>
+    <div class="footer-links"><a href="https://www.youtube.com/@kaidaz18">YouTube</a></div>
+  </div>
+</footer>
+
+<script src="https://cdnjs.cloudflare.com/ajax/libs/jszip/3.10.1/jszip.min.js"></script>
+<script>
+(function(){
+'use strict';
+const $=id=>document.getElementById(id);
+const EXTRA=[
+  ['upcoming_creator_features','Upcoming creator features','Early access to new add-on features.'],
+  ['data_driven_biomes','Custom biomes','Biome definitions from behavior packs.'],
+  ['experimental_molang_features','Molang features','New Molang queries and functions.'],
+  ['cameras','Cameras','Camera presets and scripted cameras.']
+];
+let zip=null,lvPath='',root=null,fileName='';
+
+/* ---------- Little-endian NBT (Bedrock level.dat) ---------- */
+const TD=new TextDecoder(),TE=new TextEncoder();
+function readTag(dv,u8,st,t){
+  const p=st.p;
+  switch(t){
+    case 1:st.p+=1;return dv.getInt8(p);
+    case 2:st.p+=2;return dv.getInt16(p,true);
+    case 3:st.p+=4;return dv.getInt32(p,true);
+    case 4:st.p+=8;return dv.getBigInt64(p,true);
+    case 5:st.p+=4;return dv.getFloat32(p,true);
+    case 6:st.p+=8;return dv.getFloat64(p,true);
+    case 7:{const n=dv.getInt32(p,true);st.p+=4+n;return u8.slice(p+4,p+4+n)}
+    case 8:{const n=dv.getUint16(p,true);st.p+=2+n;return TD.decode(u8.subarray(p+2,p+2+n))}
+    case 9:{const it=dv.getUint8(p),n=dv.getInt32(p+1,true);st.p+=5;const items=[];
+      for(let i=0;i<n;i++)items.push(readTag(dv,u8,st,it));return{it,items}}
+    case 10:{const m=new Map();
+      for(;;){const ct=dv.getUint8(st.p++);if(ct===0)break;
+        const nl=dv.getUint16(st.p,true);const name=TD.decode(u8.subarray(st.p+2,st.p+2+nl));st.p+=2+nl;
+        m.set(name,{t:ct,v:readTag(dv,u8,st,ct)})}
+      return m}
+    case 11:{const n=dv.getInt32(p,true);st.p+=4;const a=[];for(let i=0;i<n;i++){a.push(dv.getInt32(st.p,true));st.p+=4}return a}
+    case 12:{const n=dv.getInt32(p,true);st.p+=4;const a=[];for(let i=0;i<n;i++){a.push(dv.getBigInt64(st.p,true));st.p+=8}return a}
+  }
+  throw new Error('Unknown NBT tag '+t);
+}
+function parseNBT(u8){
+  const dv=new DataView(u8.buffer,u8.byteOffset,u8.byteLength),st={p:0};
+  const t=dv.getUint8(st.p++);if(t!==10)throw new Error('Root is not a compound');
+  const nl=dv.getUint16(st.p,true);st.p+=2+nl;
+  return{name:TD.decode(u8.subarray(st.p-nl,st.p)),v:readTag(dv,u8,st,10)};
+}
+function writeNBT(r){
+  const out=[];
+  const b=n=>out.push(n&255);
+  const w=(len,fn)=>{const a=new ArrayBuffer(len);fn(new DataView(a));out.push(...new Uint8Array(a))};
+  const str=s=>{const e=TE.encode(s);w(2,d=>d.setUint16(0,e.length,true));for(const x of e)out.push(x)};
+  function put(t,v){
+    switch(t){
+      case 1:w(1,d=>d.setInt8(0,v));break;
+      case 2:w(2,d=>d.setInt16(0,v,true));break;
+      case 3:w(4,d=>d.setInt32(0,v,true));break;
+      case 4:w(8,d=>d.setBigInt64(0,v,true));break;
+      case 5:w(4,d=>d.setFloat32(0,v,true));break;
+      case 6:w(8,d=>d.setFloat64(0,v,true));break;
+      case 7:w(4,d=>d.setInt32(0,v.length,true));for(const x of v)out.push(x);break;
+      case 8:str(v);break;
+      case 9:b(v.it);w(4,d=>d.setInt32(0,v.items.length,true));for(const x of v.items)put(v.it,x);break;
+      case 10:for(const[k,tag]of v){b(tag.t);str(k);put(tag.t,tag.v)}b(0);break;
+      case 11:w(4,d=>d.setInt32(0,v.length,true));for(const x of v)w(4,d=>d.setInt32(0,x,true));break;
+      case 12:w(4,d=>d.setInt32(0,v.length,true));for(const x of v)w(8,d=>d.setBigInt64(0,x,true));break;
+    }
+  }
+  b(10);str(r.name);put(10,r.v);
+  return Uint8Array.from(out);
+}
+const same=(a,b)=>a.length===b.length&&a.every((x,i)=>x===b[i]);
+
+/* ---------- UI helpers ---------- */
+function fail(m){$('topErr').textContent=m;$('panel').hidden=true}
+function say(m,c){const e=$('msg');e.textContent=m;e.className='msg'+(c?' '+c:'')}
+function exps(){const t=root&&root.v.get('experiments');return t&&t.t===10?t.v:new Map()}
+function isOn(k){const t=exps().get(k);return !!(t&&t.v)}
+function setState(id,k){const e=$(id);const on=isOn(k);e.textContent=on?'already on':'off';e.className='state'+(on?' on':'')}
+const fmt=n=>n>1048576?(n/1048576).toFixed(1)+' MB':Math.max(1,Math.round(n/1024))+' KB';
+
+async function load(f){
+  $('topErr').textContent='';say('');
+  fileName=f.name.replace(/\.(mcworld|zip)$/i,'');
+  try{
+    zip=await JSZip.loadAsync(f);
+  }catch(e){return fail('That file could not be opened as a world. Export it from Minecraft as a .mcworld and try again.')}
+  const hits=Object.keys(zip.files).filter(n=>!zip.files[n].dir&&/(^|\/)level\.dat$/.test(n)).sort((a,b)=>a.length-b.length);
+  if(!hits.length)return fail('No level.dat found inside. Make sure this is a full world export, not a resource or behavior pack.');
+  lvPath=hits[0];
+  const u8=await zip.file(lvPath).async('uint8array');
+  if(u8[0]===0x1f&&u8[1]===0x8b)return fail('This looks like a Java Edition world. Beta APIs only exist in Bedrock and Education Edition.');
+  try{
+    const dv=new DataView(u8.buffer,u8.byteOffset,u8.byteLength);
+    if(u8.length<9||dv.getInt32(4,true)!==u8.length-8)throw new Error('header');
+    const body=u8.subarray(8);
+    root=parseNBT(body);
+    if(!same(writeNBT(root),body))throw new Error('roundtrip');
+  }catch(e){return fail('This level.dat is in a format the site can\u2019t safely edit, so it has been left alone. Nothing was changed.')}
+  let name=fileName;
+  const ln=zip.file(lvPath.replace(/level\.dat$/,'levelname.txt'));
+  if(ln)name=(await ln.async('string')).trim()||name;
+  $('wName').textContent=name;
+  $('wMeta').textContent=f.name+' \u00b7 '+fmt(f.size);
+  $('dropTitle').textContent='Choose a different world';
+  setState('s-gametest','gametest');
+  $('extra').innerHTML=EXTRA.map(([k,t,d])=>
+    '<label class="toggle"><input type="checkbox" data-k="'+k+'"'+(isOn(k)?' checked':'')+'><span><b>'+t+'</b><small>'+d+'</small></span><span class="state'+(isOn(k)?' on':'')+'">'+(isOn(k)?'already on':'off')+'</span></label>').join('')
+    +'<div class="section-sub" style="padding-bottom:8px">Experiment names can change between Minecraft versions. Beta APIs is the one this site is built for.</div>';
+  $('t-gametest').checked=true;
+  $('panel').hidden=false;
+}
+
+async function build(){
+  const go=$('go');go.disabled=true;say('');
+  try{
+    const want=[['gametest',$('t-gametest').checked]];
+    document.querySelectorAll('#extra input').forEach(i=>want.push([i.dataset.k,i.checked]));
+    let ex=root.v.get('experiments');
+    if(!ex||ex.t!==10){ex={t:10,v:new Map()};root.v.set('experiments',ex)}
+    let changed=0;
+    for(const[k,on]of want){
+      if(on&&!isOn(k)){ex.v.set(k,{t:1,v:1});changed++}
+      else if(!on&&ex.v.has(k)&&isOn(k)){ex.v.set(k,{t:1,v:0});changed++}
+    }
+    if(!changed){say('Nothing to change \u2014 those experiments are already set.');go.disabled=false;return}
+    ex.v.set('experiments_ever_used',{t:1,v:1});
+    ex.v.set('saved_with_toggled_experiments',{t:1,v:1});
+    const body=writeNBT(root);
+    const lv=new Uint8Array(8+body.length);
+    const dv=new DataView(lv.buffer);
+    const old=await zip.file(lvPath).async('uint8array');
+    lv.set(old.subarray(0,4),0);dv.setInt32(4,body.length,true);lv.set(body,8);
+    zip.file(lvPath,lv);
+    $('bar').style.display='block';
+    const blob=await zip.generateAsync({type:'blob',compression:'DEFLATE'},m=>{$('barFill').style.width=m.percent.toFixed(0)+'%'});
+    const a=document.createElement('a');
+    a.href=URL.createObjectURL(blob);a.download=fileName+'-beta-apis.mcworld';
+    document.body.appendChild(a);a.click();a.remove();
+    setTimeout(()=>URL.revokeObjectURL(a.href),4000);
+    say('Done. Open '+a.download+' to import it into Minecraft.','ok');
+    setState('s-gametest','gametest');
+  }catch(e){say('Something went wrong while building the file: '+e.message,'err')}
+  $('bar').style.display='none';go.disabled=false;
+}
+
+const drop=$('drop');
+$('file').addEventListener('change',e=>{if(e.target.files[0])load(e.target.files[0])});
+['dragenter','dragover'].forEach(n=>drop.addEventListener(n,e=>{e.preventDefault();drop.classList.add('over')}));
+['dragleave','drop'].forEach(n=>drop.addEventListener(n,e=>{e.preventDefault();drop.classList.remove('over')}));
+drop.addEventListener('drop',e=>{const f=e.dataTransfer.files[0];if(f)load(f)});
+$('go').addEventListener('click',build);
+})();
+</script>
+</body>
+</html>
