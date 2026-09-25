@@ -1,0 +1,59 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <title>Voice Notes App</title>
+</head>
+<body>
+    <h1>My Voice Notes</h1>
+    <button id="start-btn">🎙️ Start Dictation</button>
+    <p id="status">Click the button to start speaking...</p>
+
+    <h3>Raw Browser Transcript:</h3>
+    <textarea id="output-text" rows="4" cols="50"></textarea>
+
+    <script>
+        // Check if the browser supports speech recognition
+        const SpeechRecognition = window.SpeechRecognition || window.webkitSpeechRecognition;
+
+        if (!SpeechRecognition) {
+            alert("Your browser does not support the Web Speech API. Try Google Chrome or Safari!");
+        } else {
+            const recognition = new SpeechRecognition();
+            // keeps listening even if you pause slightly
+            recognition.continuous = false;
+            // shows final results only
+            recognition.interimResults = false;
+            recognition.lang = 'en-US';
+
+            const startBtn = document.getElementById('start-btn');
+            const statusText = document.getElementById('status');
+            const outputText = document.getElementById('output-text');
+
+            startBtn.addEventListener('click', () => {
+                recognition.start();
+                statusText.innerText = "Listening... Speak now!";
+            });
+
+            recognition.onresult = (event) => {
+                const speechToText = event.results[0][0].transcript;
+                outputText.value = speechToText;
+                statusText.innerText = "Speech captured! Ready to send to LLM.";
+
+                // NEXT STEP: Call your cloud LLM API function here
+                // sendToLLM(speechToText);
+            };
+
+            recognition.onerror = (event) => {
+                statusText.innerText = "Error occurred in recognition: " + event.error;
+            };
+
+            recognition.onend = () => {
+                if(statusText.innerText === "Listening... Speak now!") {
+                    statusText.innerText = "Stopped listening.";
+                }
+            };
+        }
+    </script>
+</body>
+</html>
