@@ -4,189 +4,203 @@
 <meta charset="UTF-8">
 <meta name="viewport" content="width=device-width, initial-scale=1, viewport-fit=cover">
 <title>Ledger — Connection Test</title>
-<link rel="preconnect" href="https://fonts.googleapis.com">
-<link href="https://fonts.googleapis.com/css2?family=IBM+Plex+Sans:wght@400;500;600&family=IBM+Plex+Mono:wght@400;500&display=swap" rel="stylesheet">
 <style>
-  :root {
-    --bg: #171615;
-    --bg-raised: #201F1D;
-    --border: #322F29;
-    --ink: #EDEAE3;
-    --ink-dim: #A8A399;
-    --ink-faint: #6f6b62;
-    --sage: #8FA184;
-    --danger: #C97C6E;
-    --amber: #C9A15C;
+  :root{
+    --bg:#1C1B1A; --bg-raised:#242321; --border:#38362f;
+    --ink:#EDEAE3; --ink-dim:#A8A399; --ink-faint:#6f6b62;
+    --amber:#C9A15C; --sage:#8FA184; --danger:#C97C6E; --accent:#7C93CC;
     color-scheme: dark;
   }
   * { box-sizing: border-box; }
-  body {
-    background: var(--bg);
-    color: var(--ink);
-    font-family: 'IBM Plex Sans', system-ui, sans-serif;
-    margin: 0;
-    min-height: 100vh;
-    display: flex;
-    align-items: center;
-    justify-content: center;
-    padding: 20px;
+  html,body{ margin:0; height:100%; }
+  body{
+    background:var(--bg); color:var(--ink);
+    font-family: -apple-system, system-ui, sans-serif;
+    padding: env(safe-area-inset-top,0) 16px calc(40px + env(safe-area-inset-bottom,0));
+    font-size: 15px; line-height:1.5;
   }
-  .card {
-    background: var(--bg-raised);
-    border: 1px solid var(--border);
-    border-radius: 6px;
-    width: 100%;
-    max-width: 480px;
-    padding: 24px;
+  h1{ font-size:20px; margin: 20px 0 4px; }
+  .sub{ color:var(--ink-dim); font-size:13.5px; margin-bottom:20px; }
+  .rerun{
+    background: var(--accent); color:#0d0d0c; border:none; font-weight:600;
+    padding:10px 16px; border-radius:6px; font-size:14px; margin-bottom:18px;
   }
-  h1 {
-    font-size: 18px;
-    font-weight: 600;
-    margin: 0 0 16px 0;
-    padding-bottom: 12px;
-    border-bottom: 1px solid var(--border);
+  .test{
+    background: var(--bg-raised); border:1px solid var(--border); border-radius:8px;
+    padding:14px 16px; margin-bottom:10px;
   }
-  .test-list {
-    display: flex;
-    flex-direction: column;
-    gap: 12px;
+  .row{ display:flex; align-items:center; gap:10px; }
+  .dot{
+    width:11px; height:11px; border-radius:50%; flex-shrink:0;
+    background: var(--ink-faint);
   }
-  .test-item {
-    display: flex;
-    align-items: center;
-    justify-content: space-between;
-    padding: 10px 12px;
-    background: var(--bg);
-    border: 1px solid var(--border);
-    border-radius: 4px;
+  .dot.pass{ background: var(--sage); }
+  .dot.fail{ background: var(--danger); }
+  .dot.pending{ background: var(--amber); animation: pulse 1s infinite; }
+  @keyframes pulse{ 0%,100%{opacity:1} 50%{opacity:.4} }
+  .name{ font-weight:600; font-size:14.5px; flex:1; }
+  .status{ font-size:12.5px; color:var(--ink-faint); font-family: ui-monospace, monospace; }
+  .detail{
+    margin-top:8px; padding-top:8px; border-top:1px solid var(--border);
+    font-size:13px; color:var(--ink-dim); white-space:pre-wrap; word-break:break-word;
+    display:none;
   }
-  .test-info {
-    display: flex;
-    flex-direction: column;
-    gap: 2px;
+  .detail.show{ display:block; }
+  .hint{
+    margin-top:8px; font-size:13px; color:var(--amber); display:none;
   }
-  .test-name {
-    font-size: 14px;
-    font-weight: 500;
+  .hint.show{ display:block; }
+  .summary{
+    margin-top: 20px; padding: 14px 16px; border-radius:8px;
+    background: var(--bg-raised); border:1px solid var(--border); font-size:14px;
   }
-  .test-url {
-    font-size: 12px;
-    font-family: 'IBM Plex Mono', monospace;
-    color: var(--ink-faint);
-  }
-  .status-badge {
-    font-size: 12px;
-    font-weight: 500;
-    padding: 4px 8px;
-    border-radius: 3px;
-    font-family: 'IBM Plex Mono', monospace;
-  }
-  .status-testing { background: var(--border); color: var(--amber); }
-  .status-ok { background: rgba(143, 161, 132, 0.2); color: var(--sage); }
-  .status-failed { background: rgba(201, 124, 110, 0.2); color: var(--danger); }
-
-  .summary {
-    margin-top: 20px;
-    padding-top: 16px;
-    border-top: 1px solid var(--border);
-    font-size: 13px;
-    color: var(--ink-dim);
-  }
-  button {
-    margin-top: 16px;
-    width: 100%;
-    padding: 10px;
-    background: #4A5D8A;
-    color: #fff;
-    border: none;
-    border-radius: 3px;
-    font-size: 14px;
-    font-weight: 500;
-    cursor: pointer;
-  }
-  button:hover { background: #5a70a3; }
 </style>
 </head>
 <body>
+<h1>Ledger — Connection Test</h1>
+<div class="sub">Checks each thing the app needs, one at a time. Run this in the same browser/tab situation where the app is failing.</div>
+<button class="rerun" id="rerun">Run tests again</button>
 
-<div class="card">
-  <h1>Safari Restriction Diagnostic</h1>
-  <div class="test-list" id="test-list"></div>
-  <div class="summary" id="summary">Running connectivity tests...</div>
-  <button id="retest-btn">Run Tests Again</button>
-</div>
+<div id="tests"></div>
+<div class="summary" id="summary"></div>
 
 <script>
-const domains = [
-  { name: 'PocketBase Server', url: 'https://kaidaz18.duckdns.org/api/health', type: 'fetch' },
-  { name: 'CDNJS (PocketBase SDK)', url: 'https://cdnjs.cloudflare.com/ajax/libs/pocketbase/0.21.3/pocketbase.umd.js', type: 'fetch' },
-  { name: 'Google Fonts (Styles)', url: 'https://fonts.googleapis.com/css2?family=IBM+Plex+Sans&display=swap', type: 'fetch' },
-  { name: 'Google Fonts (Static)', url: 'https://fonts.gstatic.com/s/ibmplexsans/v19/z43H-q27C1f42d8IouB5.woff2', type: 'img' }
+const $ = (s,el=document)=>el.querySelector(s);
+
+const TESTS = [
+  {
+    id: 'net',
+    name: 'Basic internet reachability',
+    run: async () => {
+      const r = await fetch('https://www.google.com/generate_204', { mode: 'no-cors', cache: 'no-store' });
+      return { ok: true, detail: 'Network requests are going out fine.' };
+    },
+    hint: 'If this fails, the issue is your iPad\'s network/Wi-Fi/cellular, not the app.'
+  },
+  {
+    id: 'cdn',
+    name: 'PocketBase library (cdnjs.cloudflare.com)',
+    run: async () => {
+      const r = await fetch('https://cdnjs.cloudflare.com/ajax/libs/pocketbase/0.21.3/pocketbase.umd.js', { cache: 'no-store' });
+      if (!r.ok) throw new Error('HTTP ' + r.status);
+      const text = await r.text();
+      return { ok: true, detail: `Loaded OK — ${(text.length/1024).toFixed(0)} KB received.` };
+    },
+    hint: 'If this fails, cdnjs.cloudflare.com is blocked on this device/network. The app can\'t work at all without this file loading — check your iPad\'s Screen Time website restrictions or any content-blocker/VPN app for cdnjs.cloudflare.com.'
+  },
+  {
+    id: 'fonts',
+    name: 'Google Fonts (fonts.googleapis.com)',
+    run: async () => {
+      const r = await fetch('https://fonts.googleapis.com/css2?family=IBM+Plex+Sans:wght@400&display=swap', { mode:'no-cors', cache: 'no-store' });
+      return { ok: true, detail: 'Request completed without being blocked.' };
+    },
+    hint: 'Non-critical — if this fails the app will still work, just with a fallback font.'
+  },
+  {
+    id: 'pb-root',
+    name: 'PocketBase server reachable (kaidaz18.duckdns.org)',
+    run: async () => {
+      const r = await fetch('https://kaidaz18.duckdns.org/api/health', { cache: 'no-store' });
+      const body = await r.text();
+      if (!r.ok) throw new Error(`HTTP ${r.status} — ${body.slice(0,200)}`);
+      return { ok: true, detail: `Server responded: ${body.slice(0,200)}` };
+    },
+    hint: 'This is the most likely culprit. If it fails with a network error (not an HTTP error), the DuckDNS domain itself is blocked or unreachable from this device — check Screen Time / Restrictions on the iPad for "kaidaz18.duckdns.org" or "duckdns.org", and check any DNS/VPN/content-filter app installed on it. It could also mean your home server/router is down or the DuckDNS record isn\'t pointing at it right now.'
+  },
+  {
+    id: 'pb-auth',
+    name: 'PocketBase auth endpoint responds',
+    run: async () => {
+      const r = await fetch('https://kaidaz18.duckdns.org/api/collections/users/auth-with-password', {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({ identity: 'connection-test@example.com', password: 'not-a-real-password-123' })
+      });
+      const body = await r.json().catch(()=>({}));
+      // We *expect* this to fail auth (400) — we're just checking the server answers correctly.
+      if (r.status === 400 || r.status === 401 || r.status === 403) {
+        return { ok: true, detail: `Server correctly rejected the test login (HTTP ${r.status}). This means the auth endpoint itself is working — a "wrong password" for your real account is a credentials issue, not a connectivity one.` };
+      }
+      if (!r.ok) throw new Error(`Unexpected HTTP ${r.status} — ${JSON.stringify(body).slice(0,200)}`);
+      return { ok: true, detail: 'Unexpected success response, but the endpoint is reachable: ' + JSON.stringify(body).slice(0,200) };
+    },
+    hint: 'If this fails with a network error, requests are reaching the domain but something (proxy, VPN, DNS-level ad/content blocker) is interfering with the specific API path.'
+  },
+  {
+    id: 'mixed',
+    name: 'Page loaded over HTTPS (no mixed content)',
+    run: async () => {
+      if (location.protocol !== 'https:' && location.protocol !== 'file:') {
+        throw new Error('This page is loaded over ' + location.protocol);
+      }
+      return { ok: true, detail: 'Protocol: ' + location.protocol + ' — fine for talking to an HTTPS PocketBase server.' };
+    },
+    hint: 'Safari silently blocks HTTP requests from an HTTPS page (or vice versa in some cases). If Ledger itself is opened via a plain http:// link, its requests to the https:// PocketBase server can behave oddly.'
+  },
+  {
+    id: 'storage',
+    name: 'Local storage / cookies available',
+    run: async () => {
+      const k = '__ledger_test__';
+      localStorage.setItem(k, '1');
+      const v = localStorage.getItem(k);
+      localStorage.removeItem(k);
+      if (v !== '1') throw new Error('Could not read back a value that was just written.');
+      return { ok: true, detail: 'PocketBase\'s JS SDK stores your auth session in localStorage — this works here.' };
+    },
+    hint: 'If this fails, Safari is in Private Browsing mode, or "Prevent Cross-Site Tracking" / "Block All Cookies" in Settings → Safari is stopping storage — that can make login appear to silently fail or not persist.'
+  },
 ];
 
-async function checkDomain(domain) {
-  try {
-    if (domain.type === 'fetch') {
-      await fetch(domain.url, { mode: 'no-cors', cache: 'no-store' });
-    } else {
-      await new Promise((resolve, reject) => {
-        const img = new Image();
-        img.onload = resolve;
-        img.onerror = reject;
-        img.src = domain.url + '?t=' + Date.now();
-      });
-    }
-    return true;
-  } catch (e) {
-    return false;
-  }
-}
+let summaryEl, testsEl;
 
-async function runDiagnostics() {
-  const container = document.getElementById('test-list');
-  const summaryEl = document.getElementById('summary');
-  container.innerHTML = '';
-  summaryEl.textContent = 'Running connectivity tests...';
-
-  let failedCount = 0;
-
-  for (const domain of domains) {
-    const item = document.createElement('div');
-    item.className = 'test-item';
-    item.innerHTML = `
-      <div class="test-info">
-        <span class="test-name">${domain.name}</span>
-        <span class="test-url">${new URL(domain.url).hostname}</span>
+function renderShell(){
+  testsEl = $('#tests');
+  testsEl.innerHTML = TESTS.map(t => `
+    <div class="test" id="t-${t.id}">
+      <div class="row">
+        <div class="dot pending" id="dot-${t.id}"></div>
+        <div class="name">${t.name}</div>
+        <div class="status" id="status-${t.id}">running…</div>
       </div>
-      <span class="status-badge status-testing">Testing...</span>
-    `;
-    container.appendChild(item);
-
-    const badge = item.querySelector('.status-badge');
-    const success = await checkDomain(domain);
-
-    if (success) {
-      badge.className = 'status-badge status-ok';
-      badge.textContent = 'ALLOWED';
-    } else {
-      badge.className = 'status-badge status-failed';
-      badge.textContent = 'BLOCKED';
-      failedCount++;
-    }
-  }
-
-  if (failedCount === 0) {
-    summaryEl.textContent = 'All required websites are accessible!';
-    summaryEl.style.color = 'var(--sage)';
-  } else {
-    summaryEl.textContent = `${failedCount} domain(s) blocked. Add the red items to Safari "Allowed Websites".`;
-    summaryEl.style.color = 'var(--danger)';
-  }
+      <div class="detail" id="detail-${t.id}"></div>
+      <div class="hint" id="hint-${t.id}">${t.hint || ''}</div>
+    </div>
+  `).join('');
+  summaryEl = $('#summary');
+  summaryEl.textContent = 'Running tests…';
 }
 
-document.getElementById('retest-btn').addEventListener('click', runDiagnostics);
-window.addEventListener('DOMContentLoaded', runDiagnostics);
-</script>
+async function runAll(){
+  renderShell();
+  let passCount = 0, failCount = 0;
+  for (const t of TESTS) {
+    const dot = $('#dot-' + t.id), status = $('#status-' + t.id);
+    const detail = $('#detail-' + t.id), hint = $('#hint-' + t.id);
+    try {
+      const res = await t.run();
+      dot.className = 'dot pass';
+      status.textContent = 'OK';
+      detail.textContent = res.detail || '';
+      detail.classList.add('show');
+      passCount++;
+    } catch (err) {
+      dot.className = 'dot fail';
+      status.textContent = 'FAILED';
+      detail.textContent = 'Error: ' + (err && err.message ? err.message : String(err));
+      detail.classList.add('show');
+      hint.classList.add('show');
+      failCount++;
+    }
+  }
+  summaryEl.innerHTML = failCount === 0
+    ? `✅ All ${passCount} checks passed. If login still fails, it's most likely just an incorrect password for your account.`
+    : `⚠️ ${failCount} of ${TESTS.length} checks failed (see the amber notes above each failed test for what that specifically means).`;
+}
 
+$('#rerun').addEventListener('click', runAll);
+runAll();
+</script>
 </body>
 </html>
