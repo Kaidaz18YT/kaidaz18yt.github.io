@@ -9,6 +9,7 @@
   const SUGGESTIONS = ['Give me an overview of my open tasks', "What's due soon?", 'Summarise my notes'];
   const history = [];
   let busy = false;
+  let stopDictation = () => {};
 
   // ---------- Styles ----------
   const style = document.createElement('style');
@@ -46,6 +47,11 @@
     border-radius: var(--radius); background: var(--bg); font-size: 14px; line-height: 1.4; transition: border-color .12s; }
   #ai-input:hover { border-color: var(--ink-faint); }
   #ai-input:focus { border-color: var(--accent-dim); }
+  #ai-mic { flex-shrink: 0; width: 36px; height: 36px; padding: 0; display: flex; align-items: center; justify-content: center; }
+  #ai-mic svg { width: 16px; height: 16px; }
+  #ai-mic.listening { background: var(--danger); border-color: var(--danger); color: #fff; animation: ai-pulse 1.2s ease-in-out infinite; }
+  @keyframes ai-pulse { 50% { opacity: .6; } }
+  @media (prefers-reduced-motion: reduce) { #ai-mic.listening { animation: none; } }
   @media (max-width: 560px) { #ai-input { font-size: 16px; } }`;
   document.head.appendChild(style);
 
@@ -61,7 +67,10 @@
     </div>
     <div id="ai-messages"></div>
     <div class="ai-input-row">
-      <textarea id="ai-input" rows="1" placeholder="Ask about your tasks and notes..."></textarea>
+        <textarea id="ai-input" rows="1" placeholder="Ask about your tasks and notes..."></textarea>
+      <button class="btn-secondary" id="ai-mic" type="button" aria-label="Dictate" aria-pressed="false" title="Dictate">
+        <svg viewBox="0 0 16 16" fill="none" stroke="currentColor" stroke-width="1.4" stroke-linecap="round" stroke-linejoin="round"><rect x="5.5" y="1.5" width="5" height="8" rx="2.5"/><path d="M3 7.5a5 5 0 0 0 10 0M8 12.5v2"/></svg>
+      </button>
       <button class="primary-btn" id="ai-send" type="button">Send</button>
     </div>
   </aside>`);
@@ -183,6 +192,44 @@
   });
   el('ai-panel').addEventListener('keydown', (e) => { if (e.key === 'Escape') { e.stopPropagation(); close(); } });
   pb.authStore.onChange(() => { if (!pb.authStore.isValid) { close(); reset(); } });
+
+    // ---------- Dictation ----------
+  const SR = window.SpeechRecognition || window.webkitSpeechRecognition;
+  const mic = el('ai-mic');
+  if (!SR) {
+    mic.hidden = true;
+  } else {
+    let rec = null;
+    const setUi = (on) => {
+      mic.classList.toggle('listening', on);
+      mic.setAttribute('aria-pressed', on ? 'true' : 'false');
+      mic.title = on ? 'Stop dictating' : 'Dictate';
+    };
+    stopDictation = () => { if (rec) { try { rec.stop(); } catch (_) {} } };
+    function startDictation() {
+      if (busy) return;
+      const input = el('ai-input');
+      const base = input.value ? input.value.replace(/\s+$/, '') + ' ' : '';
+      rec = new SR();
+      rec.lang = navigator.language || 'en-AU';
+      rec.interimResults = true;
+      rec.continuous = true;
+      rec.onresult = (ev) => {
+        let text = '';
+        for (let i = 0; i < ev.results.length; i++) text += ev.results[i][0].transcript;
+        input.value = base + text.trim();
+        input.style.height = 'auto';
+        input.style.height = Math.min(input.scrollHeight, 140) + 'px';
+      };
+      rec.onerror = (ev) => {
+        if (ev.error === 'not-allowed' || ev.error === 'service-not-allowed') toast('Microphone access is blocked for this site.', 4000);
+        else if (ev.error !== 'no-speech' && ev.error !== 'aborted') toast('Dictation error: ' + ev.error, 3000);
+      };
+      rec.onend = () => { setUi(false); rec = null; input.focus(); };
+      try { rec.start(); setUi(true); } catch (_) { setUi(false); rec = null; }
+    }
+    mic.addEventListener('click', () => (rec ? stopDictation() : startDictation()));
+  }
 
   showEmpty();
 })();
