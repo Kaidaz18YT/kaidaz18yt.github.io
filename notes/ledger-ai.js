@@ -206,6 +206,9 @@
       mic.title = on ? 'Stop dictating' : 'Dictate';
     };
     stopDictation = () => { if (rec) { try { rec.stop(); } catch (_) {} } };
+
+    // Dictation Function
+
     function startDictation() {
       if (busy) return;
       const input = el('ai-input');
