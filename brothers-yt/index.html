@@ -317,8 +317,31 @@
     .modal-overlay.fullscreen .modal-head, .modal-overlay.fullscreen .modal-actions { padding-left: 16px; padding-right: 16px; }
   }
 </style>
+<!-- BACKEND DOWN BANNER (temporary): to remove, delete this <style> block and the #backend-down-banner <div> + <script> at the top of <body>. -->
+<style>
+  :root { --backend-down-h: 40px; }
+  #backend-down-banner {
+    position: fixed; top: 0; left: 0; right: 0; z-index: 1000;
+    background: #33261A; color: #EDEAE3;
+    border-bottom: 1px solid #6B5233;
+    font-family: 'IBM Plex Sans', system-ui, sans-serif;
+    font-size: 13.5px; line-height: 1.45; text-align: center;
+    padding: calc(9px + env(safe-area-inset-top, 0px)) 16px 9px;
+  }
+  #backend-down-banner strong { color: #C9A15C; font-weight: 600; }
+  #backend-down-banner .backend-down-icon { color: #C9A15C; margin-right: 6px; }
+  /* Shift this page's fixed / full-height layout below the banner. */
+  #login-screen, #rail-scrim, .modal-overlay { top: var(--backend-down-h); }
+  #rail { top: var(--backend-down-h); }
+  #app { padding-top: max(0px, calc(var(--backend-down-h) - env(safe-area-inset-top, 0px))); }
+</style>
 </head>
 <body>
+<!-- BACKEND DOWN BANNER (temporary): see note in <head>. -->
+<div id="backend-down-banner" role="alert"><span class="backend-down-icon" aria-hidden="true">⚠︎</span><strong>Backend is down.</strong> Signing in, loading and saving won’t work until it’s back — please check back later.</div>
+<script>
+(function(){var b=document.getElementById('backend-down-banner');if(!b)return;function s(){document.documentElement.style.setProperty('--backend-down-h',b.offsetHeight+'px');}s();window.addEventListener('resize',s);if(window.ResizeObserver)new ResizeObserver(s).observe(b);})();
+</script>
 
 <div id="login-screen">
   <div class="login-box">
