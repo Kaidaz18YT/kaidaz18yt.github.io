@@ -1,940 +1,156 @@
 <!DOCTYPE html>
 <html lang="en">
 <head>
-    <meta charset="UTF-8">
-    <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>AFO Backend — Test Dashboard</title>
-    <style>
-        *, *::before, *::after {
-            box-sizing: border-box;
-            margin: 0;
-            padding: 0;
-        }
-
-        :root {
-            --bg-primary: #0a0a0f;
-            --bg-secondary: #12121a;
-            --bg-card: #1a1a26;
-            --bg-input: #22222e;
-            --border: #2a2a3a;
-            --border-hover: #3a3a5a;
-            --text-primary: #e8e8f0;
-            --text-secondary: #8888a0;
-            --text-muted: #5a5a70;
-            --accent: #6366f1;
-            --accent-hover: #818cf8;
-            --accent-dim: rgba(99, 102, 241, 0.15);
-            --success: #22c55e;
-            --success-dim: rgba(34, 197, 94, 0.15);
-            --error: #ef4444;
-            --error-dim: rgba(239, 68, 68, 0.15);
-            --warning: #f59e0b;
-            --warning-dim: rgba(245, 158, 11, 0.15);
-            --radius: 12px;
-            --radius-sm: 8px;
-            --shadow: 0 4px 24px rgba(0, 0, 0, 0.3);
-            --transition: 0.2s cubic-bezier(0.4, 0, 0.2, 1);
-        }
-
-        body {
-            font-family: 'Inter', -apple-system, BlinkMacSystemFont, 'Segoe UI', system-ui, sans-serif;
-            background: var(--bg-primary);
-            color: var(--text-primary);
-            line-height: 1.6;
-            min-height: 100vh;
-        }
-
-        /* Scrollbar */
-        ::-webkit-scrollbar { width: 6px; height: 6px; }
-        ::-webkit-scrollbar-track { background: transparent; }
-        ::-webkit-scrollbar-thumb { background: var(--border); border-radius: 3px; }
-        ::-webkit-scrollbar-thumb:hover { background: var(--border-hover); }
-
-        /* Layout */
-        .app {
-            display: flex;
-            flex-direction: column;
-            min-height: 100vh;
-        }
-
-        header {
-            background: var(--bg-secondary);
-            border-bottom: 1px solid var(--border);
-            padding: 0 2rem;
-            height: 64px;
-            display: flex;
-            align-items: center;
-            justify-content: space-between;
-            position: sticky;
-            top: 0;
-            z-index: 100;
-            backdrop-filter: blur(12px);
-        }
-
-        .logo {
-            display: flex;
-            align-items: center;
-            gap: 12px;
-            font-weight: 700;
-            font-size: 1.2rem;
-            letter-spacing: -0.02em;
-        }
-
-        .logo-icon {
-            width: 36px;
-            height: 36px;
-            background: linear-gradient(135deg, var(--accent), #a855f7);
-            border-radius: var(--radius-sm);
-            display: flex;
-            align-items: center;
-            justify-content: center;
-            font-size: 1rem;
-        }
-
-        .header-status {
-            display: flex;
-            align-items: center;
-            gap: 1.5rem;
-        }
-
-        .connection-dot {
-            width: 8px;
-            height: 8px;
-            border-radius: 50%;
-            background: var(--text-muted);
-            transition: var(--transition);
-        }
-
-        .connection-dot.connected {
-            background: var(--success);
-            box-shadow: 0 0 8px rgba(34, 197, 94, 0.5);
-        }
-
-        .user-badge {
-            display: flex;
-            align-items: center;
-            gap: 8px;
-            padding: 6px 14px;
-            background: var(--accent-dim);
-            border: 1px solid rgba(99, 102, 241, 0.3);
-            border-radius: 20px;
-            font-size: 0.82rem;
-            color: var(--accent-hover);
-        }
-
-        .user-badge .avatar {
-            width: 22px;
-            height: 22px;
-            background: var(--accent);
-            border-radius: 50%;
-            display: flex;
-            align-items: center;
-            justify-content: center;
-            font-size: 0.7rem;
-            color: white;
-            font-weight: 600;
-        }
-
-        .main {
-            flex: 1;
-            padding: 2rem;
-            max-width: 1400px;
-            margin: 0 auto;
-            width: 100%;
-        }
-
-        /* Tabs */
-        .tabs {
-            display: flex;
-            gap: 4px;
-            background: var(--bg-secondary);
-            padding: 4px;
-            border-radius: var(--radius);
-            border: 1px solid var(--border);
-            margin-bottom: 2rem;
-            overflow-x: auto;
-        }
-
-        .tab {
-            padding: 10px 20px;
-            border-radius: var(--radius-sm);
-            border: none;
-            background: transparent;
-            color: var(--text-secondary);
-            cursor: pointer;
-            font-size: 0.88rem;
-            font-weight: 500;
-            transition: var(--transition);
-            white-space: nowrap;
-            display: flex;
-            align-items: center;
-            gap: 8px;
-        }
-
-        .tab:hover {
-            color: var(--text-primary);
-            background: var(--bg-card);
-        }
-
-        .tab.active {
-            background: var(--accent);
-            color: white;
-            box-shadow: 0 2px 8px rgba(99, 102, 241, 0.3);
-        }
-
-        .tab-icon {
-            font-size: 1rem;
-        }
-
-        .tab-panel {
-            display: none;
-            animation: fadeIn 0.3s ease;
-        }
-
-        .tab-panel.active {
-            display: block;
-        }
-
-        @keyframes fadeIn {
-            from { opacity: 0; transform: translateY(8px); }
-            to { opacity: 1; transform: translateY(0); }
-        }
-
-        /* Cards */
-        .card {
-            background: var(--bg-card);
-            border: 1px solid var(--border);
-            border-radius: var(--radius);
-            padding: 1.5rem;
-            margin-bottom: 1.5rem;
-            transition: var(--transition);
-        }
-
-        .card:hover {
-            border-color: var(--border-hover);
-        }
-
-        .card-header {
-            display: flex;
-            align-items: center;
-            justify-content: space-between;
-            margin-bottom: 1.25rem;
-        }
-
-        .card-title {
-            font-size: 1.05rem;
-            font-weight: 600;
-            letter-spacing: -0.01em;
-            display: flex;
-            align-items: center;
-            gap: 10px;
-        }
-
-        .card-title .icon {
-            font-size: 1.2rem;
-        }
-
-        .grid-2 {
-            display: grid;
-            grid-template-columns: repeat(auto-fit, minmax(400px, 1fr));
-            gap: 1.5rem;
-        }
-
-        .grid-3 {
-            display: grid;
-            grid-template-columns: repeat(auto-fit, minmax(250px, 1fr));
-            gap: 1rem;
-            margin-bottom: 1.5rem;
-        }
-
-        /* Stats */
-        .stat-card {
-            background: var(--bg-card);
-            border: 1px solid var(--border);
-            border-radius: var(--radius);
-            padding: 1.25rem;
-            display: flex;
-            flex-direction: column;
-            gap: 8px;
-            transition: var(--transition);
-        }
-
-        .stat-card:hover {
-            border-color: var(--border-hover);
-            transform: translateY(-2px);
-        }
-
-        .stat-label {
-            font-size: 0.8rem;
-            color: var(--text-secondary);
-            text-transform: uppercase;
-            letter-spacing: 0.05em;
-            font-weight: 500;
-        }
-
-        .stat-value {
-            font-size: 1.8rem;
-            font-weight: 700;
-            letter-spacing: -0.02em;
-        }
-
-        .stat-sub {
-            font-size: 0.78rem;
-            color: var(--text-muted);
-        }
-
-        /* Forms */
-        .form-group {
-            margin-bottom: 1rem;
-        }
-
-        label {
-            display: block;
-            font-size: 0.82rem;
-            font-weight: 500;
-            color: var(--text-secondary);
-            margin-bottom: 6px;
-            text-transform: uppercase;
-            letter-spacing: 0.04em;
-        }
-
-        input, textarea, select {
-            width: 100%;
-            padding: 10px 14px;
-            background: var(--bg-input);
-            border: 1px solid var(--border);
-            border-radius: var(--radius-sm);
-            color: var(--text-primary);
-            font-size: 0.9rem;
-            font-family: inherit;
-            transition: var(--transition);
-            outline: none;
-        }
-
-        input:focus, textarea:focus, select:focus {
-            border-color: var(--accent);
-            box-shadow: 0 0 0 3px var(--accent-dim);
-        }
-
-        input::placeholder, textarea::placeholder {
-            color: var(--text-muted);
-        }
-
-        textarea {
-            resize: vertical;
-            min-height: 80px;
-        }
-
-        /* Buttons */
-        .btn {
-            padding: 10px 20px;
-            border-radius: var(--radius-sm);
-            border: 1px solid transparent;
-            font-size: 0.88rem;
-            font-weight: 500;
-            cursor: pointer;
-            transition: var(--transition);
-            display: inline-flex;
-            align-items: center;
-            gap: 8px;
-            font-family: inherit;
-            line-height: 1;
-        }
-
-        .btn:disabled {
-            opacity: 0.5;
-            cursor: not-allowed;
-        }
-
-        .btn-primary {
-            background: var(--accent);
-            color: white;
-        }
-
-        .btn-primary:hover:not(:disabled) {
-            background: var(--accent-hover);
-            box-shadow: 0 4px 12px rgba(99, 102, 241, 0.4);
-            transform: translateY(-1px);
-        }
-
-        .btn-secondary {
-            background: var(--bg-input);
-            color: var(--text-primary);
-            border-color: var(--border);
-        }
-
-        .btn-secondary:hover:not(:disabled) {
-            border-color: var(--border-hover);
-            background: var(--bg-card);
-        }
-
-        .btn-danger {
-            background: var(--error-dim);
-            color: var(--error);
-            border-color: rgba(239, 68, 68, 0.3);
-        }
-
-        .btn-danger:hover:not(:disabled) {
-            background: var(--error);
-            color: white;
-        }
-
-        .btn-success {
-            background: var(--success-dim);
-            color: var(--success);
-            border-color: rgba(34, 197, 94, 0.3);
-        }
-
-        .btn-success:hover:not(:disabled) {
-            background: var(--success);
-            color: white;
-        }
-
-        .btn-sm {
-            padding: 6px 12px;
-            font-size: 0.8rem;
-        }
-
-        .btn-group {
-            display: flex;
-            gap: 8px;
-            flex-wrap: wrap;
-        }
-
-        /* Log */
-        .log-container {
-            background: var(--bg-primary);
-            border: 1px solid var(--border);
-            border-radius: var(--radius-sm);
-            max-height: 300px;
-            overflow-y: auto;
-            font-family: 'JetBrains Mono', 'Fira Code', 'Cascadia Code', monospace;
-            font-size: 0.78rem;
-        }
-
-        .log-entry {
-            padding: 8px 14px;
-            border-bottom: 1px solid rgba(42, 42, 58, 0.5);
-            display: flex;
-            gap: 12px;
-            align-items: flex-start;
-            transition: var(--transition);
-        }
-
-        .log-entry:hover {
-            background: var(--bg-secondary);
-        }
-
-        .log-entry:last-child {
-            border-bottom: none;
-        }
-
-        .log-time {
-            color: var(--text-muted);
-            white-space: nowrap;
-            flex-shrink: 0;
-        }
-
-        .log-type {
-            padding: 1px 8px;
-            border-radius: 4px;
-            font-size: 0.7rem;
-            font-weight: 600;
-            text-transform: uppercase;
-            letter-spacing: 0.05em;
-            white-space: nowrap;
-            flex-shrink: 0;
-        }
-
-        .log-type.info {
-            background: var(--accent-dim);
-            color: var(--accent-hover);
-        }
-
-        .log-type.success {
-            background: var(--success-dim);
-            color: var(--success);
-        }
-
-        .log-type.error {
-            background: var(--error-dim);
-            color: var(--error);
-        }
-
-        .log-type.warn {
-            background: var(--warning-dim);
-            color: var(--warning);
-        }
-
-        .log-message {
-            color: var(--text-primary);
-            word-break: break-all;
-        }
-
-        /* Documents Table */
-        .doc-list {
-            display: flex;
-            flex-direction: column;
-            gap: 8px;
-        }
-
-        .doc-item {
-            background: var(--bg-primary);
-            border: 1px solid var(--border);
-            border-radius: var(--radius-sm);
-            padding: 14px;
-            transition: var(--transition);
-            cursor: default;
-        }
-
-        .doc-item:hover {
-            border-color: var(--border-hover);
-            background: var(--bg-secondary);
-        }
-
-        .doc-header {
-            display: flex;
-            align-items: center;
-            justify-content: space-between;
-            margin-bottom: 8px;
-        }
-
-        .doc-id {
-            font-family: 'JetBrains Mono', monospace;
-            font-size: 0.78rem;
-            color: var(--accent-hover);
-            background: var(--accent-dim);
-            padding: 2px 10px;
-            border-radius: 4px;
-        }
-
-        .doc-body {
-            font-size: 0.85rem;
-            color: var(--text-secondary);
-        }
-
-        .doc-body pre {
-            background: var(--bg-input);
-            padding: 10px;
-            border-radius: var(--radius-sm);
-            overflow-x: auto;
-            font-family: 'JetBrains Mono', monospace;
-            font-size: 0.78rem;
-            line-height: 1.5;
-        }
-
-        /* JSON viewer */
-        .json-key { color: #c084fc; }
-        .json-string { color: #34d399; }
-        .json-number { color: #fbbf24; }
-        .json-boolean { color: #60a5fa; }
-        .json-null { color: var(--text-muted); }
-
-        /* Toast */
-        .toast-container {
-            position: fixed;
-            top: 80px;
-            right: 20px;
-            z-index: 1000;
-            display: flex;
-            flex-direction: column;
-            gap: 8px;
-        }
-
-        .toast {
-            padding: 12px 20px;
-            border-radius: var(--radius-sm);
-            font-size: 0.85rem;
-            font-weight: 500;
-            animation: slideIn 0.3s ease, fadeOut 0.3s ease 2.7s;
-            max-width: 400px;
-            box-shadow: var(--shadow);
-        }
-
-        .toast.success {
-            background: var(--success-dim);
-            border: 1px solid rgba(34, 197, 94, 0.3);
-            color: var(--success);
-        }
-
-        .toast.error {
-            background: var(--error-dim);
-            border: 1px solid rgba(239, 68, 68, 0.3);
-            color: var(--error);
-        }
-
-        .toast.info {
-            background: var(--accent-dim);
-            border: 1px solid rgba(99, 102, 241, 0.3);
-            color: var(--accent-hover);
-        }
-
-        @keyframes slideIn {
-            from { transform: translateX(100%); opacity: 0; }
-            to { transform: translateX(0); opacity: 1; }
-        }
-
-        @keyframes fadeOut {
-            to { opacity: 0; transform: translateY(-10px); }
-        }
-
-        /* Empty state */
-        .empty-state {
-            text-align: center;
-            padding: 3rem 1rem;
-            color: var(--text-muted);
-        }
-
-        .empty-state .icon {
-            font-size: 3rem;
-            margin-bottom: 1rem;
-            opacity: 0.5;
-        }
-
-        .empty-state p {
-            font-size: 0.9rem;
-        }
-
-        /* Loading spinner */
-        .spinner {
-            width: 18px;
-            height: 18px;
-            border: 2px solid transparent;
-            border-top-color: currentColor;
-            border-radius: 50%;
-            animation: spin 0.6s linear infinite;
-            display: inline-block;
-        }
-
-        @keyframes spin {
-            to { transform: rotate(360deg); }
-        }
-
-        /* Separator */
-        .separator {
-            height: 1px;
-            background: var(--border);
-            margin: 1.25rem 0;
-        }
-
-        /* Badge */
-        .badge {
-            display: inline-flex;
-            align-items: center;
-            padding: 3px 10px;
-            border-radius: 12px;
-            font-size: 0.72rem;
-            font-weight: 600;
-            text-transform: uppercase;
-            letter-spacing: 0.04em;
-        }
-
-        .badge-success {
-            background: var(--success-dim);
-            color: var(--success);
-        }
-
-        .badge-error {
-            background: var(--error-dim);
-            color: var(--error);
-        }
-
-        .badge-info {
-            background: var(--accent-dim);
-            color: var(--accent-hover);
-        }
-
-        /* Collection selector */
-        .collection-bar {
-            display: flex;
-            gap: 8px;
-            align-items: center;
-            margin-bottom: 1rem;
-            flex-wrap: wrap;
-        }
-
-        /* Responsive */
-        @media (max-width: 768px) {
-            .main { padding: 1rem; }
-            .grid-2 { grid-template-columns: 1fr; }
-            .grid-3 { grid-template-columns: 1fr 1fr; }
-            header { padding: 0 1rem; }
-            .tabs { overflow-x: auto; }
-        }
-
-        @media (max-width: 480px) {
-            .grid-3 { grid-template-columns: 1fr; }
-        }
-
-        .hidden { display: none !important; }
-
-        /* Pulse animation for live updates */
-        .pulse {
-            animation: pulse 2s ease-in-out infinite;
-        }
-
-        @keyframes pulse {
-            0%, 100% { opacity: 1; }
-            50% { opacity: 0.5; }
-        }
-
-        .section-label {
-            font-size: 0.75rem;
-            text-transform: uppercase;
-            letter-spacing: 0.08em;
-            color: var(--text-muted);
-            margin-bottom: 0.75rem;
-            font-weight: 600;
-        }
-
-        .inline-form {
-            display: flex;
-            gap: 8px;
-            align-items: flex-end;
-        }
-
-        .inline-form .form-group {
-            flex: 1;
-            margin-bottom: 0;
-        }
-
-        .flex-between {
-            display: flex;
-            align-items: center;
-            justify-content: space-between;
-        }
-    </style>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>AFO Backend Test</title>
+<style>
+  * { box-sizing: border-box; margin: 0; padding: 0; }
+  body { font-family: system-ui, sans-serif; background: #0f172a; color: #e2e8f0; padding: 20px; }
+  h1 { color: #f59e0b; margin-bottom: 20px; }
+  h2 { color: #38bdf8; margin: 20px 0 10px; }
+  .card { background: #1e293b; border-radius: 12px; padding: 20px; margin-bottom: 16px; }
+  button { background: #f59e0b; color: #0f172a; border: none; padding: 10px 20px; border-radius: 8px; font-weight: bold; cursor: pointer; margin: 4px; }
+  button:hover { background: #d97706; }
+  button:disabled { opacity: 0.5; cursor: not-allowed; }
+  input, textarea { background: #334155; color: #e2e8f0; border: 1px solid #475569; padding: 8px 12px; border-radius: 6px; width: 100%; margin: 4px 0; }
+  pre { background: #0f172a; padding: 12px; border-radius: 8px; overflow-x: auto; font-size: 13px; margin-top: 8px; white-space: pre-wrap; }
+  .ok { color: #4ade80; }
+  .err { color: #f87171; }
+  img { max-width: 300px; border-radius: 8px; margin-top: 8px; }
+  .status { font-size: 12px; margin-top: 8px; }
+</style>
 </head>
 <body>
-    <div class="app">
-        <!-- Header -->
-        <header>
-            <div class="logo">
-                <div class="logo-icon">⚡</div>
-                <span>AFO Test Dashboard</span>
-            </div>
-            <div class="header-status">
-                <div style="display:flex;align-items:center;gap:8px;font-size:0.82rem;color:var(--text-secondary)">
-                    <div class="connection-dot" id="connectionDot"></div>
-                    <span id="connectionText">Connecting...</span>
-                </div>
-                <div class="user-badge hidden" id="userBadge">
-                    <div class="avatar" id="userAvatar">?</div>
-                    <span id="userEmail">Not signed in</span>
-                </div>
-                <button class="btn btn-sm btn-danger hidden" id="logoutBtn" onclick="handleLogout()">Logout</button>
-            </div>
-        </header>
 
-        <!-- Main Content -->
-        <div class="main">
-            <!-- Stats -->
-            <div class="grid-3" id="statsGrid">
-                <div class="stat-card">
-                    <div class="stat-label">Auth Status</div>
-                    <div class="stat-value" id="statAuth">—</div>
-                    <div class="stat-sub" id="statAuthSub">Not authenticated</div>
-                </div>
-                <div class="stat-card">
-                    <div class="stat-label">Documents</div>
-                    <div class="stat-value" id="statDocs">0</div>
-                    <div class="stat-sub" id="statDocsSub">Across all collections</div>
-                </div>
-                <div class="stat-card">
-                    <div class="stat-label">API Calls</div>
-                    <div class="stat-value" id="statCalls">0</div>
-                    <div class="stat-sub">This session</div>
-                </div>
-            </div>
+<h1>🧪 AFO Backend Test Page</h1>
 
-            <!-- Tabs -->
-            <div class="tabs">
-                <button class="tab active" onclick="switchTab('auth')" data-tab="auth">
-                    <span class="tab-icon">🔐</span> Auth
-                </button>
-                <button class="tab" onclick="switchTab('documents')" data-tab="documents">
-                    <span class="tab-icon">📄</span> Documents
-                </button>
-                <button class="tab" onclick="switchTab('explorer')" data-tab="explorer">
-                    <span class="tab-icon">🔍</span> Explorer
-                </button>
-                <button class="tab" onclick="switchTab('console')" data-tab="console">
-                    <span class="tab-icon">🖥️</span> Console
-                </button>
-            </div>
+<div class="card">
+  <h2>1. Health Check</h2>
+  <button onclick="testHealth()">Test Health</button>
+  <pre id="health-result">Click the button...</pre>
+</div>
 
-            <!-- Auth Panel -->
-            <div class="tab-panel active" id="panel-auth">
-                <div class="grid-2">
-                    <!-- Sign Up -->
-                    <div class="card">
-                        <div class="card-header">
-                            <div class="card-title">
-                                <span class="icon">✨</span> Sign Up
-                            </div>
-                            <span class="badge badge-info">New Account</span>
-                        </div>
-                        <div class="form-group">
-                            <label>Email</label>
-                            <input type="email" id="signupEmail" placeholder="user@example.com">
-                        </div>
-                        <div class="form-group">
-                            <label>Password</label>
-                            <input type="password" id="signupPassword" placeholder="Min 6 characters">
-                        </div>
-                        <button class="btn btn-primary" onclick="handleSignUp()" id="signupBtn">
-                            Create Account
-                        </button>
-                    </div>
+<div class="card">
+  <h2>2. Create a Document</h2>
+  <input id="doc-title" placeholder="Title" value="Hello from test page!">
+  <input id="doc-body" placeholder="Body" value="This is a test document.">
+  <button onclick="testCreate()">Create Document</button>
+  <pre id="create-result">Click the button...</pre>
+</div>
 
-                    <!-- Log In -->
-                    <div class="card">
-                        <div class="card-header">
-                            <div class="card-title">
-                                <span class="icon">🔑</span> Log In
-                            </div>
-                            <span class="badge badge-success" id="loginStatus" style="display:none">Active</span>
-                        </div>
-                        <div class="form-group">
-                            <label>Email</label>
-                            <input type="email" id="loginEmail" placeholder="user@example.com">
-                        </div>
-                        <div class="form-group">
-                            <label>Password</label>
-                            <input type="password" id="loginPassword" placeholder="Your password">
-                        </div>
-                        <button class="btn btn-success" onclick="handleLogin()" id="loginBtn">
-                            Sign In
-                        </button>
-                    </div>
-                </div>
+<div class="card">
+  <h2>3. Read Documents</h2>
+  <button onclick="testRead()">Read All Documents</button>
+  <pre id="read-result">Click the button...</pre>
+</div>
 
-                <!-- Token Display -->
-                <div class="card hidden" id="tokenCard">
-                    <div class="card-header">
-                        <div class="card-title">
-                            <span class="icon">🎫</span> Active Token
-                        </div>
-                        <button class="btn btn-sm btn-secondary" onclick="copyToken()">📋 Copy</button>
-                    </div>
-                    <div style="background: var(--bg-primary); border: 1px solid var(--border); border-radius: var(--radius-sm); padding: 12px; font-family: monospace; font-size: 0.78rem; word-break: break-all; color: var(--text-secondary); max-height: 100px; overflow-y: auto;" id="tokenDisplay">
-                    </div>
-                </div>
-            </div>
+<div class="card">
+  <h2>4. Upload a File</h2>
+  <input type="file" id="file-input">
+  <button onclick="testUpload()">Upload File</button>
+  <pre id="upload-result">Click the button...</pre>
+  <div id="upload-preview"></div>
+</div>
 
-            <!-- Documents Panel -->
-            <div class="tab-panel" id="panel-documents">
-                <div class="grid-2">
-                    <!-- Create Document -->
-                    <div class="card">
-                        <div class="card-header">
-                            <div class="card-title">
-                                <span class="icon">➕</span> Create Document
-                            </div>
-                        </div>
-                        <div class="form-group">
-                            <label>Collection Name</label>
-                            <input type="text" id="createCollection" placeholder="e.g. posts, users, tasks" value="posts">
-                        </div>
-                        <div class="form-group">
-                            <label>Document JSON</label>
-                            <textarea id="createDocBody" rows="5" placeholder='{"title": "Hello World", "body": "My first post"}'>{
-  "title": "Hello World",
-  "body": "This is a test document",
-  "tags": ["test", "demo"],
-  "published": true
-}</textarea>
-                        </div>
-                        <button class="btn btn-primary" onclick="handleCreateDoc()" id="createDocBtn">
-                            ➕ Add Document
-                        </button>
-                    </div>
+<div class="card">
+  <h2>5. List Uploaded Files</h2>
+  <button onclick="testListFiles()">List Files</button>
+  <pre id="files-result">Click the button...</pre>
+</div>
 
-                    <!-- Read Documents -->
-                    <div class="card">
-                        <div class="card-header">
-                            <div class="card-title">
-                                <span class="icon">📖</span> Read Documents
-                            </div>
-                            <button class="btn btn-sm btn-secondary" onclick="handleReadDocs()">🔄 Refresh</button>
-                        </div>
-                        <div class="collection-bar">
-                            <div class="form-group" style="flex:1;margin-bottom:0">
-                                <input type="text" id="readCollection" placeholder="Collection name" value="posts">
-                            </div>
-                            <button class="btn btn-primary btn-sm" onclick="handleReadDocs()">Fetch</button>
-                        </div>
-                        <div id="docsList">
-                            <div class="empty-state">
-                                <div class="icon">📭</div>
-                                <p>No documents loaded yet</p>
-                            </div>
-                        </div>
-                    </div>
-                </div>
+<script>
+const BASE = "https://kaidaz18.duckdns.org/api/v1/test";
+const API_KEY = "pk_live_b1CZ4vUnaOQCoMngCE0WxFm0";
 
-                <!-- Single Document Operations -->
-                <div class="card">
-                    <div class="card-header">
-                        <div class="card-title">
-                            <span class="icon">🛠️</span> Single Document Operations
-                        </div>
-                    </div>
-                    <div class="inline-form" style="margin-bottom: 1rem;">
-                        <div class="form-group">
-                            <label>Collection</label>
-                            <input type="text" id="singleDocCollection" placeholder="posts" value="posts">
-                        </div>
-                        <div class="form-group">
-                            <label>Document ID</label>
-                            <input type="text" id="singleDocId" placeholder="Paste document ID here">
-                        </div>
-                    </div>
-                    <div class="form-group">
-                        <label>Update Data (for PUT/PATCH)</label>
-                        <textarea id="singleDocBody" rows="3" placeholder='{"title": "Updated title"}'></textarea>
-                    </div>
-                    <div class="btn-group">
-                        <button class="btn btn-primary btn-sm" onclick="handleGetSingleDoc()">📄 GET</button>
-                        <button class="btn btn-secondary btn-sm" onclick="handleUpdateDoc('PUT')">✏️ PUT (Replace)</button>
-                        <button class="btn btn-secondary btn-sm" onclick="handleUpdateDoc('PATCH')">🩹 PATCH (Merge)</button>
-                        <button class="btn btn-danger btn-sm" onclick="handleDeleteDoc()">🗑️ DELETE</button>
-                    </div>
-                    <div id="singleDocResult" style="margin-top: 1rem;"></div>
-                </div>
-            </div>
+function show(id, text, ok) {
+  const el = document.getElementById(id);
+  el.textContent = typeof text === "string" ? text : JSON.stringify(text, null, 2);
+  el.className = ok ? "ok" : "";
+}
 
-            <!-- Explorer Panel -->
-            <div class="tab-panel" id="panel-explorer">
-                <div class="card">
-                    <div class="card-header">
-                        <div class="card-title">
-                            <span class="icon">🌐</span> Raw API Explorer
-                        </div>
-                        <span class="badge badge-info">Advanced</span>
-                    </div>
-                    <div class="inline-form" style="margin-bottom: 1rem;">
-                        <div class="form-group" style="flex: 0 0 140px;">
-                            <label>Method</label>
-                            <select id="rawMethod">
-                                <option value="GET">GET</option>
-                                <option value="POST" selected>POST</option>
-                                <option value="PUT">PUT</option>
-                                <option value="PATCH">PATCH</option>
-                                <option value="DELETE">DELETE</option>
-                            </select>
-                        </div>
-                        <div class="form-group">
-                            <label>Endpoint Path</label>
-                            <input type="text" id="rawPath" placeholder="/collections/posts" value="/collections/posts">
-                        </div>
-                    </div>
-                    <div class="form-group">
-                        <label>Request Body (JSON)</label>
-                        <textarea id="rawBody" rows="6" placeholder="Leave empty for GET/DELETE requests"></textarea>
-                    </div>
-                    <div class="flex-between">
-                        <div class="btn-group">
-                            <button class="btn btn-primary" onclick="handleRawRequest()">🚀 Send Request</button>
-                            <button class="btn btn-secondary" onclick="clearRawResponse()">Clear</button>
-                        
+async function testHealth() {
+  try {
+    const res = await fetch("https://kaidaz18.duckdns.org/api/health");
+    const text = await res.text();
+    show("health-result", `Status: ${res.status}\n${text}`, res.ok);
+  } catch (e) {
+    show("health-result", "ERROR: " + e.message);
+  }
+}
+
+async function testCreate() {
+  try {
+    const title = document.getElementById("doc-title").value;
+    const body = document.getElementById("doc-body").value;
+    const res = await fetch(BASE + "/collections/posts", {
+      method: "POST",
+      headers: {
+        "Content-Type": "application/json",
+        "x-api-key": API_KEY
+      },
+      body: JSON.stringify({ title, body })
+    });
+    const data = await res.json();
+    show("create-result", data, res.ok);
+  } catch (e) {
+    show("create-result", "ERROR: " + e.message);
+  }
+}
+
+async function testRead() {
+  try {
+    const res = await fetch(BASE + "/collections/posts", {
+      headers: { "x-api-key": API_KEY }
+    });
+    const data = await res.json();
+    show("read-result", data, res.ok);
+  } catch (e) {
+    show("read-result", "ERROR: " + e.message);
+  }
+}
+
+async function testUpload() {
+  const fileInput = document.getElementById("file-input");
+  if (!fileInput.files.length) {
+    show("upload-result", "Please select a file first!");
+    return;
+  }
+  try {
+    const formData = new FormData();
+    formData.append("file", fileInput.files[0]);
+    const res = await fetch(BASE + "/upload", {
+      method: "POST",
+      headers: { "x-api-key": API_KEY },
+      body: formData
+    });
+    const data = await res.json();
+    show("upload-result", data, res.ok);
+    if (res.ok && data.fullUrl) {
+      const preview = document.getElementById("upload-preview");
+      if (data.mimeType && data.mimeType.startsWith("image/")) {
+        preview.innerHTML = `<img src="${data.fullUrl}" alt="uploaded">`;
+      } else {
+        preview.innerHTML = `<a href="${data.fullUrl}" target="_blank" style="color:#38bdf8">Open file</a>`;
+      }
+    }
+  } catch (e) {
+    show("upload-result", "ERROR: " + e.message);
+  }
+}
+
+async function testListFiles() {
+  try {
+    const res = await fetch(BASE + "/files", {
+      headers: { "x-api-key": API_KEY }
+    });
+    const data = await res.json();
+    show("files-result", data, res.ok);
+  } catch (e) {
+    show("files-result", "ERROR: " + e.message);
+  }
+}
+</script>
+
+</body>
+</html>
