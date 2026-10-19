@@ -1,0 +1,236 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1, viewport-fit=cover">
+<title>AFO Backend Integration Guide | Kaidaz18</title>
+<meta name="description" content="A concise developer guide to integrating with the AFO Backend: project credentials, authentication, collections, the JavaScript SDK and raw fetch examples.">
+<link rel="canonical" href="https://kaidaz18yt.github.io/backend/guide/">
+<link rel="icon" type="image/png" sizes="192x192" href="https://kaidaz18yt.github.io/assets/search-icon.png">
+<link rel="icon" type="image/x-icon" href="https://kaidaz18yt.github.io/favicon.ico">
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+<link href="https://fonts.googleapis.com/css2?family=IBM+Plex+Mono:wght@400;500&family=IBM+Plex+Sans:wght@400;500;600;700&display=swap" rel="stylesheet">
+<style>
+:root{
+  --bg:#1C1B1A;--bg-raised:#242321;--bg-hover:#2C2B28;--border:#38362f;--border-soft:#2c2b27;
+  --ink:#EDEAE3;--ink-dim:#A8A399;--ink-faint:#6f6b62;
+  --accent:#7C93CC;--accent-dim:#4A5D8A;--amber:#C9A15C;--sage:#8FA184;--danger:#C97C6E;
+  --brand-red:#C1443A;--brand-red-dim:#8B322A;--brand-red-glow:rgba(193,68,58,.18);
+  --radius:3px;color-scheme:dark;
+}
+*{box-sizing:border-box}
+html,body{margin:0;min-height:100%}
+html{scroll-behavior:smooth;scroll-padding-top:80px}
+body{background:var(--bg);color:var(--ink);font-family:'IBM Plex Sans',system-ui,sans-serif;font-size:15px;line-height:1.6;-webkit-font-smoothing:antialiased;padding-top:env(safe-area-inset-top,0px);padding-bottom:env(safe-area-inset-bottom,0px)}
+::selection{background:var(--accent-dim);color:#fff}
+::-webkit-scrollbar{width:10px;height:10px}::-webkit-scrollbar-thumb{background:var(--border);border-radius:5px}::-webkit-scrollbar-track{background:transparent}
+a{color:var(--accent);text-decoration:none;transition:color .18s ease,background-color .18s ease}a:hover{text-decoration:underline}
+button{font:inherit;cursor:pointer}.mono,code,pre{font-family:'IBM Plex Mono',monospace}code{font-size:.9em;color:#d9c99d;background:var(--bg-hover);padding:2px 5px;border-radius:2px} :focus-visible{outline:2px solid var(--accent);outline-offset:3px}
+.page-wrap{max-width:980px;margin:0 auto;padding:0 28px}
+.topbar{position:sticky;top:env(safe-area-inset-top,0px);z-index:10;background:rgba(28,27,26,.96);border-bottom:1px solid var(--border-soft);box-shadow:0 4px 16px rgba(0,0,0,.2);backdrop-filter:blur(10px)}
+.topbar-inner{max-width:980px;margin:0 auto;padding:14px 28px;display:flex;align-items:center;justify-content:space-between;gap:16px}
+.brand{display:flex;align-items:center;gap:10px;color:var(--ink);font-weight:700;font-size:15px;letter-spacing:-.01em}.brand:hover{text-decoration:none;opacity:.85}.brand-icon{width:26px;height:26px;border-radius:4px;image-rendering:pixelated;box-shadow:0 0 0 1px var(--border-soft)}.brand-handle{color:var(--ink-faint);font-weight:400;font-size:12.5px}
+.topnav{display:flex;gap:4px;flex-wrap:wrap}.topnav a{color:var(--ink-dim);font-size:13px;padding:7px 10px;border-radius:var(--radius)}.topnav a:hover{color:var(--ink);background:var(--bg-hover);text-decoration:none}
+.hero{padding:50px 0 34px;border-bottom:1px solid var(--border-soft)}.eyebrow{font:12px 'IBM Plex Mono',monospace;color:var(--brand-red);margin-bottom:12px}.hero h1{font-size:36px;line-height:1.18;letter-spacing:-.025em;font-weight:600;margin:0 0 12px}.lede{color:var(--ink-dim);font-size:16px;max-width:700px;margin:0}.hero-actions{display:flex;gap:9px;flex-wrap:wrap;margin-top:22px}.button{display:inline-block;border-radius:var(--radius);padding:9px 14px;font-size:13px;font-weight:500}.button-primary{background:var(--brand-red-dim);color:#fff}.button-primary:hover{background:var(--brand-red);text-decoration:none}.button-quiet{border:1px solid var(--border);color:var(--ink-dim)}.button-quiet:hover{color:var(--ink);border-color:var(--ink-faint);text-decoration:none}
+.section{padding:34px 0;border-bottom:1px solid var(--border-soft);scroll-margin-top:80px}.section:last-of-type{border-bottom:0}.section-head{margin-bottom:18px}.section-head h2{font-size:21px;line-height:1.3;font-weight:600;letter-spacing:-.01em;margin:0}.section-sub{font-size:13px;color:var(--ink-faint);margin-top:4px}.faq-list{display:grid;grid-template-columns:1fr 1fr;gap:10px}.faq-item{background:var(--bg-raised);border:1px solid var(--border-soft);border-radius:var(--radius);padding:0 15px}.faq-item summary{list-style:none;cursor:pointer;padding:13px 24px 13px 0;font-weight:600;font-size:14px;position:relative}.faq-item summary::-webkit-details-marker{display:none}.faq-item summary::after{content:'+';position:absolute;right:0;color:var(--accent);font:20px 'IBM Plex Mono',monospace;top:10px}.faq-item[open] summary::after{content:'−'}.faq-answer{color:var(--ink-dim);font-size:13.5px;padding:0 0 14px}.faq-answer p{margin:0}.faq-answer strong{color:var(--ink)}
+.callout{display:flex;gap:12px;align-items:flex-start;background:rgba(201,161,92,.08);border:1px solid rgba(201,161,92,.25);border-radius:var(--radius);padding:13px 15px;color:var(--ink-dim);font-size:13.5px}.callout strong{color:var(--amber)}.callout-icon{font:15px 'IBM Plex Mono',monospace;color:var(--amber);flex:none;padding-top:1px}
+.quick-grid{display:grid;grid-template-columns:repeat(3,1fr);gap:12px}.quick-card,.panel{background:var(--bg-raised);border:1px solid var(--border-soft);border-radius:var(--radius);padding:16px}.quick-card .label,.card-label{font:11px 'IBM Plex Mono',monospace;color:var(--ink-faint);text-transform:uppercase;letter-spacing:.04em;margin-bottom:7px}.quick-card strong{display:block;font-size:14px;margin-bottom:5px}.quick-card p{font-size:13px;color:var(--ink-dim);margin:0}.quick-card code{overflow-wrap:anywhere}
+.steps{list-style:none;counter-reset:step;margin:0;padding:0}.steps li{counter-increment:step;display:flex;gap:13px;padding:12px 0;border-bottom:1px solid var(--border-soft);color:var(--ink-dim);font-size:14px}.steps li:last-child{border-bottom:0}.steps li::before{content:counter(step);font:12px 'IBM Plex Mono',monospace;color:var(--brand-red);background:rgba(193,68,58,.12);width:23px;height:23px;border-radius:50%;display:grid;place-items:center;flex:none;margin-top:1px}.steps strong{color:var(--ink);font-weight:600}
+.base-url{display:inline-block;margin:0 0 16px;padding:8px 11px;background:var(--bg-raised);border:1px solid var(--border-soft);color:var(--sage);border-radius:var(--radius);font-size:13px;overflow-wrap:anywhere}
+.endpoint-group{margin-top:14px}.endpoint-group h3{font-size:15px;margin:0 0 9px;font-weight:600}.endpoint-list{display:grid;gap:8px}.endpoint{display:grid;grid-template-columns:76px minmax(0,1fr);gap:10px;align-items:start;padding:10px 12px;background:var(--bg-raised);border:1px solid var(--border-soft);border-radius:var(--radius)}.method{font:11px 'IBM Plex Mono',monospace;color:var(--sage);padding-top:2px}.method.post{color:var(--amber)}.method.patch{color:var(--accent)}.method.delete{color:var(--danger)}.endpoint-path{font:12.5px 'IBM Plex Mono',monospace;overflow-wrap:anywhere}.endpoint-note{font-size:12px;color:var(--ink-faint);margin-top:3px}
+pre{position:relative;margin:0;background:#171615;border:1px solid var(--border-soft);border-radius:var(--radius);padding:16px;overflow:auto;color:#d7d2c8;font-size:12.5px;line-height:1.65;tab-size:2}pre code{padding:0;color:inherit;background:none;font-size:inherit;white-space:pre}.code-wrap{position:relative}.copy{position:absolute;top:8px;right:8px;border:1px solid var(--border);background:var(--bg-raised);color:var(--ink-dim);border-radius:var(--radius);padding:4px 8px;font-size:11px}.copy:hover{color:var(--ink);border-color:var(--ink-faint)}.code-caption{font:11px 'IBM Plex Mono',monospace;color:var(--ink-faint);margin:16px 0 7px}
+.details-card{margin-top:12px;border:1px solid var(--border-soft);border-radius:var(--radius);background:var(--bg-raised);padding:0 15px}.details-card summary{list-style:none;cursor:pointer;padding:12px 24px 12px 0;font-size:13px;color:var(--ink-dim);position:relative}.details-card summary::-webkit-details-marker{display:none}.details-card summary::after{content:'+';position:absolute;right:0;color:var(--accent);font:19px 'IBM Plex Mono',monospace;top:8px}.details-card[open] summary::after{content:'−'}.details-content{padding:0 0 14px;color:var(--ink-dim);font-size:13px}.details-content p{margin:0 0 9px}.details-content p:last-child{margin-bottom:0}
+.checklist{display:grid;grid-template-columns:1fr 1fr;gap:8px 20px;margin:0;padding:0;list-style:none}.checklist li{display:flex;gap:9px;color:var(--ink-dim);font-size:13.5px}.checklist li::before{content:'✓';color:var(--sage);font-family:'IBM Plex Mono',monospace;flex:none}.site-footer{padding:28px 0 38px}.footer-inner{display:flex;justify-content:space-between;align-items:center;gap:16px;flex-wrap:wrap;font-size:12.5px;color:var(--ink-faint)}.footer-links{display:flex;gap:16px}.footer-links a{color:var(--ink-faint)}.footer-links a:hover{color:var(--accent)}
+@media(max-width:700px){.page-wrap{padding:0 18px}.topbar-inner{padding:12px 18px;align-items:flex-start}.brand-handle{display:none}.topnav{justify-content:flex-end}.topnav a{font-size:12px;padding:6px 7px}.hero{padding:36px 0 28px}.hero h1{font-size:30px}.section{padding:28px 0}.faq-list,.quick-grid{grid-template-columns:1fr}.checklist{grid-template-columns:1fr}.endpoint{grid-template-columns:62px minmax(0,1fr)}pre{font-size:11.5px;padding:14px 11px}.section-head h2{font-size:19px}}
+@media(prefers-reduced-motion:reduce){*{scroll-behavior:auto!important;transition:none!important}}
+</style>
+</head>
+<body>
+<div class="topbar">
+  <div class="topbar-inner">
+    <a class="brand" href="https://kaidaz18yt.github.io/">
+      <img class="brand-icon" src="https://kaidaz18yt.github.io/assets/head.png" alt="">
+      Kaidaz18 <span class="brand-handle">.creator</span>
+    </a>
+    <nav class="topnav" aria-label="Page navigation">
+      <a href="#faq">FAQ</a><a href="#start">Quick start</a><a href="#endpoints">Endpoints</a><a href="#sdk">JavaScript SDK</a>
+    </nav>
+  </div>
+</div>
+<main class="page-wrap" id="top">
+  <header class="hero">
+    <div class="eyebrow">AFO BACKEND · DEVELOPER GUIDE</div>
+    <h1>Connect your project to AFO Backend.</h1>
+    <p class="lede">A quick, practical guide to credentials, sign-in and saving data. Use the SDK for the easiest setup, or call the API directly.</p>
+    <div class="hero-actions">
+      <a class="button button-primary" href="#start">Get started</a>
+      <a class="button button-quiet" href="https://kaidaz18.duckdns.org/login" target="_blank" rel="noopener">Open dashboard ↗</a>
+    </div>
+  </header>
+
+  <section class="section" id="faq">
+    <div class="section-head"><h2>Quick answers</h2><div class="section-sub">Start here if you only need the essentials.</div></div>
+    <div class="faq-list">
+      <details class="faq-item"><summary>What is AFO Backend?</summary><div class="faq-answer"><p>A backend-as-a-service, similar to Firebase or PocketBase. One service hosts multiple projects, each with separate users, data, API keys and access rules.</p></div></details>
+      <details class="faq-item"><summary>How do I get access?</summary><div class="faq-answer"><p>Ask the admin to create your project in the <a href="https://kaidaz18.duckdns.org/login" target="_blank" rel="noopener">dashboard</a>. You need its <strong>project slug</strong> and <strong>client API key</strong>.</p></div></details>
+      <details class="faq-item"><summary>Can I put the API key in my website?</summary><div class="faq-answer"><p>The <strong>client key</strong> is designed for frontend use. The <strong>admin key is secret</strong>—keep it on a server and never put it in browser code, a public repository or an app bundle.</p></div></details>
+      <details class="faq-item"><summary>Do I need to create collections first?</summary><div class="faq-answer"><p>No. Collections are created automatically when you first write to them. Access rules are configured by the admin in the dashboard.</p></div></details>
+      <details class="faq-item"><summary>Why is my request being denied?</summary><div class="faq-answer"><p>Check your project slug, client key and (for protected actions) bearer token. If those are correct, ask the admin to review the project's <strong>Rules</strong> in the dashboard.</p></div></details>
+      <details class="faq-item"><summary>How do I check if the server is up?</summary><div class="faq-answer"><p>Request <code>https://kaidaz18.duckdns.org/api/health</code>. A healthy server returns <code>200 OK</code>.</p></div></details>
+    </div>
+  </section>
+
+  <section class="section" id="start">
+    <div class="section-head"><h2>Quick start</h2><div class="section-sub">Three things to get your first request working.</div></div>
+    <div class="quick-grid">
+      <div class="quick-card"><div class="label">01 · Ask the admin</div><strong>Get your project details</strong><p>Project slug, client API key, and an admin key only if your server needs privileged access.</p></div>
+      <div class="quick-card"><div class="label">02 · Set the base URL</div><strong>Use the AFO server</strong><p><code>https://kaidaz18.duckdns.org</code></p></div>
+      <div class="quick-card"><div class="label">03 · Send credentials</div><strong>Include the right headers</strong><p>Send <code>x-api-key</code> on every API request; add a bearer token for authenticated actions.</p></div>
+    </div>
+    <div class="callout" style="margin-top:14px"><span class="callout-icon">!</span><div><strong>Keep the admin key private.</strong> The client key is okay in frontend code; the admin key must only be used from trusted server-side code.</div></div>
+    <details class="details-card">
+      <summary>What credentials will I receive?</summary>
+      <div class="details-content">
+        <p><strong>Project slug</strong> (for example, <code>my-website</code>) identifies your project in API URLs.</p>
+        <p><strong>Client API key</strong> (starts with <code>ck_live_</code>) authenticates public/frontend requests.</p>
+        <p><strong>Admin API key</strong> (starts with <code>ak_live_</code>) is secret and intended for server-side use only.</p>
+      </div>
+    </details>
+  </section>
+
+  <section class="section" id="endpoints">
+    <div class="section-head"><h2>API endpoints</h2><div class="section-sub">All client-facing API requests use this URL pattern.</div></div>
+    <div class="base-url mono">https://kaidaz18.duckdns.org/api/v1/{project-slug}/...</div>
+    <div class="endpoint-group">
+      <h3>Authentication</h3>
+      <div class="endpoint-list">
+        <div class="endpoint"><span class="method post">POST</span><div><div class="endpoint-path">/auth/signup</div><div class="endpoint-note">Create an account · JSON body: email and password</div></div></div>
+        <div class="endpoint"><span class="method post">POST</span><div><div class="endpoint-path">/auth/login</div><div class="endpoint-note">Sign in · returns a token</div></div></div>
+        <div class="endpoint"><span class="method">GET</span><div><div class="endpoint-path">/auth/me</div><div class="endpoint-note">Get the signed-in user · requires bearer token</div></div></div>
+      </div>
+    </div>
+    <div class="endpoint-group">
+      <h3>Collections and documents</h3>
+      <div class="endpoint-list">
+        <div class="endpoint"><span class="method">GET</span><div><div class="endpoint-path">/collections/{collection-name}</div><div class="endpoint-note">List documents in a collection</div></div></div>
+        <div class="endpoint"><span class="method post">POST</span><div><div class="endpoint-path">/collections/{collection-name}</div><div class="endpoint-note">Create a document · requires bearer token</div></div></div>
+        <div class="endpoint"><span class="method">GET</span><div><div class="endpoint-path">/collections/{collection-name}/{docId}</div><div class="endpoint-note">Get one document</div></div></div>
+        <div class="endpoint"><span class="method patch">PATCH</span><div><div class="endpoint-path">/collections/{collection-name}/{docId}</div><div class="endpoint-note">Update a document · requires bearer token</div></div></div>
+        <div class="endpoint"><span class="method delete">DELETE</span><div><div class="endpoint-path">/collections/{collection-name}/{docId}</div><div class="endpoint-note">Delete a document · requires bearer token</div></div></div>
+      </div>
+    </div>
+    <details class="details-card">
+      <summary>Example request and headers</summary>
+      <div class="details-content">
+        <p>Use the client key in <code>x-api-key</code>. For signed-in actions, also send <code>Authorization: Bearer &lt;token&gt;</code>. Include <code>Content-Type: application/json</code> on POST and PATCH requests.</p>
+        <div class="code-wrap"><pre><code>POST /api/v1/my-website/auth/login
+Content-Type: application/json
+x-api-key: ck_live_...
+
+{"email":"user@example.com","password":"password123"}</code></pre></div>
+      </div>
+    </details>
+  </section>
+
+  <section class="section" id="sdk">
+    <div class="section-head"><h2>JavaScript SDK</h2><div class="section-sub">The easiest way to connect from a JavaScript project.</div></div>
+    <p style="color:var(--ink-dim);font-size:13.5px;margin:0 0 10px">Add the SDK script to your page. Alternatively, download <code>afo-client.js</code> and host it locally, for example at <code>public/sdk/afo-client.js</code>.</p>
+    <div class="code-caption">ADD THE SDK</div>
+    <div class="code-wrap"><button class="copy" type="button">Copy</button><pre><code>&lt;script src="https://kaidaz18.duckdns.org/sdk/afo-client.js"&gt;&lt;/script&gt;</code></pre></div>
+    <div class="code-caption">INITIALIZE, SIGN IN AND USE A COLLECTION</div>
+    <div class="code-wrap"><button class="copy" type="button">Copy</button><pre><code>const afo = new AFOClient({
+  baseUrl: "https://kaidaz18.duckdns.org",
+  projectSlug: "my-website",
+  apiKey: "ck_live_abc123..."
+});
+
+// Sign up (optional) or log in
+await afo.auth.signup("user@example.com", "password123");
+const { token } = await afo.auth.login("user@example.com", "password123");
+
+// Create and list documents
+await afo.collection("posts").create({
+  title: "Hello World",
+  body: "My first post!"
+});
+const posts = await afo.collection("posts").list();</code></pre></div>
+    <details class="details-card">
+      <summary>Prefer not to use the SDK? See a fetch example</summary>
+      <div class="details-content">
+        <p>For JSON requests, include the content type and client key. Use the token returned by login for actions that require authentication.</p>
+        <div class="code-wrap"><button class="copy" type="button">Copy</button><pre><code>const BASE = "https://kaidaz18.duckdns.org/api/v1/my-website";
+const API_KEY = "ck_live_abc123...";
+
+// Log in
+const res = await fetch(`${BASE}/auth/login`, {
+  method: "POST",
+  headers: {
+    "Content-Type": "application/json",
+    "x-api-key": API_KEY
+  },
+  body: JSON.stringify({
+    email: "user@example.com",
+    password: "password123"
+  })
+});
+const { token } = await res.json();
+
+// Create a document
+await fetch(`${BASE}/collections/posts`, {
+  method: "POST",
+  headers: {
+    "Content-Type": "application/json",
+    "x-api-key": API_KEY,
+    "Authorization": `Bearer ${token}`
+  },
+  body: JSON.stringify({ title: "My Post", content: "Hello!" })
+});</code></pre></div>
+      </div>
+    </details>
+  </section>
+
+  <section class="section" id="checklist">
+    <div class="section-head"><h2>Before you ship</h2><div class="section-sub">A short checklist for a reliable integration.</div></div>
+    <ul class="checklist">
+      <li>Get the project slug and client API key from the admin.</li>
+      <li>Set the base URL to <code>https://kaidaz18.duckdns.org</code>.</li>
+      <li>Include <code>x-api-key</code> on every API request.</li>
+      <li>Use <code>Authorization: Bearer &lt;token&gt;</code> for authenticated actions.</li>
+      <li>Use any collection name; it is created on first write.</li>
+      <li>Test <code>GET /api/health</code> to confirm connectivity.</li>
+    </ul>
+    <details class="details-card">
+      <summary>Important notes</summary>
+      <div class="details-content">
+        <p>Collections are created automatically when first written to. No collection setup is needed.</p>
+        <p>Access rules are set by the admin in the dashboard under <strong>Rules</strong>. A denied request may mean a rule needs adjusting.</p>
+        <p>The client API key is intended for frontend use; the admin key is not. All responses are JSON. Add <code>Content-Type: application/json</code> to POST and PATCH requests.</p>
+        <p>Health check: <code>GET https://kaidaz18.duckdns.org/api/health</code> returns <code>200 OK</code> when the server is running.</p>
+      </div>
+    </details>
+  </section>
+</main>
+<footer class="site-footer">
+  <div class="page-wrap footer-inner">
+    <div>© 2026 Kaidaz18 · <a href="https://kaidaz18yt.github.io/">Home</a></div>
+    <div class="footer-links"><a href="https://youtube.com/@Kaidaz18" target="_blank" rel="noopener">YouTube</a><a href="https://kaidaz18.duckdns.org/login" target="_blank" rel="noopener">AFO Dashboard</a></div>
+  </div>
+</footer>
+<script>
+document.querySelectorAll('.copy').forEach((button) => {
+  button.addEventListener('click', async () => {
+    const code = button.parentElement.querySelector('pre').innerText;
+    try {
+      await navigator.clipboard.writeText(code);
+      button.textContent = 'Copied';
+      setTimeout(() => { button.textContent = 'Copy'; }, 1400);
+    } catch {
+      button.textContent = 'Select code';
+      setTimeout(() => { button.textContent = 'Copy'; }, 1800);
+    }
+  });
+});
+</script>
+</body>
+</html>
