@@ -21,6 +21,7 @@
     color-scheme: dark;
   }
   * { box-sizing: border-box; }
+  [hidden] { display: none !important; }
   html, body { height: 100%; margin: 0; }
   body {
     background: var(--bg);
@@ -53,6 +54,12 @@
     border: none; border-radius: 3px; font-size: 14px; font-weight: 500; cursor: pointer;
   }
   .login-error { color: var(--danger); font-size: 13px; margin-top: 10px; min-height: 16px; }
+  .login-box a { display: block; margin-top: 14px; font-size: 13px; color: var(--accent); }
+  .login-box .retry-session { background: none; color: var(--accent); padding: 8px 0; font-size: 13px; }
+  #sync-notice { background: #33261A; border: 1px solid #6B5233; padding: 10px 12px; margin-bottom: 16px; font-size: 13px; }
+  #sync-notice button { background: none; border: none; color: var(--accent); text-decoration: underline; cursor: pointer; }
+  #live-dot.stale { background: var(--danger); animation: none; }
+  .sync-caption { color: var(--ink-faint); font-size: 11px; margin-top: 3px; }
 
   #board {
     display: none;
@@ -171,121 +178,211 @@
     .row-title { font-size: 15px; }
   }
 </style>
-<!-- BACKEND DOWN BANNER (temporary): to remove, delete this <style> block and the #backend-down-banner <div> + <script> at the top of <body>. -->
-<style>
-  :root { --backend-down-h: 40px; }
-  #backend-down-banner {
-    position: fixed; top: 0; left: 0; right: 0; z-index: 1000;
-    background: #33261A; color: #EDEAE3;
-    border-bottom: 1px solid #6B5233;
-    font-family: 'IBM Plex Sans', system-ui, sans-serif;
-    font-size: 13.5px; line-height: 1.45; text-align: center;
-    padding: calc(9px + env(safe-area-inset-top, 0px)) 16px 9px;
-  }
-  #backend-down-banner strong { color: #C9A15C; font-weight: 600; }
-  #backend-down-banner .backend-down-icon { color: #C9A15C; margin-right: 6px; }
-  /* Shift this page's fixed / full-height layout below the banner. */
-  #login-screen { top: var(--backend-down-h); }
-  body { padding-top: var(--backend-down-h); }
-</style>
 </head>
 <body>
-<!-- BACKEND DOWN BANNER (temporary): see note in <head>. -->
-<div id="backend-down-banner" role="alert"><span class="backend-down-icon" aria-hidden="true">⚠︎</span><strong>Backend is down.</strong> Signing in and loading the board won’t work until it’s back — please check back later.</div>
-<script>
-(function(){var b=document.getElementById('backend-down-banner');if(!b)return;function s(){document.documentElement.style.setProperty('--backend-down-h',b.offsetHeight+'px');}s();window.addEventListener('resize',s);if(window.ResizeObserver)new ResizeObserver(s).observe(b);})();
-</script>
 
 <div id="login-screen">
-  <div class="login-box">
+  <form class="login-box" id="auth-form">
     <h1>Ledger — Board</h1>
-    <p>Sign in to view.</p>
-    <input type="password" id="login-password" placeholder="Password" autocomplete="current-password">
-    <button id="login-btn">Sign in</button>
-    <div class="login-error" id="login-error"></div>
-  </div>
+    <p>Sign in with your BreadBackend account.</p>
+    <input type="email" id="login-email" placeholder="Email" autocomplete="email" aria-label="Email" required>
+    <input type="password" id="login-password" placeholder="Password" autocomplete="current-password" aria-label="Password" required>
+    <button id="login-btn" type="submit">Sign in</button>
+    <button id="login-retry" class="retry-session" type="button" hidden>Retry saved session</button>
+    <div class="login-error" id="login-error" role="status"></div>
+    <a href="../">Open Ledger or create an account</a>
+  </form>
 </div>
 
 <div id="board">
   <div id="board-head">
     <h1>What's due</h1>
-    <div id="clock"><span id="live-dot"></span><span id="clock-text"></span></div>
+    <div><div id="clock"><span id="live-dot"></span><span id="clock-text"></span></div><div class="sync-caption">Live updates · 30-second refresh fallback</div></div>
   </div>
+  <div id="sync-notice" role="status" hidden><span id="sync-message"></span> <button id="sync-retry" type="button">Retry</button></div>
   <div id="list"></div>
 </div>
 
-<button id="signout">Sign out</button>
+<button id="signout" hidden>Sign out</button>
 
-<script src="https://cdnjs.cloudflare.com/ajax/libs/pocketbase/0.21.3/pocketbase.umd.js"></script>
+<script src="https://kaidaz18.duckdns.org/sdk/bread-client.js"></script>
+<script src="../bread-backend.js"></script>
 <script>
-const pb = new PocketBase("https://kaidaz18.duckdns.org");
+const backend = window.LedgerBackend;
 const $ = (id) => document.getElementById(id);
 
 let tasks = [];
 let projects = [];
 const PROJECT_COLORS = ['#7C93CC','#C9A15C','#8FA184','#C97C6E','#B490C0','#6FB3B8','#D0A868','#9AAF6E'];
 function colorForIndex(i){ return PROJECT_COLORS[i % PROJECT_COLORS.length]; }
+function safeProjectColor(value, fallback){ return /^#[0-9a-f]{6}$/i.test(String(value || '')) ? value : fallback; }
 function projectColor(id){
   const idx = projects.findIndex(p=>p.id===id);
   if (idx===-1) return null;
-  return projects[idx].color || colorForIndex(idx);
+  return safeProjectColor(projects[idx].color, colorForIndex(idx));
 }
 function projectName(id){
   const p = projects.find(p=>p.id===id);
   return p ? p.name : null;
 }
 
-let booted = false;
+let epoch = 0;
+let authAttempt = 0;
+let pollTimer = null;
+let clockTimer = null;
+let syncPromise = null;
+let syncAgain = false;
+let subscriptions = [];
+let dataReady = false;
 
+function stopSubscriptions(){
+  subscriptions.splice(0).forEach(unsubscribe => { try { unsubscribe(); } catch (error) { console.warn(error); } });
+  syncAgain = false;
+}
+function queueSync(){
+  if (!backend.user) return;
+  if (syncPromise) syncAgain = true;
+  else syncData();
+}
+function startSubscriptions(){
+  const requestEpoch = epoch;
+  ['tasks', 'projects'].forEach(async name => {
+    try {
+      const unsubscribe = await backend.subscribe(name, queueSync);
+      if (requestEpoch !== epoch) { if (unsubscribe) unsubscribe(); return; }
+      if (unsubscribe) subscriptions.push(unsubscribe);
+    } catch (error) { if (requestEpoch === epoch) console.warn('Live updates unavailable for ' + name, error); }
+  });
+}
+function stopBoard(){
+  stopSubscriptions();
+  epoch++;
+  authAttempt++;
+  clearInterval(pollTimer); clearInterval(clockTimer);
+  pollTimer = null; clockTimer = null; syncPromise = null;
+  tasks = []; projects = []; dataReady = false;
+  $('list').innerHTML = '';
+  $('board').classList.remove('visible');
+  $('signout').hidden = true;
+}
 function showBoard(){
+  epoch++;
+  dataReady = false;
   $('login-screen').classList.add('hidden');
   $('board').classList.add('visible');
-  boot();
+  $('signout').hidden = false;
+  $('sync-notice').hidden = true;
+  $('list').innerHTML = '<div class="empty">Loading your board…</div>';
+  clearInterval(pollTimer); clearInterval(clockTimer);
+  stopSubscriptions();
+  startClock();
+  syncData();
+  startSubscriptions();
+  pollTimer = setInterval(() => { if (!document.hidden) syncData(); }, 30000);
 }
-function showLogin(){
+function showLogin(message){
   $('login-screen').classList.remove('hidden');
   $('board').classList.remove('visible');
+  $('signout').hidden = true;
+  $('login-password').value = '';
+  $('login-retry').hidden = !backend.hasSession;
+  $('login-error').textContent = message || '';
 }
-
-if (pb.authStore.isValid) showBoard(); else showLogin();
-
-$('login-btn').addEventListener('click', doLogin);
-$('login-password').addEventListener('keydown', (e)=>{ if(e.key==='Enter') doLogin(); });
-async function doLogin(){
-  const pw = $('login-password').value;
-  $('login-error').textContent = '';
+async function restoreSession(){
+  if (!backend.hasSession) { showLogin(); return; }
+  const attempt = ++authAttempt;
+  $('login-error').textContent = 'Checking your saved session…';
+  $('login-retry').hidden = true;
   try {
-    await pb.collection('users').authWithPassword('kaioliver111@gmail.com', pw);
-    $('login-password').value = '';
-    showBoard();
-  } catch(err) {
-    $('login-error').textContent = 'Incorrect password.';
+    await backend.restore();
+    if (attempt === authAttempt) showBoard();
+  } catch(error) {
+    if (attempt !== authAttempt) return;
+    console.error(error);
+    if (backend.isUnauthorized(error)) {
+      try { await backend.logout(); } catch (logoutError) { console.warn(logoutError); }
+      if (attempt === authAttempt) showLogin('Your session has expired. Please sign in again.');
+    } else showLogin('Could not restore your session. Check the connection and retry, or sign in again.');
   }
 }
-$('signout').addEventListener('click', ()=>{ pb.authStore.clear(); showLogin(); });
-
-async function boot(){
-  if (booted) return;
-  booted = true;
-  await loadAll();
-  render();
-  pb.collection('tasks').subscribe('*', async ()=>{ await loadAll(); render(); });
-  pb.collection('projects').subscribe('*', async ()=>{ await loadAll(); render(); });
-  startClock();
-}
-
-async function loadAll(){
+$('auth-form').addEventListener('submit', async (event) => {
+  event.preventDefault();
+  const attempt = ++authAttempt;
+  $('login-btn').disabled = true; $('login-retry').disabled = true;
+  $('login-error').textContent = 'Signing in…';
   try {
-    tasks = await pb.collection('tasks').getFullList({ sort: 'deadline' });
-  } catch(e){ console.error(e); tasks = []; }
-  try {
-    projects = await pb.collection('projects').getFullList({ sort: 'name' });
-  } catch(e){ console.error(e); projects = []; }
+    await backend.login($('login-email').value.trim(), $('login-password').value);
+    if (attempt !== authAttempt) return;
+    $('login-password').value = '';
+    showBoard();
+  } catch(error) {
+    if (attempt !== authAttempt) return;
+    console.error(error);
+    const status = backend.statusOf(error);
+    $('login-error').textContent = status === 400 || status === 403 || backend.isUnauthorized(error)
+      ? 'Could not sign in. Check your email, password and account permissions.'
+      : 'Could not reach BreadBackend. Check the connection and server settings, then try again.';
+    $('login-retry').hidden = !backend.hasSession;
+  } finally { $('login-btn').disabled = false; $('login-retry').disabled = false; }
+});
+$('login-retry').addEventListener('click', restoreSession);
+$('signout').addEventListener('click', async () => {
+  const attempt = ++authAttempt;
+  $('signout').disabled = true;
+  let failed = false;
+  try { await backend.logout(); } catch (error) { console.warn(error); failed = true; }
+  finally { $('signout').disabled = false; }
+  if (attempt !== authAttempt) return;
+  stopBoard();
+  showLogin(failed ? 'Signed out locally. Server sign-out could not be confirmed.' : 'Signed out.');
+});
+window.addEventListener('ledger-session-change', () => {
+  stopBoard();
+  if (backend.hasSession) restoreSession(); else showLogin('Signed out in another tab.');
+});
+
+async function syncData(){
+  if (!backend.user) return;
+  if (syncPromise) return syncPromise;
+  const requestEpoch = epoch;
+  const revision = backend.revision;
+  const promise = (async () => {
+    try {
+      const [nextTasks, nextProjects] = await Promise.all([backend.list('tasks'), backend.list('projects')]);
+      if (requestEpoch !== epoch) return;
+      if (revision !== backend.revision) { setTimeout(syncData, 0); return; }
+      tasks = nextTasks; projects = nextProjects; dataReady = true;
+      $('sync-notice').hidden = true; $('live-dot').classList.remove('stale');
+      render();
+    } catch(error) {
+      if (requestEpoch !== epoch) return;
+      console.error(error);
+      $('sync-message').textContent = backend.isUnauthorized(error)
+        ? 'Your session may have expired. Please sign in again.'
+        : /partial collection/i.test(String(error && error.message))
+          ? 'BreadBackend returned only part of a collection. Pagination support is needed to load the board safely.'
+          : /ownerId/i.test(String(error && error.message))
+            ? 'Some documents have no ownerId. Check the backend schema or data migration.'
+            : 'Could not sync with BreadBackend. Check the connection and project rules.';
+      $('sync-notice').hidden = false; $('live-dot').classList.add('stale');
+      if (!dataReady) $('list').innerHTML = '<div class="empty">Could not load your board. Retry above.</div>';
+    }
+  })();
+  syncPromise = promise;
+  try { await promise; } finally {
+    if (syncPromise === promise) {
+      syncPromise = null;
+      if (syncAgain && requestEpoch === epoch) { syncAgain = false; setTimeout(syncData, 0); }
+    }
+  }
 }
+$('sync-retry').addEventListener('click', syncData);
+document.addEventListener('visibilitychange', () => { if (!document.hidden && backend.user) syncData(); });
+window.addEventListener('online', () => { if (backend.user) syncData(); });
 
 const PRIORITY_ORDER = { Urgent:0, High:1, Medium:2, Low:3 };
 function sortTasks(a,b){
-  const pd = PRIORITY_ORDER[a.priority] - PRIORITY_ORDER[b.priority];
+  const pd = (PRIORITY_ORDER[a.priority] ?? PRIORITY_ORDER.Medium) - (PRIORITY_ORDER[b.priority] ?? PRIORITY_ORDER.Medium);
   if (pd !== 0) return pd;
   const ad = a.deadline ? new Date(a.deadline) : new Date('9999-12-31');
   const bd = b.deadline ? new Date(b.deadline) : new Date('9999-12-31');
@@ -294,7 +391,8 @@ function sortTasks(a,b){
 
 function fmtDeadline(d){
   if (!d) return null;
-  const date = new Date(d);
+  const date = new Date(String(d).replace(' ', 'T'));
+  if (isNaN(date)) return null;
   const now = new Date();
   const diffMs = date - now;
   const opts = { weekday:'short', month:'short', day:'numeric', hour:'2-digit', minute:'2-digit' };
@@ -311,13 +409,14 @@ function escapeHtml(str){
 }
 
 function rowHtml(t){
-  const pClass = 'p-' + t.priority.toLowerCase();
+  const priority = ['Urgent','High','Medium','Low'].includes(t.priority) ? t.priority : 'Medium';
+  const pClass = 'p-' + priority.toLowerCase();
   const dl = fmtDeadline(t.deadline);
   const color = projectColor(t.project);
   const pname = projectName(t.project);
   let metaParts = [];
   if (dl) metaParts.push(`<span class="deadline ${dl.cls}">${dl.str}${dl.cls==='overdue'?' · overdue':''}</span>`);
-  metaParts.push(`<span class="priority-word ${pClass}">${t.priority}</span>`);
+  metaParts.push(`<span class="priority-word ${pClass}">${priority}</span>`);
   if (pname) metaParts.push(`<span class="project-tag"><span class="dot" style="background:${color}"></span>${escapeHtml(pname)}</span>`);
   return `<div class="row ${pClass}">
     <div>
@@ -328,6 +427,7 @@ function rowHtml(t){
 }
 
 function render(){
+  if (!dataReady) return;
   const open = tasks.filter(t=>t.status!=='Done').sort(sortTasks);
   const inProgress = open.filter(t=>t.status==='In Progress');
   const todo = open.filter(t=>t.status!=='In Progress');
@@ -357,8 +457,9 @@ function startClock(){
     render();
   }
   tick();
-  setInterval(tick, 30000);
+  clockTimer = setInterval(tick, 30000);
 }
+restoreSession();
 </script>
 </body>
 </html>

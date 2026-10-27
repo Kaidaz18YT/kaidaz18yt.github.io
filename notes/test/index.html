@@ -55,31 +55,10 @@
     background: var(--bg-raised); border:1px solid var(--border); font-size:14px;
   }
 </style>
-<!-- BACKEND DOWN BANNER (temporary): to remove, delete this <style> block and the #backend-down-banner <div> + <script> at the top of <body>. -->
-<style>
-  :root { --backend-down-h: 40px; }
-  #backend-down-banner {
-    position: fixed; top: 0; left: 0; right: 0; z-index: 1000;
-    background: #33261A; color: #EDEAE3;
-    border-bottom: 1px solid #6B5233;
-    font-family: 'IBM Plex Sans', system-ui, sans-serif;
-    font-size: 13.5px; line-height: 1.45; text-align: center;
-    padding: calc(9px + env(safe-area-inset-top, 0px)) 16px 9px;
-  }
-  #backend-down-banner strong { color: #C9A15C; font-weight: 600; }
-  #backend-down-banner .backend-down-icon { color: #C9A15C; margin-right: 6px; }
-  /* Shift the page content below the banner. */
-  body { padding-top: var(--backend-down-h); }
-</style>
 </head>
 <body>
-<!-- BACKEND DOWN BANNER (temporary): see note in <head>. -->
-<div id="backend-down-banner" role="alert"><span class="backend-down-icon" aria-hidden="true">⚠︎</span><strong>Backend is down.</strong> The PocketBase checks below will fail until it’s back.</div>
-<script>
-(function(){var b=document.getElementById('backend-down-banner');if(!b)return;function s(){document.documentElement.style.setProperty('--backend-down-h',b.offsetHeight+'px');}s();window.addEventListener('resize',s);if(window.ResizeObserver)new ResizeObserver(s).observe(b);})();
-</script>
 <h1>Ledger — Connection Test</h1>
-<div class="sub">Checks each thing the app needs, one at a time. Run this in the same browser/tab situation where the app is failing.</div>
+<div class="sub">Checks the BreadBackend SDK, API and browser storage. Run this on the device and network where Ledger is failing.</div>
 <button class="rerun" id="rerun">Run tests again</button>
 
 <div id="tests"></div>
@@ -87,95 +66,86 @@
 
 <script>
 const $ = (s,el=document)=>el.querySelector(s);
+const BASE = 'https://kaidaz18.duckdns.org/api/v1/kaidaz18-notes';
+const API_KEY = 'pk_live_BpZSqs73ax25L4X91Ok0D3fY';
+const SDK = 'https://kaidaz18.duckdns.org/sdk/bread-client.js';
+
+async function fetchWithTimeout(url, options = {}){
+  const controller = new AbortController();
+  const timer = setTimeout(() => controller.abort(), 12000);
+  try { return await fetch(url, { ...options, signal: controller.signal, cache: 'no-store' }); }
+  finally { clearTimeout(timer); }
+}
+function loadSdk(){
+  if (typeof window.BreadClient === 'function' || typeof BreadClient === 'function') return Promise.resolve();
+  return new Promise((resolve, reject) => {
+    const script = document.createElement('script');
+    let timer;
+    const finish = (error) => {
+      clearTimeout(timer);
+      script.remove();
+      if (error) reject(error); else resolve();
+    };
+    timer = setTimeout(() => finish(new Error('Timed out loading the SDK.')), 12000);
+    script.onload = () => finish(typeof window.BreadClient === 'function' || typeof BreadClient === 'function' ? null : new Error('The script did not provide BreadClient.'));
+    script.onerror = () => finish(new Error('Could not load the BreadBackend SDK.'));
+    script.src = SDK;
+    document.head.appendChild(script);
+  });
+}
 
 const TESTS = [
   {
-    id: 'net',
-    name: 'Basic internet reachability',
+    id: 'sdk', name: 'BreadBackend JavaScript SDK',
     run: async () => {
-      const r = await fetch('https://www.google.com/generate_204', { mode: 'no-cors', cache: 'no-store' });
-      return { ok: true, detail: 'Network requests are going out fine.' };
+      await loadSdk();
+      return { detail: 'The SDK loaded and exposes BreadClient.' };
     },
-    hint: 'If this fails, the issue is your iPad\'s network/Wi-Fi/cellular, not the app.'
+    hint: 'Check that kaidaz18.duckdns.org is reachable and that /sdk/bread-client.js is available. A content blocker, DNS, server or certificate issue may prevent loading it.'
   },
   {
-    id: 'cdn',
-    name: 'PocketBase library (cdnjs.cloudflare.com)',
+    id: 'api', name: 'Project collections API and browser CORS',
     run: async () => {
-      const r = await fetch('https://cdnjs.cloudflare.com/ajax/libs/pocketbase/0.21.3/pocketbase.umd.js', { cache: 'no-store' });
-      if (!r.ok) throw new Error('HTTP ' + r.status);
-      const text = await r.text();
-      return { ok: true, detail: `Loaded OK — ${(text.length/1024).toFixed(0)} KB received.` };
+      const r = await fetchWithTimeout(BASE + '/collections/notes', { headers: { 'x-api-key': API_KEY } });
+      if (r.status === 401 || r.status === 403) return { detail: `The API responded (HTTP ${r.status}); authentication or project rules are required. Sign in and verify the rules before using Ledger.` };
+      if (!r.ok) throw new Error(`HTTP ${r.status}. Check the project slug, API key and collection rules.`);
+      return { detail: `The project API responded (HTTP ${r.status}) and this browser can make cross-origin requests. No note contents were displayed.` };
     },
-    hint: 'If this fails, cdnjs.cloudflare.com is blocked on this device/network. The app can\'t work at all without this file loading — check your iPad\'s Screen Time website restrictions or any content-blocker/VPN app for cdnjs.cloudflare.com.'
+    hint: 'A network error can mean the server is unreachable, its HTTPS certificate is invalid, or CORS does not allow this site and the x-api-key/Authorization headers. Check the server and browser console.'
   },
   {
-    id: 'fonts',
-    name: 'Google Fonts (fonts.googleapis.com)',
+    id: 'auth', name: 'BreadBackend session endpoint',
     run: async () => {
-      const r = await fetch('https://fonts.googleapis.com/css2?family=IBM+Plex+Sans:wght@400&display=swap', { mode:'no-cors', cache: 'no-store' });
-      return { ok: true, detail: 'Request completed without being blocked.' };
+      const r = await fetchWithTimeout(BASE + '/auth/me', { headers: { 'x-api-key': API_KEY } });
+      if (r.status === 401 || r.status === 403) return { detail: `The endpoint responded (HTTP ${r.status}) without a session, as expected for a protected profile.` };
+      if (!r.ok) throw new Error(`HTTP ${r.status}. The session endpoint did not respond as expected.`);
+      return { detail: `The endpoint responded (HTTP ${r.status}). This check does not verify an account or expose profile data.` };
     },
-    hint: 'Non-critical — if this fails the app will still work, just with a fallback font.'
+    hint: 'Verify that the project auth endpoint is enabled and that the server allows this site and the required request headers in its CORS configuration.'
   },
   {
-    id: 'pb-root',
-    name: 'PocketBase server reachable (kaidaz18.duckdns.org)',
+    id: 'storage', name: 'Browser local storage',
     run: async () => {
-      const r = await fetch('https://kaidaz18.duckdns.org/api/health', { cache: 'no-store' });
-      const body = await r.text();
-      if (!r.ok) throw new Error(`HTTP ${r.status} — ${body.slice(0,200)}`);
-      return { ok: true, detail: `Server responded: ${body.slice(0,200)}` };
+      const key = '__ledger_test__';
+      localStorage.setItem(key, '1');
+      const value = localStorage.getItem(key);
+      localStorage.removeItem(key);
+      if (value !== '1') throw new Error('Could not read back the test value.');
+      return { detail: 'Local storage works. Ledger uses it to keep your BreadBackend session between reloads and tabs.' };
     },
-    hint: 'This is the most likely culprit. If it fails with a network error (not an HTTP error), the DuckDNS domain itself is blocked or unreachable from this device — check Screen Time / Restrictions on the iPad for "kaidaz18.duckdns.org" or "duckdns.org", and check any DNS/VPN/content-filter app installed on it. It could also mean your home server/router is down or the DuckDNS record isn\'t pointing at it right now.'
+    hint: 'Check the browser’s storage and privacy settings. Without local storage, you may need to sign in again after reloading.'
   },
   {
-    id: 'pb-auth',
-    name: 'PocketBase auth endpoint responds',
+    id: 'https', name: 'Secure page',
     run: async () => {
-      const r = await fetch('https://kaidaz18.duckdns.org/api/collections/users/auth-with-password', {
-        method: 'POST',
-        headers: { 'Content-Type': 'application/json' },
-        body: JSON.stringify({ identity: 'connection-test@example.com', password: 'not-a-real-password-123' })
-      });
-      const body = await r.json().catch(()=>({}));
-      // We *expect* this to fail auth (400) — we're just checking the server answers correctly.
-      if (r.status === 400 || r.status === 401 || r.status === 403) {
-        return { ok: true, detail: `Server correctly rejected the test login (HTTP ${r.status}). This means the auth endpoint itself is working — a "wrong password" for your real account is a credentials issue, not a connectivity one.` };
-      }
-      if (!r.ok) throw new Error(`Unexpected HTTP ${r.status} — ${JSON.stringify(body).slice(0,200)}`);
-      return { ok: true, detail: 'Unexpected success response, but the endpoint is reachable: ' + JSON.stringify(body).slice(0,200) };
+      if (location.protocol !== 'https:' && location.hostname !== 'localhost' && location.hostname !== '127.0.0.1') throw new Error('This page is using ' + location.protocol + '.');
+      return { detail: 'The page is using HTTPS or a local development address.' };
     },
-    hint: 'If this fails with a network error, requests are reaching the domain but something (proxy, VPN, DNS-level ad/content blocker) is interfering with the specific API path.'
-  },
-  {
-    id: 'mixed',
-    name: 'Page loaded over HTTPS (no mixed content)',
-    run: async () => {
-      if (location.protocol !== 'https:' && location.protocol !== 'file:') {
-        throw new Error('This page is loaded over ' + location.protocol);
-      }
-      return { ok: true, detail: 'Protocol: ' + location.protocol + ' — fine for talking to an HTTPS PocketBase server.' };
-    },
-    hint: 'Safari silently blocks HTTP requests from an HTTPS page (or vice versa in some cases). If Ledger itself is opened via a plain http:// link, its requests to the https:// PocketBase server can behave oddly.'
-  },
-  {
-    id: 'storage',
-    name: 'Local storage / cookies available',
-    run: async () => {
-      const k = '__ledger_test__';
-      localStorage.setItem(k, '1');
-      const v = localStorage.getItem(k);
-      localStorage.removeItem(k);
-      if (v !== '1') throw new Error('Could not read back a value that was just written.');
-      return { ok: true, detail: 'PocketBase\'s JS SDK stores your auth session in localStorage — this works here.' };
-    },
-    hint: 'If this fails, Safari is in Private Browsing mode, or "Prevent Cross-Site Tracking" / "Block All Cookies" in Settings → Safari is stopping storage — that can make login appear to silently fail or not persist.'
+    hint: 'Open the published site over HTTPS to protect your session and avoid browser security restrictions.'
   },
 ];
 
 let summaryEl, testsEl;
-
 function renderShell(){
   testsEl = $('#tests');
   testsEl.innerHTML = TESTS.map(t => `
@@ -187,13 +157,12 @@ function renderShell(){
       </div>
       <div class="detail" id="detail-${t.id}"></div>
       <div class="hint" id="hint-${t.id}">${t.hint || ''}</div>
-    </div>
-  `).join('');
+    </div>`).join('');
   summaryEl = $('#summary');
   summaryEl.textContent = 'Running tests…';
 }
-
 async function runAll(){
+  $('#rerun').disabled = true;
   renderShell();
   let passCount = 0, failCount = 0;
   for (const t of TESTS) {
@@ -201,25 +170,19 @@ async function runAll(){
     const detail = $('#detail-' + t.id), hint = $('#hint-' + t.id);
     try {
       const res = await t.run();
-      dot.className = 'dot pass';
-      status.textContent = 'OK';
-      detail.textContent = res.detail || '';
-      detail.classList.add('show');
-      passCount++;
+      dot.className = 'dot pass'; status.textContent = 'OK';
+      detail.textContent = res.detail || ''; detail.classList.add('show'); passCount++;
     } catch (err) {
-      dot.className = 'dot fail';
-      status.textContent = 'FAILED';
+      dot.className = 'dot fail'; status.textContent = 'FAILED';
       detail.textContent = 'Error: ' + (err && err.message ? err.message : String(err));
-      detail.classList.add('show');
-      hint.classList.add('show');
-      failCount++;
+      detail.classList.add('show'); hint.classList.add('show'); failCount++;
     }
   }
-  summaryEl.innerHTML = failCount === 0
-    ? `✅ All ${passCount} checks passed. If login still fails, it's most likely just an incorrect password for your account.`
-    : `⚠️ ${failCount} of ${TESTS.length} checks failed (see the amber notes above each failed test for what that specifically means).`;
+  summaryEl.textContent = failCount === 0
+    ? `All ${passCount} checks passed. Signing in and accessing your own documents also depends on account and project rules.`
+    : `${failCount} of ${TESTS.length} checks failed. See the notes above for what to check.`;
+  $('#rerun').disabled = false;
 }
-
 $('#rerun').addEventListener('click', runAll);
 runAll();
 </script>
