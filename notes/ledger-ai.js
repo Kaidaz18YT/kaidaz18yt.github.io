@@ -1,3 +1,6 @@
+/* Legacy assistant implementation, intentionally not loaded by Ledger.
+   It depends on the previous PocketBase AI endpoint and is retained for a
+   future migration if BreadBackend provides an authenticated AI endpoint. */
 /* Ledger AI assistant: adds an "Ask AI" button and a slide-out chat panel.
    Load it AFTER the main Ledger script, right before </body>:
    <script src="ledger-ai.js"></script> */

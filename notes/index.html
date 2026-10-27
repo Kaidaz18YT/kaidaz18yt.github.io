@@ -98,6 +98,17 @@
   }
   .login-box button:hover { background: var(--accent); }
   .login-error { color: var(--danger); font-size: 13px; margin-top: 10px; min-height: 16px; }
+  .login-box .login-toggle, .login-box .login-retry {
+    background: none; color: var(--accent); padding: 7px 0; margin-top: 6px; font-size: 13px;
+  }
+  .login-box .login-toggle:hover, .login-box .login-retry:hover { background: none; color: var(--ink); }
+  .login-box .login-help { margin: 16px 0 0; color: var(--ink-faint); font-size: 11.5px; }
+  #sync-notice {
+    flex-shrink: 0; background: #33261A; color: var(--ink); border-bottom: 1px solid #6B5233;
+    padding: 9px 16px; font-size: 12.5px; text-align: center;
+  }
+  #sync-notice button { background: none; border: none; padding: 2px 5px; color: var(--accent); text-decoration: underline; }
+  #note-modal-overlay.saving .modal-body, #task-modal.saving .field-group, #task-modal.saving .field-row { pointer-events: none; opacity: .7; }
 
   /* ---------- App shell ---------- */
   #app {
@@ -1001,41 +1012,22 @@
     .modal-overlay.fullscreen .modal-head, .modal-overlay.fullscreen .modal-actions { padding-left: 16px; padding-right: 16px; }
   }
 </style>
-<!-- BACKEND DOWN BANNER (temporary): to remove, delete this <style> block and the #backend-down-banner <div> + <script> at the top of <body>. -->
-<style>
-  :root { --backend-down-h: 40px; }
-  #backend-down-banner {
-    position: fixed; top: 0; left: 0; right: 0; z-index: 1000;
-    background: #33261A; color: #EDEAE3;
-    border-bottom: 1px solid #6B5233;
-    font-family: 'IBM Plex Sans', system-ui, sans-serif;
-    font-size: 13.5px; line-height: 1.45; text-align: center;
-    padding: calc(9px + env(safe-area-inset-top, 0px)) 16px 9px;
-  }
-  #backend-down-banner strong { color: #C9A15C; font-weight: 600; }
-  #backend-down-banner .backend-down-icon { color: #C9A15C; margin-right: 6px; }
-  /* Shift this page's fixed / full-height layout below the banner. */
-  #login-screen, #rail-scrim, .modal-overlay { top: var(--backend-down-h); }
-  #rail { top: var(--backend-down-h); }
-  #app { padding-top: max(0px, calc(var(--backend-down-h) - env(safe-area-inset-top, 0px))); }
-  body #ai-panel { top: var(--backend-down-h); } /* ledger-ai.js injects #ai-panel styles at runtime */
-</style>
 </head>
 <body>
-<!-- BACKEND DOWN BANNER (temporary): see note in <head>. -->
-<div id="backend-down-banner" role="alert"><span class="backend-down-icon" aria-hidden="true">⚠︎</span><strong>Backend is down.</strong> Signing in, loading and saving won’t work until it’s back — please check back later.</div>
-<script>
-(function(){var b=document.getElementById('backend-down-banner');if(!b)return;function s(){document.documentElement.style.setProperty('--backend-down-h',b.offsetHeight+'px');}s();window.addEventListener('resize',s);if(window.ResizeObserver)new ResizeObserver(s).observe(b);})();
-</script>
 
 <div id="login-screen">
-  <div class="login-box">
+  <form class="login-box" id="auth-form">
     <h1>Ledger</h1>
-    <p>Sign in to continue.</p>
-    <input type="password" id="login-password" placeholder="Password" autocomplete="current-password">
-    <button id="login-btn">Sign in</button>
-    <div class="login-error" id="login-error"></div>
-  </div>
+    <p id="auth-subtitle">Sign in with your BreadBackend account.</p>
+    <input type="email" id="login-email" placeholder="Email" autocomplete="email" aria-label="Email" required>
+    <input type="password" id="login-password" placeholder="Password" autocomplete="current-password" aria-label="Password" required>
+    <input type="password" id="login-confirm" placeholder="Confirm password" autocomplete="new-password" aria-label="Confirm password" hidden>
+    <button id="login-btn" type="submit">Sign in</button>
+    <button id="login-toggle" class="login-toggle" type="button">Need an account? Sign up</button>
+    <button id="login-retry" class="login-retry" type="button" hidden>Retry saved session</button>
+    <div class="login-error" id="login-error" role="status"></div>
+    <p class="login-help">This uses a new backend. Existing PocketBase accounts and data are not imported automatically. Privacy depends on server-side access rules.</p>
+  </form>
 </div>
 
 <div id="app">
@@ -1059,11 +1051,12 @@
       <button id="new-project-btn">Add</button>
     </div>
     <div class="rail-foot">
-      Live view for other screens: <a href="dashboard.html" target="_blank">dashboard.html</a>
+      Live updates · 30-second refresh fallback · <a href="dashboard/" target="_blank" rel="noopener">Open dashboard</a>
     </div>
   </aside>
 
   <main id="main">
+    <div id="sync-notice" role="status" hidden><span id="sync-message"></span> <button type="button" id="sync-retry">Retry</button></div>
     <header id="main-head">
       <div class="head-inner">
         <button id="menu-btn" aria-label="Open menu" aria-expanded="false">
@@ -1137,11 +1130,6 @@
         <input type="text" id="note-picker-search" placeholder="Search your notes">
         <div id="note-picker-list"></div>
       </div>
-      <div class="setup-note" id="task-notes-setup" hidden>
-        Linking notes needs one more field in PocketBase. Open the <code>tasks</code> collection, add a
-        <b>Relation</b> field named <code>linked_notes</code> pointing to <code>notes</code>, allow multiple
-        values, then reload this page.
-      </div>
     </div>
     <div class="modal-actions">
       <button class="btn-danger" id="task-delete-btn" style="display:none">Delete task</button>
@@ -1180,7 +1168,7 @@
       </div>
       <div class="field-group">
         <label class="field-label">Attachments</label>
-        <div class="file-drop" id="file-drop">Click, drop, or paste files here. Any type, no size limit</div>
+        <div class="file-drop" id="file-drop">Click, drop, or paste files here. Up to 50 MB per file. File links may be public; check your backend permissions.</div>
         <input type="file" id="file-input" multiple>
         <div class="attach-list" id="attach-list"></div>
       </div>
@@ -1227,12 +1215,15 @@
 <div class="slash-menu" id="slash-menu" role="listbox"></div>
 <div class="toast" id="toast" role="status"></div>
 
-<script src="https://cdnjs.cloudflare.com/ajax/libs/pocketbase/0.21.3/pocketbase.umd.js"></script>
+<script src="https://kaidaz18.duckdns.org/sdk/bread-client.js"></script>
+<script src="bread-backend.js"></script>
+<script src="vendor/dompurify.min.js"></script>
 <script>
-const pb = new PocketBase("https://kaidaz18.duckdns.org");
+const backend = window.LedgerBackend;
 
 const PROJECT_COLORS = ['#7C93CC','#C9A15C','#8FA184','#C97C6E','#B490C0','#6FB3B8','#D0A868','#9AAF6E'];
 function colorForIndex(i){ return PROJECT_COLORS[i % PROJECT_COLORS.length]; }
+function safeProjectColor(value, fallback){ return /^#[0-9a-f]{6}$/i.test(String(value || '')) ? value : fallback; }
 
 let projects = [];
 let tasks = [];
@@ -1242,8 +1233,14 @@ let currentView = 'tasks';
 let editingTaskId = null;
 let editingNoteId = null;
 let editingProjectId = null;
-let pendingFiles = [];
+let pendingFiles = []; // { file, uploaded } — retained across retries
 let removedFileNames = [];
+let editingNoteSnapshot = null;
+let fileSubmitMayHaveSucceeded = false;
+let noteSaving = false;
+let taskSaving = false;
+let pendingPreviewUrls = [];
+let abandonedUploads = [];
 let taskLinkedNoteIds = [];
 let noteCtx = null;          // { project, taskTitle, onSaved } for the note editor
 let projectDraftColor = null;
@@ -1263,17 +1260,13 @@ function escapeHtml(str){
   if (str === null || str === undefined) return '';
   return String(str).replace(/[&<>"']/g, m => ({'&':'&amp;','<':'&lt;','>':'&gt;','"':'&quot;',"'":'&#39;'}[m]));
 }
-// PocketBase dates look like "2026-07-01 12:00:00.000Z"; Safari needs a "T".
+// Accept both ISO dates and older date strings with a space separator.
 function parseDate(s){
   if (!s) return null;
   const d = new Date(String(s).replace(' ', 'T'));
   return isNaN(d) ? null : d;
 }
-function fileUrl(rec, name, query){
-  const f = pb.files;
-  const fn = f.getURL || f.getUrl;
-  return fn.call(f, rec, name, query);
-}
+function fileUrl(name){ return backend.fileUrl(name); }
 // Plain-text preview of note HTML. Block ends become spaces so lines don't run together.
 function stripHtml(html){
   if (!html) return '';
@@ -1281,25 +1274,19 @@ function stripHtml(html){
   const doc = new DOMParser().parseFromString(spaced, 'text/html');
   return (doc.body.textContent || '').replace(/[\s\u00a0\u200b]+/g, ' ').trim();
 }
-// Light clean-up for stored note HTML before it goes back into the editor.
+// Stored HTML is untrusted; sanitize it before inserting it into the editor.
 function sanitizeStored(html){
   if (!html) return '';
-  const doc = new DOMParser().parseFromString('<div>' + html + '</div>', 'text/html');
-  const root = doc.body.firstChild;
-  root.querySelectorAll('script,iframe,object,embed,style,link,meta,base,form').forEach(n => n.remove());
-  root.querySelectorAll('*').forEach(el => {
-    Array.from(el.attributes).forEach(a => {
-      const n = a.name.toLowerCase();
-      if (n.startsWith('on')) el.removeAttribute(a.name);
-      else if ((n === 'href' || n === 'src' || n === 'xlink:href') && /^\s*(javascript|vbscript|data):/i.test(a.value)
-               && !(n === 'src' && /^\s*data:image\//i.test(a.value))) el.removeAttribute(a.name);
-    });
+  if (!window.DOMPurify) return escapeHtml(html); // Fail closed if the local sanitizer cannot load.
+  return window.DOMPurify.sanitize(String(html), {
+    USE_PROFILES: { html: true },
+    FORBID_TAGS: ['style', 'form', 'input', 'button', 'textarea', 'select', 'meta', 'link', 'base'],
+    FORBID_ATTR: ['contenteditable'],
   });
-  return root.innerHTML;
 }
 function upsertLocal(list, rec, atFront){
   const i = list.findIndex(x => x.id === rec.id);
-  if (i > -1) list[i] = rec;
+  if (i > -1) list[i] = Object.assign({}, list[i], rec);
   else if (atFront) list.unshift(rec);
   else list.push(rec);
 }
@@ -1328,70 +1315,221 @@ function confirmDiscard(kind){
   return !dirty[kind] || confirm('Discard your changes?');
 }
 
-// ---------- Auth ----------
-let booted = false;
-function showApp(){
-  $('login-screen').classList.add('hidden');
-  $('app').classList.add('visible');
-  boot();
+// ---------- Authentication and synchronisation ----------
+let sessionEpoch = 0;
+let authAttempt = 0;
+let pollTimer = null;
+let syncPromise = null;
+let syncAgain = false;
+let subscriptions = [];
+let dataReady = false;
+let signupMode = false;
+const POLL_MS = 30000;
+
+function setAuthMode(signup){
+  signupMode = signup;
+  $('auth-subtitle').textContent = signup ? 'Create a BreadBackend account.' : 'Sign in with your BreadBackend account.';
+  $('login-btn').textContent = signup ? 'Create account' : 'Sign in';
+  $('login-toggle').textContent = signup ? 'Already have an account? Sign in' : 'Need an account? Sign up';
+  $('login-confirm').hidden = !signup;
+  $('login-confirm').required = signup;
+  $('login-password').autocomplete = signup ? 'new-password' : 'current-password';
+  $('login-error').textContent = '';
 }
-function showLogin(){
+function showLogin(message){
   $('login-screen').classList.remove('hidden');
   $('app').classList.remove('visible');
+  $('login-password').value = '';
+  $('login-confirm').value = '';
+  $('login-retry').hidden = !backend.hasSession;
+  $('login-error').textContent = message || '';
 }
-if (pb.authStore.isValid) showApp(); else showLogin();
-
-$('login-btn').addEventListener('click', doLogin);
-$('login-password').addEventListener('keydown', (e)=>{ if(e.key==='Enter') doLogin(); });
-async function doLogin(){
-  const pw = $('login-password').value;
-  $('login-error').textContent = '';
+function stopSubscriptions(){
+  subscriptions.splice(0).forEach(unsubscribe => { try { unsubscribe(); } catch (error) { console.warn(error); } });
+  syncAgain = false;
+}
+function queueSync(){
+  if (!backend.user) return;
+  if (syncPromise) syncAgain = true;
+  else syncData();
+}
+function startSubscriptions(){
+  const epoch = sessionEpoch;
+  ['projects', 'tasks', 'notes'].forEach(async name => {
+    try {
+      const unsubscribe = await backend.subscribe(name, queueSync);
+      if (epoch !== sessionEpoch) { if (unsubscribe) unsubscribe(); return; }
+      if (unsubscribe) subscriptions.push(unsubscribe);
+    } catch (error) {
+      // Polling remains available when SSE is unsupported or disconnects.
+      if (epoch === sessionEpoch) console.warn('Live updates unavailable for ' + name, error);
+    }
+  });
+}
+function clearWorkspace(){
+  stopSubscriptions();
+  authAttempt++;
+  sessionEpoch++;
+  clearInterval(pollTimer);
+  pollTimer = null;
+  syncPromise = null;
+  dataReady = false;
+  projects = []; tasks = []; notes = [];
+  currentProjectId = 'all';
+  taskLinkedNoteIds = [];
+  editingTaskId = null; editingNoteId = null; editingProjectId = null;
+  pendingFiles = []; removedFileNames = []; abandonedUploads = []; editingNoteSnapshot = null; noteCtx = null;
+  releasePendingPreviews();
+  dirty.task = false; dirty.note = false;
+  overlayStack.slice().forEach(closeOverlay);
+  closeRail(); closeCtx();
+  $('task-title').value = ''; $('task-description').value = '';
+  $('note-title').value = ''; $('note-content').innerHTML = '';
+  $('project-list').innerHTML = ''; $('tasks-view').innerHTML = ''; $('notes-view').innerHTML = '';
+  $('sync-notice').hidden = true;
+}
+function showApp(){
+  sessionEpoch++;
+  dataReady = false;
+  $('login-screen').classList.add('hidden');
+  $('app').classList.add('visible');
+  $('sync-notice').hidden = true;
+  $('add-btn').disabled = true; $('new-project-btn').disabled = true;
+  $('tasks-view').innerHTML = '<div class="empty-state">Loading your workspace…</div>';
+  $('notes-view').innerHTML = '<div class="empty-state">Loading your workspace…</div>';
+  clearInterval(pollTimer);
+  stopSubscriptions();
+  syncData();
+  startSubscriptions();
+  pollTimer = setInterval(() => { if (!document.hidden) syncData(); }, POLL_MS);
+}
+function authMessage(error, action){
+  const message = String(error && error.message || '');
+  if (backend.statusOf(error) === 400 || backend.isUnauthorized(error) || backend.statusOf(error) === 403 || /invalid.{0,20}(password|credentials)|incorrect|already exists/i.test(message)) {
+    return action === 'signup' ? 'Could not create the account. ' + (message || 'Check the details and try again.') : 'Could not sign in. Check your email, password and account permissions.';
+  }
+  return 'Could not reach BreadBackend. Check the connection and server settings, then try again.' + (message ? ' ' + message : '');
+}
+async function restoreSession(){
+  if (!backend.hasSession) { showLogin(); return; }
+  const attempt = ++authAttempt;
+  $('login-error').textContent = 'Checking your saved session…';
+  $('login-retry').hidden = true;
   try {
-    await pb.collection('users').authWithPassword('kaioliver111@gmail.com', pw);
-    $('login-password').value = '';
+    await backend.restore();
+    if (attempt !== authAttempt) return;
     showApp();
-  } catch (err) {
-    $('login-error').textContent = 'Incorrect password.';
+  } catch (error) {
+    if (attempt !== authAttempt) return;
+    console.error(error);
+    if (backend.isUnauthorized(error)) {
+      try { await backend.logout(); } catch (logoutError) { console.warn(logoutError); }
+      if (attempt === authAttempt) showLogin('Your session has expired. Please sign in again.');
+    } else showLogin('Could not restore your session. Check the connection and retry, or sign in again.');
   }
 }
-$('logout-btn').addEventListener('click', ()=>{
-  pb.authStore.clear();
-  closeRail();
-  showLogin();
+$('login-toggle').addEventListener('click', () => setAuthMode(!signupMode));
+$('login-retry').addEventListener('click', restoreSession);
+$('auth-form').addEventListener('submit', async (event) => {
+  event.preventDefault();
+  const email = $('login-email').value.trim();
+  const password = $('login-password').value;
+  if (!email || !password) return;
+  if (signupMode && password !== $('login-confirm').value) {
+    $('login-error').textContent = 'Passwords do not match.';
+    return;
+  }
+  const attempt = ++authAttempt;
+  const creating = signupMode;
+  let accountCreated = false;
+  $('login-btn').disabled = true; $('login-toggle').disabled = true; $('login-retry').disabled = true;
+  $('login-error').textContent = creating ? 'Creating account…' : 'Signing in…';
+  try {
+    if (creating) { await backend.signup(email, password); accountCreated = true; }
+    if (attempt !== authAttempt) return;
+    await backend.login(email, password);
+    if (attempt !== authAttempt) return;
+    $('login-password').value = ''; $('login-confirm').value = '';
+    showApp();
+  } catch (error) {
+    if (attempt !== authAttempt) return;
+    console.error(error);
+    if (accountCreated) {
+      setAuthMode(false);
+      $('login-error').textContent = 'Account created. Check your email for a verification link, then sign in. ' + authMessage(error, 'login');
+    } else $('login-error').textContent = authMessage(error, creating ? 'signup' : 'login');
+    $('login-retry').hidden = !backend.hasSession;
+  } finally {
+    $('login-btn').disabled = false; $('login-toggle').disabled = false; $('login-retry').disabled = false;
+  }
+});
+$('logout-btn').addEventListener('click', async () => {
+  if ((dirty.task || dirty.note) && !confirm('Sign out and discard your unsaved changes?')) return;
+  const attempt = ++authAttempt;
+  $('logout-btn').disabled = true;
+  let failed = false;
+  try { await backend.logout(); } catch (error) { console.warn(error); failed = true; }
+  finally { $('logout-btn').disabled = false; }
+  if (attempt !== authAttempt) return;
+  clearWorkspace();
+  showLogin(failed ? 'Signed out locally. Server sign-out could not be confirmed.' : 'Signed out.');
+});
+window.addEventListener('ledger-session-change', () => {
+  clearWorkspace();
+  if (backend.hasSession) restoreSession();
+  else showLogin('Signed out in another tab.');
 });
 
-// ---------- Boot ----------
-async function boot(){
-  if (booted) return;
-  booted = true;
-  await loadProjects();
-  await loadTasks();
-  await loadNotes();
-  renderProjectList();
-  renderCurrentView();
-  populateProjectSelects();
-  subscribeRealtime();
+async function syncData(){
+  if (!backend.user) return;
+  if (syncPromise) return syncPromise;
+  const epoch = sessionEpoch;
+  const revision = backend.revision;
+  const promise = (async () => {
+    try {
+      const [nextProjects, nextTasks, nextNotes] = await Promise.all([
+        backend.list('projects'), backend.list('tasks'), backend.list('notes'),
+      ]);
+      if (epoch !== sessionEpoch) return;
+      // An older poll must not overwrite a write that completed in the meantime.
+      if (revision !== backend.revision) { setTimeout(syncData, 0); return; }
+      projects = nextProjects.sort((a,b) => (a.name || '').localeCompare(b.name || ''));
+      tasks = nextTasks;
+      notes = nextNotes;
+      dataReady = true;
+      $('add-btn').disabled = false; $('new-project-btn').disabled = false;
+      if (currentProjectId !== 'all' && !projects.some(p => p.id === currentProjectId)) currentProjectId = 'all';
+      $('sync-notice').hidden = true;
+      refresh(); populateProjectSelects();
+      if ($('task-modal-overlay').classList.contains('open')) { renderTaskNotes(); renderPicker(); }
+    } catch (error) {
+      if (epoch !== sessionEpoch) return;
+      console.error(error);
+      $('sync-message').textContent = backend.isUnauthorized(error)
+        ? 'Your session may have expired. Sign in again to sync; unsaved drafts are still open.'
+        : /partial collection/i.test(String(error && error.message))
+          ? 'BreadBackend returned only part of a collection. Pagination support is needed before Ledger can load it safely.'
+          : /ownerId/i.test(String(error && error.message))
+            ? 'Some documents have no ownerId. Check the backend schema or migrate the old data before using Ledger.'
+            : 'Could not sync with BreadBackend. Showing the last loaded data; check your connection and project rules.';
+      $('sync-notice').hidden = false;
+      if (!dataReady) {
+        $('tasks-view').innerHTML = '<div class="empty-state">Could not load your workspace. Retry the connection above.</div>';
+        $('notes-view').innerHTML = '<div class="empty-state">Could not load your workspace. Retry the connection above.</div>';
+      }
+    }
+  })();
+  syncPromise = promise;
+  try { await promise; } finally {
+    if (syncPromise === promise) {
+      syncPromise = null;
+      if (syncAgain && epoch === sessionEpoch) { syncAgain = false; setTimeout(syncData, 0); }
+    }
+  }
 }
-async function loadProjects(){
-  try { projects = await pb.collection('projects').getFullList({ sort: 'name' }); }
-  catch(e){ console.error(e); projects = []; }
-}
-async function loadTasks(){
-  try { tasks = await pb.collection('tasks').getFullList({ sort: 'deadline' }); }
-  catch(e){ console.error(e); tasks = []; }
-}
-async function loadNotes(){
-  try { notes = await pb.collection('notes').getFullList({ sort: '-updated' }); }
-  catch(e){ console.error(e); notes = []; }
-}
-function subscribeRealtime(){
-  pb.collection('tasks').subscribe('*', async () => { await loadTasks(); refresh(); });
-  pb.collection('notes').subscribe('*', async () => {
-    await loadNotes(); refresh();
-    if ($('task-modal-overlay').classList.contains('open')) { renderTaskNotes(); renderPicker(); }
-  });
-  pb.collection('projects').subscribe('*', async () => { await loadProjects(); refresh(); populateProjectSelects(); });
-}
+$('sync-retry').addEventListener('click', syncData);
+document.addEventListener('visibilitychange', () => { if (!document.hidden && backend.user) syncData(); });
+window.addEventListener('online', () => { if (backend.user) syncData(); });
 
 // ---------- Drawer ----------
 function openRail(){
@@ -1421,8 +1559,8 @@ function renderProjectList(){
     const count = currentView === 'tasks'
       ? tasks.filter(t=>t.project===p.id).length
       : notes.filter(n=>n.project===p.id).length;
-    const color = p.color || colorForIndex(i);
-    html += `<div class="project-item ${currentProjectId===p.id?'active':''}" data-id="${p.id}" tabindex="0" title="${escapeHtml(p.name)}">
+    const color = safeProjectColor(p.color, colorForIndex(i));
+    html += `<div class="project-item ${currentProjectId===p.id?'active':''}" data-id="${escapeHtml(p.id)}" tabindex="0" title="${escapeHtml(p.name)}">
       <span class="project-dot" style="background:${color}"></span>
       <span class="project-name">${escapeHtml(p.name)}</span>
       <span class="count">${count}</span>
@@ -1447,7 +1585,7 @@ $('project-list').addEventListener('keydown', (e)=>{
 function projectColor(projectId){
   const idx = projects.findIndex(p=>p.id===projectId);
   if (idx === -1) return null;
-  return projects[idx].color || colorForIndex(idx);
+  return safeProjectColor(projects[idx].color, colorForIndex(idx));
 }
 function projectName(projectId){
   const p = projects.find(p=>p.id===projectId);
@@ -1457,45 +1595,60 @@ function projectName(projectId){
 $('new-project-btn').addEventListener('click', createProject);
 $('new-project-name').addEventListener('keydown', (e)=>{ if(e.key==='Enter') createProject(); });
 async function createProject(){
+  if (!dataReady) return;
   const name = $('new-project-name').value.trim();
-  if (!name) return;
+  if (!name || $('new-project-btn').disabled) return;
+  $('new-project-btn').disabled = true;
   try {
     const color = colorForIndex(projects.length);
-    const rec = await pb.collection('projects').create({ name, color });
+    const rec = await backend.create('projects', { name, color });
     upsertLocal(projects, rec);
     projects.sort((a,b)=>a.name.localeCompare(b.name));
-    $('new-project-name').value = '';
+    if ($('new-project-name').value.trim() === name) $('new-project-name').value = '';
     refresh(); populateProjectSelects();
     toast('Project added');
   } catch(e){ console.error(e); toast('Could not add project'); }
+  finally { $('new-project-btn').disabled = !dataReady; }
 }
 
 async function deleteProject(id){
   const p = projects.find(x=>x.id===id);
   if (!p) return;
-  const taskCount = tasks.filter(t=>t.project===id).length;
-  const noteCount = notes.filter(n=>n.project===id).length;
+  const epoch = sessionEpoch;
+  const relatedTasks = tasks.filter(t=>t.project===id);
+  const relatedNotes = notes.filter(n=>n.project===id);
   let msg = `Delete project "${p.name}"?`;
-  if (taskCount || noteCount) {
-    msg += ` It has ${taskCount} task${taskCount!==1?'s':''} and ${noteCount} note${noteCount!==1?'s':''}. They will NOT be deleted, just unassigned from this project.`;
+  if (relatedTasks.length || relatedNotes.length) {
+    msg += ` It has ${relatedTasks.length} task${relatedTasks.length!==1?'s':''} and ${relatedNotes.length} note${relatedNotes.length!==1?'s':''}. They will NOT be deleted, just unassigned from this project.`;
   }
   if (!confirm(msg)) return;
   try {
-    await Promise.all([
-      ...tasks.filter(t=>t.project===id).map(t => pb.collection('tasks').update(t.id, { project: null })),
-      ...notes.filter(n=>n.project===id).map(n => pb.collection('notes').update(n.id, { project: null })),
-    ]);
-    await pb.collection('projects').delete(id);
+    // Wait for every unassignment. Never delete the project after a partial failure.
+    const changes = [
+      ...relatedTasks.map(t => ({ collection: 'tasks', id: t.id })),
+      ...relatedNotes.map(n => ({ collection: 'notes', id: n.id })),
+    ];
+    const results = await Promise.allSettled(changes.map(change => backend.update(change.collection, change.id, { project: null })));
+    if (epoch !== sessionEpoch) return;
+    results.forEach((result, i) => {
+      if (result.status === 'fulfilled') upsertLocal(changes[i].collection === 'tasks' ? tasks : notes, result.value);
+    });
+    if (results.some(result => result.status === 'rejected')) {
+      refresh();
+      toast('Some items could not be unassigned. The project was kept; please retry.', 5000);
+      syncData();
+      return;
+    }
+    await backend.delete('projects', id);
     projects = projects.filter(x=>x.id!==id);
     if (currentProjectId === id) currentProjectId = 'all';
-    await Promise.all([loadTasks(), loadNotes()]);
     refresh(); populateProjectSelects();
     toast('Project deleted');
-  } catch(e){ console.error(e); toast('Could not delete project'); }
+  } catch(e){ console.error(e); if (epoch === sessionEpoch) { refresh(); toast('Could not delete project. Unassigned items were kept.'); syncData(); } }
 }
 
 function populateProjectSelects(){
-  const opts = '<option value="">No project</option>' + projects.map(p=>`<option value="${p.id}">${escapeHtml(p.name)}</option>`).join('');
+  const opts = '<option value="">No project</option>' + projects.map(p=>`<option value="${escapeHtml(p.id)}">${escapeHtml(p.name)}</option>`).join('');
   const tv = $('task-project').value, nv = $('note-project').value;
   $('task-project').innerHTML = opts;
   $('note-project').innerHTML = opts;
@@ -1509,7 +1662,7 @@ function openProjectModal(id){
   if (!p) return;
   editingProjectId = id;
   $('project-name-input').value = p.name;
-  projectDraftColor = p.color || projectColor(id) || PROJECT_COLORS[0];
+  projectDraftColor = projectColor(id) || PROJECT_COLORS[0];
   renderProjectSwatches();
   openOverlay($('project-modal-overlay'));
   setTimeout(()=>$('project-name-input').select(), 50);
@@ -1530,7 +1683,7 @@ $('project-save-btn').addEventListener('click', async ()=>{
   const name = $('project-name-input').value.trim();
   if (!name) { toast('Name required'); return; }
   try {
-    const rec = await pb.collection('projects').update(editingProjectId, { name, color: projectDraftColor });
+    const rec = await backend.update('projects', editingProjectId, { name, color: projectDraftColor });
     upsertLocal(projects, rec);
     projects.sort((a,b)=>a.name.localeCompare(b.name));
     closeProjectModal();
@@ -1563,15 +1716,18 @@ $('add-btn').addEventListener('click', ()=>{
 function renderCurrentView(){
   const projLabel = currentProjectId==='all' ? 'All' : (projectName(currentProjectId) || '');
   $('main-title').textContent = `${projLabel} ${currentView==='tasks' ? 'Tasks' : 'Notes'}`;
+  if (!dataReady) {
+    const message = $('sync-notice').hidden ? 'Loading your workspace…' : 'Could not load your workspace. Retry the connection above.';
+    $(currentView + '-view').innerHTML = `<div class="empty-state">${message}</div>`;
+    return;
+  }
   if (currentView==='tasks') renderTasks(); else renderNotes();
 }
 
 // ---------- Tasks rendering ----------
-function linkFieldMissing(){
-  return tasks.length > 0 && !Object.prototype.hasOwnProperty.call(tasks[0], 'linked_notes');
-}
+
 function linkedIds(t){
-  return (t.linked_notes || []).filter(id => notes.some(n => n.id === id));
+  return (Array.isArray(t.linked_notes) ? t.linked_notes : []).filter(id => notes.some(n => n.id === id));
 }
 function fmtDeadline(d){
   const date = parseDate(d);
@@ -1612,7 +1768,7 @@ $('tasks-view').addEventListener('keydown', (e)=>{
 
 const PRIORITY_ORDER = { Urgent:0, High:1, Medium:2, Low:3 };
 function sortTasks(a,b){
-  const pd = PRIORITY_ORDER[a.priority] - PRIORITY_ORDER[b.priority];
+  const pd = (PRIORITY_ORDER[a.priority] ?? PRIORITY_ORDER.Medium) - (PRIORITY_ORDER[b.priority] ?? PRIORITY_ORDER.Medium);
   if (pd !== 0) return pd;
   const ad = parseDate(a.deadline) || new Date('9999-12-31');
   const bd = parseDate(b.deadline) || new Date('9999-12-31');
@@ -1623,7 +1779,8 @@ const NOTE_ICON = `<svg viewBox="0 0 16 16" fill="none"><path d="M3 2h7l3 3v9a1 
 const PIN_ICON = `<svg viewBox="0 0 16 16" fill="none"><path d="M8 2l1.5 4.5L14 8l-4.5 1.5L8 14l-1.5-4.5L2 8l4.5-1.5L8 2Z" fill="currentColor"/></svg>`;
 
 function taskRowHtml(t){
-  const pClass = 'p-' + t.priority.toLowerCase();
+  const priority = Object.prototype.hasOwnProperty.call(PRIORITY_ORDER, t.priority) ? t.priority : 'Medium';
+  const pClass = 'p-' + priority.toLowerCase();
   const done = t.status === 'Done';
   const dl = fmtDeadline(t.deadline);
   const color = projectColor(t.project);
@@ -1631,10 +1788,10 @@ function taskRowHtml(t){
   const linkCount = linkedIds(t).length;
   const meta = [];
   if (dl) meta.push(`<span class="deadline ${dl.cls}">${dl.str}${dl.cls==='overdue'?' · overdue':''}</span>`);
-  meta.push(`<span class="priority-word ${pClass}">${t.priority}</span>`);
+  meta.push(`<span class="priority-word ${pClass}">${priority}</span>`);
   if (pname) meta.push(`<span class="project-tag"><span class="dot" style="background:${color}"></span>${escapeHtml(pname)}</span>`);
   if (linkCount) meta.push(`<span class="note-count" title="Linked notes">${NOTE_ICON}${linkCount} note${linkCount>1?'s':''}</span>`);
-  return `<div class="task-row ${pClass} ${done?'done':''}" data-id="${t.id}" tabindex="0">
+  return `<div class="task-row ${pClass} ${done?'done':''}" data-id="${escapeHtml(t.id)}" tabindex="0">
     <div class="task-check" role="checkbox" aria-checked="${done}"><svg viewBox="0 0 12 12" fill="none"><path d="M2 6l3 3 5-6" stroke="white" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"/></svg></div>
     <div class="task-body">
       <div class="task-title">${escapeHtml(t.title)}</div>
@@ -1646,7 +1803,7 @@ function taskRowHtml(t){
 
 async function updateTask(id, patch){
   try {
-    const rec = await pb.collection('tasks').update(id, patch);
+    const rec = await backend.update('tasks', id, patch);
     upsertLocal(tasks, rec);
     refresh();
     return rec;
@@ -1661,7 +1818,7 @@ async function toggleTaskDone(id){
 async function deleteTask(id){
   if (!confirm('Delete this task?')) return;
   try {
-    await pb.collection('tasks').delete(id);
+    await backend.delete('tasks', id);
     tasks = tasks.filter(t=>t.id!==id);
     refresh();
     toast('Task deleted');
@@ -1681,7 +1838,7 @@ async function duplicateTask(id){
   };
   if ('linked_notes' in t) data.linked_notes = [...(t.linked_notes || [])];
   try {
-    const rec = await pb.collection('tasks').create(data);
+    const rec = await backend.create('tasks', data);
     upsertLocal(tasks, rec);
     refresh();
     toast('Task duplicated');
@@ -1728,26 +1885,33 @@ function toLocalInputValue(iso){
   return `${d.getFullYear()}-${pad(d.getMonth()+1)}-${pad(d.getDate())}T${pad(d.getHours())}:${pad(d.getMinutes())}`;
 }
 function closeTaskModal(){ closeOverlay($('task-modal-overlay')); editingTaskId = null; dirty.task = false; }
-function requestCloseTask(){ if (confirmDiscard('task')) closeTaskModal(); }
+function requestCloseTask(){
+  if (taskSaving) { toast('Please wait for the task to finish saving.'); return; }
+  if (confirmDiscard('task')) closeTaskModal();
+}
+function setTaskSaving(saving){
+  taskSaving = saving;
+  $('task-modal').classList.toggle('saving', saving);
+  if (saving) {
+    setTaskSaving.controls = Array.from($('task-modal').querySelectorAll('button,input,textarea,select')).map(el => [el, el.disabled]);
+    setTaskSaving.controls.forEach(([el]) => { el.disabled = true; });
+  } else {
+    (setTaskSaving.controls || []).forEach(([el, disabled]) => { el.disabled = disabled; });
+    setTaskSaving.controls = [];
+    $('task-save-btn').textContent = 'Save';
+  }
+}
 $('task-modal').addEventListener('input', ()=>{ dirty.task = true; });
 $('task-modal').addEventListener('change', ()=>{ dirty.task = true; });
 
-function linkSetupToast(){
-  toast('Add a "linked_notes" relation field (to notes) on the tasks collection in PocketBase first.', 5000);
-}
-
 function renderTaskNotes(){
-  const missing = linkFieldMissing();
-  $('task-notes-setup').hidden = !missing;
-  $('task-notes-actions').hidden = missing;
-  if (missing) $('note-picker').hidden = true;
   const linked = taskLinkedNoteIds.map(id => notes.find(n => n.id === id)).filter(Boolean);
   if (!linked.length) {
-    $('task-notes-list').innerHTML = missing ? '' : `<div class="linked-empty">No notes linked yet.</div>`;
+    $('task-notes-list').innerHTML = `<div class="linked-empty">No notes linked yet.</div>`;
     return;
   }
   $('task-notes-list').innerHTML = linked.map(n => `
-    <div class="linked-note" data-id="${n.id}" tabindex="0">
+    <div class="linked-note" data-id="${escapeHtml(n.id)}" tabindex="0">
       <div class="linked-note-main">
         <div class="linked-note-title">${escapeHtml(n.title || 'Untitled')}</div>
         <div class="linked-note-snippet">${escapeHtml(stripHtml(n.content)) || 'Empty note'}</div>
@@ -1780,7 +1944,7 @@ function renderPicker(){
     .sort((a,b)=> (parseDate(b.updated)||0) - (parseDate(a.updated)||0))
     .slice(0, 40);
   $('note-picker-list').innerHTML = items.length
-    ? items.map(n => `<div class="picker-item" data-id="${n.id}">
+    ? items.map(n => `<div class="picker-item" data-id="${escapeHtml(n.id)}">
         <div class="t">${escapeHtml(n.title || 'Untitled')}</div>
         <div class="s">${escapeHtml(stripHtml(n.content)) || 'Empty note'}</div>
       </div>`).join('')
@@ -1813,6 +1977,7 @@ $('task-link-new').addEventListener('click', ()=>{
 });
 
 $('task-save-btn').addEventListener('click', async ()=>{
+  if (taskSaving) return;
   const title = $('task-title').value.trim();
   if (!title) { toast('Title required'); return; }
   const dl = $('task-deadline').value;
@@ -1825,26 +1990,31 @@ $('task-save-btn').addEventListener('click', async ()=>{
     completed: $('task-status').value === 'Done',
     deadline: dl ? new Date(dl).toISOString() : null,
   };
-  if (!linkFieldMissing()) data.linked_notes = taskLinkedNoteIds.filter(id => notes.some(n => n.id === id));
+  data.linked_notes = taskLinkedNoteIds.filter(id => notes.some(n => n.id === id));
+  setTaskSaving(true);
+  $('task-save-btn').textContent = 'Saving…';
   try {
     const rec = editingTaskId
-      ? await pb.collection('tasks').update(editingTaskId, data)
-      : await pb.collection('tasks').create(data);
+      ? await backend.update('tasks', editingTaskId, data)
+      : await backend.create('tasks', data);
     upsertLocal(tasks, rec);
     closeTaskModal();
     refresh();
-    if (taskLinkedNoteIds.length && !('linked_notes' in rec)) linkSetupToast();
-    else toast('Task saved');
+    toast('Task saved');
   } catch(e){ console.error(e); toast('Could not save task'); }
+  finally { setTaskSaving(false); }
 });
 $('task-delete-btn').addEventListener('click', async ()=>{
-  if (!editingTaskId) return;
+  if (taskSaving || !editingTaskId) return;
   if (!confirm('Delete this task?')) return;
+  const id = editingTaskId;
+  setTaskSaving(true);
   try {
-    await pb.collection('tasks').delete(editingTaskId);
-    tasks = tasks.filter(t=>t.id!==editingTaskId);
+    await backend.delete('tasks', id);
+    tasks = tasks.filter(t=>t.id!==id);
     closeTaskModal(); refresh(); toast('Task deleted');
   } catch(e){ console.error(e); toast('Could not delete'); }
+  finally { setTaskSaving(false); }
 });
 
 // ---------- Notes rendering ----------
@@ -1920,7 +2090,7 @@ function fmtNoteWhen(iso){
   return d.toLocaleDateString(undefined, { month: 'short', day: 'numeric' });
 }
 function tasksLinkingNote(noteId){
-  return tasks.filter(t => (t.linked_notes || []).includes(noteId));
+  return tasks.filter(t => Array.isArray(t.linked_notes) && t.linked_notes.includes(noteId));
 }
 function noteRowHtml(n){
   const color = projectColor(n.project);
@@ -1928,7 +2098,7 @@ function noteRowHtml(n){
   const plain = stripHtml(n.content);
   const fileCount = (n.attachments || []).length;
   const taskCount = tasksLinkingNote(n.id).length;
-  return `<div class="note-row ${n.pinned?'pinned':''}" data-id="${n.id}" tabindex="0">
+  return `<div class="note-row ${n.pinned?'pinned':''}" data-id="${escapeHtml(n.id)}" tabindex="0">
     <div class="note-row-icon">${n.pinned ? PIN_ICON : NOTE_ICON}</div>
     <div class="note-row-body">
       <div class="note-row-title">${escapeHtml(n.title || 'Untitled')}</div>
@@ -1946,26 +2116,75 @@ function noteRowHtml(n){
 
 async function updateNote(id, patch){
   try {
-    const rec = await pb.collection('notes').update(id, patch);
+    const rec = await backend.update('notes', id, patch);
     upsertLocal(notes, rec);
     refresh();
     return rec;
   } catch(e){ console.error(e); toast('Could not update note'); }
 }
-async function deleteNote(id){
-  if (!confirm('Delete this note and its attachments?')) return;
+function attachmentNames(note){
+  return (Array.isArray(note && note.attachments) ? note.attachments : [])
+    .map(backend.filenameOf).filter(Boolean);
+}
+async function cleanupUnreferencedFiles(names){
+  const unique = Array.from(new Set(names.filter(Boolean)));
+  if (!unique.length) return 0;
+  // Re-read notes before deleting project-wide files; don't remove a file still
+  // referenced by another note. If the check fails, leave the files intact.
+  let latest;
+  try { latest = await backend.list('notes'); }
+  catch (error) { console.error(error); return unique.length; }
+  const referenced = new Set(latest.flatMap(attachmentNames));
+  let failed = 0;
+  for (const name of unique) {
+    if (referenced.has(name)) continue;
+    try { await backend.deleteFile(name); }
+    catch (error) { console.error(error); failed++; }
+  }
+  return failed;
+}
+async function deleteNote(id, fromEditor = false){
+  const note = notes.find(n => n.id === id);
+  if (!note || !confirm('Delete this note? Its uploaded files will remain in backend storage.')) return;
+  const epoch = sessionEpoch;
+  const retainedFiles = attachmentNames(note);
+  const pendingUploaded = fromEditor ? pendingFiles.map(item => backend.filenameOf(item.uploaded)).filter(Boolean) : [];
+  // A timed-out save could have stored these files on another document.
+  if (fromEditor && fileSubmitMayHaveSucceeded) retainedFiles.push(...pendingUploaded);
+  const safeUploads = fromEditor && !fileSubmitMayHaveSucceeded ? pendingUploaded : [];
+  if (fromEditor) {
+    retainedFiles.push(...abandonedUploads.filter(item => item.uncertain).map(item => item.filename));
+    safeUploads.push(...abandonedUploads.filter(item => !item.uncertain).map(item => item.filename));
+  }
   try {
-    await pb.collection('notes').delete(id);
+    // Never delete files first: a failed document delete must leave the note usable.
+    await backend.delete('notes', id);
     notes = notes.filter(n=>n.id!==id);
+    taskLinkedNoteIds = taskLinkedNoteIds.filter(x=>x!==id);
+    if (fromEditor) closeNoteModal({ saved: true });
     refresh();
-    toast('Note deleted');
-  } catch(e){ console.error(e); toast('Could not delete'); }
+    if ($('task-modal-overlay').classList.contains('open')) renderTaskNotes();
+    const linked = tasks.filter(t => Array.isArray(t.linked_notes) && t.linked_notes.includes(id));
+    const results = await Promise.allSettled(linked.map(t => backend.update('tasks', t.id, {
+      linked_notes: t.linked_notes.filter(linkedId => linkedId !== id),
+    })));
+    if (epoch !== sessionEpoch) return;
+    results.forEach(result => { if (result.status === 'fulfilled') upsertLocal(tasks, result.value); });
+    const failedFiles = await cleanupUnreferencedFiles(safeUploads);
+    if (epoch !== sessionEpoch) return;
+    refresh();
+    if (failedFiles || results.some(result => result.status === 'rejected')) {
+      toast('Note deleted, but some linked tasks or uploads could not be cleaned up.', 5000);
+    } else if (retainedFiles.length) {
+      toast('Note deleted. Its files remain in backend storage.', 5000);
+    } else toast('Note deleted');
+  } catch(e){ console.error(e); if (epoch === sessionEpoch) toast('Could not delete note'); }
 }
 async function duplicateNote(id){
   const n = notes.find(x=>x.id===id);
   if (!n) return;
   try {
-    const rec = await pb.collection('notes').create({
+    const rec = await backend.create('notes', {
       title: (n.title || 'Untitled') + ' (copy)',
       content: n.content || '',
       project: n.project || null,
@@ -1977,7 +2196,6 @@ async function duplicateNote(id){
   } catch(e){ console.error(e); toast('Could not duplicate note'); }
 }
 async function linkNoteToTask(noteId, taskId){
-  if (linkFieldMissing()) { linkSetupToast(); return; }
   const t = tasks.find(x=>x.id===taskId);
   if (!t) return;
   const ids = Array.from(new Set([...(t.linked_notes || []), noteId]));
@@ -1985,7 +2203,6 @@ async function linkNoteToTask(noteId, taskId){
   if (rec) toast('Note linked to task');
 }
 function newLinkedNoteFor(taskId){
-  if (linkFieldMissing()) { linkSetupToast(); return; }
   const t = tasks.find(x=>x.id===taskId);
   if (!t) return;
   openNoteModal(null, {
@@ -2004,10 +2221,14 @@ function newLinkedNoteFor(taskId){
 function openNoteModal(id, ctx = null){
   editingNoteId = id;
   noteCtx = ctx;
+  releasePendingPreviews();
   pendingFiles = [];
   removedFileNames = [];
+  abandonedUploads = [];
+  fileSubmitMayHaveSucceeded = false;
   populateProjectSelects();
   const n = id ? notes.find(x=>x.id===id) : null;
+  editingNoteSnapshot = n ? JSON.parse(JSON.stringify(n)) : null;
   if (n) {
     $('note-modal-title').textContent = 'Edit Note';
     $('note-title').value = n.title || '';
@@ -2042,7 +2263,7 @@ function renderNoteTasks(n){
   $('note-tasks-list').innerHTML = linked.map(t =>
     taskModalOpen
       ? `<span class="chip ${t.status==='Done'?'done':''}"><span>${escapeHtml(t.title)}</span></span>`
-      : `<button type="button" class="chip ${t.status==='Done'?'done':''}" data-id="${t.id}"><span>${escapeHtml(t.title)}</span></button>`
+      : `<button type="button" class="chip ${t.status==='Done'?'done':''}" data-id="${escapeHtml(t.id)}"><span>${escapeHtml(t.title)}</span></button>`
   ).join('');
 }
 $('note-tasks-list').addEventListener('click', (e)=>{
@@ -2052,56 +2273,96 @@ $('note-tasks-list').addEventListener('click', (e)=>{
   closeNoteModal();
   openTaskModal(b.dataset.id);
 });
-function closeNoteModal(){
+function releasePendingPreviews(){
+  pendingPreviewUrls.forEach(url => URL.revokeObjectURL(url));
+  pendingPreviewUrls = [];
+}
+function closeNoteModal(options = {}){
+  const uploaded = pendingFiles.map(item => backend.filenameOf(item.uploaded)).filter(Boolean);
+  const abandoned = abandonedUploads.slice();
+  const uncertain = fileSubmitMayHaveSucceeded;
   closeOverlay($('note-modal-overlay'));
   closeSlash();
-  editingNoteId = null; noteCtx = null; pendingFiles = []; removedFileNames = []; dirty.note = false;
+  releasePendingPreviews();
+  editingNoteId = null; editingNoteSnapshot = null; noteCtx = null;
+  pendingFiles = []; removedFileNames = []; abandonedUploads = []; dirty.note = false;
+  fileSubmitMayHaveSucceeded = false;
+  if (!options.saved) {
+    const safe = (uncertain ? [] : uploaded).concat(abandoned.filter(item => !item.uncertain).map(item => item.filename));
+    if (safe.length) cleanupUnreferencedFiles(safe).then(failed => {
+      if (failed) toast('Some unused uploads could not be removed from file storage.', 5000);
+    });
+    if ((uncertain && uploaded.length) || abandoned.some(item => item.uncertain)) {
+      toast('Some uploads may remain in file storage after the failed save.', 5000);
+    }
+  }
 }
-function requestCloseNote(){ if (confirmDiscard('note')) closeNoteModal(); }
+function requestCloseNote(){
+  if (noteSaving) { toast('Please wait for the note to finish saving.'); return; }
+  if (confirmDiscard('note')) closeNoteModal();
+}
 $('note-title').addEventListener('input', ()=>{ dirty.note = true; });
 $('note-project').addEventListener('change', ()=>{ dirty.note = true; });
 $('note-pinned').addEventListener('change', ()=>{ dirty.note = true; });
 
 function renderAttachList(n){
+  releasePendingPreviews();
   const list = $('attach-list');
   let html = '';
-  if (n && n.attachments && n.attachments.length) {
-    n.attachments.forEach(fname=>{
-      if (removedFileNames.includes(fname)) return;
-      const url = fileUrl(n, fname);
-      const isImg = /\.(png|jpe?g|gif|webp|svg)$/i.test(fname);
-      html += `<div class="attach-item" data-existing="${escapeHtml(fname)}">
-        ${isImg ? `<img src="${fileUrl(n, fname, {thumb:'100x100'})}" alt="">` : `<span class="file-icon">FILE</span>`}
-        <a href="${url}" target="_blank" rel="noopener">${escapeHtml(fname)}</a>
-        <button class="remove-attach" title="Remove" aria-label="Remove attachment">&times;</button>
-      </div>`;
-    });
-  }
-  pendingFiles.forEach((f, i)=>{
-    const isImg = f.type.startsWith('image/');
+  const attachments = Array.isArray(n && n.attachments) ? n.attachments : [];
+  attachments.forEach(attachment => {
+    const filename = backend.filenameOf(attachment);
+    if (!filename || removedFileNames.includes(filename)) return;
+    const name = typeof attachment === 'string' ? attachment : (attachment.name || filename);
+    const url = fileUrl(attachment);
+    const isImg = (attachment && attachment.type && attachment.type.startsWith('image/')) || /\.(png|jpe?g|gif|webp|svg)$/i.test(name);
+    html += `<div class="attach-item" data-existing="${escapeHtml(filename)}">
+      ${isImg ? `<img src="${escapeHtml(url)}" alt="" loading="lazy">` : `<span class="file-icon">FILE</span>`}
+      <a href="${escapeHtml(url)}" target="_blank" rel="noopener noreferrer">${escapeHtml(name)}</a>
+      <button type="button" class="remove-attach" title="Remove from note" aria-label="Remove attachment from note">&times;</button>
+    </div>`;
+  });
+  pendingFiles.forEach((item, i)=>{
+    const file = item.file;
+    let preview = '';
+    if (file.type.startsWith('image/') && URL.createObjectURL) {
+      const url = URL.createObjectURL(file);
+      pendingPreviewUrls.push(url);
+      preview = `<img src="${escapeHtml(url)}" alt="">`;
+    }
     html += `<div class="attach-item attach-pending" data-pending="${i}">
-      ${isImg ? `<img src="${URL.createObjectURL(f)}" alt="">` : `<span class="file-icon">FILE</span>`}
-      <a>${escapeHtml(f.name)} (new)</a>
-      <button class="remove-attach" title="Remove" aria-label="Remove attachment">&times;</button>
+      ${preview || `<span class="file-icon">FILE</span>`}
+      <a>${escapeHtml(file.name)} (new)</a>
+      <button type="button" class="remove-attach" title="Remove from note" aria-label="Remove attachment from note">&times;</button>
     </div>`;
   });
   list.innerHTML = html || '<div style="color:var(--ink-faint); font-size:12px;">No attachments</div>';
 }
 $('attach-list').addEventListener('click', (e)=>{
   const btn = e.target.closest('.remove-attach');
-  if (!btn) return;
+  if (!btn || noteSaving) return;
   const item = btn.closest('.attach-item');
   if (item.dataset.existing) removedFileNames.push(item.dataset.existing);
-  else if (item.dataset.pending !== undefined) pendingFiles.splice(Number(item.dataset.pending), 1);
+  else if (item.dataset.pending !== undefined) {
+    const [removed] = pendingFiles.splice(Number(item.dataset.pending), 1);
+    if (removed && removed.uploaded) abandonedUploads.push({ filename: backend.filenameOf(removed.uploaded), uncertain: fileSubmitMayHaveSucceeded });
+  }
   dirty.note = true;
-  renderAttachList(editingNoteId ? notes.find(x=>x.id===editingNoteId) : null);
+  renderAttachList(editingNoteSnapshot);
 });
 function addFiles(files){
-  pendingFiles.push(...files);
-  dirty.note = true;
-  renderAttachList(editingNoteId ? notes.find(x=>x.id===editingNoteId) : null);
+  if (noteSaving) return 0;
+  const accepted = files.filter(file => file.size <= backend.MAX_FILE_SIZE);
+  const rejected = files.length - accepted.length;
+  if (rejected) toast(`${rejected} file${rejected === 1 ? ' is' : 's are'} over the 50 MB limit and could not be added.`, 4500);
+  if (accepted.length) {
+    pendingFiles.push(...accepted.map(file => ({ file, uploaded: null })));
+    dirty.note = true;
+    renderAttachList(editingNoteSnapshot);
+  }
+  return accepted.length;
 }
-$('file-drop').addEventListener('click', ()=>$('file-input').click());
+$('file-drop').addEventListener('click', () => { if (!noteSaving) $('file-input').click(); });
 $('file-input').addEventListener('change', (e)=>{ addFiles(Array.from(e.target.files)); e.target.value = ''; });
 ['dragover','dragenter'].forEach(ev=>{
   $('file-drop').addEventListener(ev, (e)=>{ e.preventDefault(); $('file-drop').classList.add('drag'); });
@@ -2112,48 +2373,81 @@ $('file-input').addEventListener('change', (e)=>{ addFiles(Array.from(e.target.f
 $('file-drop').addEventListener('drop', (e)=>{
   if (e.dataTransfer.files.length) addFiles(Array.from(e.dataTransfer.files));
 });
-
-$('note-save-btn').addEventListener('click', async ()=>{
-  const title = $('note-title').value.trim() || 'Untitled';
-  const formData = new FormData();
-  formData.append('title', title);
-  formData.append('content', getEditorHtml());
-  formData.append('project', $('note-project').value || '');
-  formData.append('pinned', $('note-pinned').checked);
-  pendingFiles.forEach(f => formData.append('attachments', f));
-  if (editingNoteId) removedFileNames.forEach(fname => formData.append('attachments-', fname));
-  const ctx = noteCtx;
-  $('note-save-btn').disabled = true;
-  $('note-save-btn').textContent = 'Saving...';
-  try {
-    const rec = editingNoteId
-      ? await pb.collection('notes').update(editingNoteId, formData)
-      : await pb.collection('notes').create(formData);
-    upsertLocal(notes, rec, true);
-    closeNoteModal();
-    refresh();
-    toast('Note saved');
-    if (ctx && ctx.onSaved) ctx.onSaved(rec);
-  } catch(e){
-    console.error(e);
-    toast('Could not save note');
-  } finally {
-    $('note-save-btn').disabled = false;
+function noteFingerprint(n){
+  return JSON.stringify({ title: n.title || '', content: n.content || '', project: n.project || null,
+    pinned: !!n.pinned, attachments: Array.isArray(n.attachments) ? n.attachments : [], updated: n.updated || null });
+}
+function setNoteSaving(saving){
+  noteSaving = saving;
+  $('note-modal-overlay').classList.toggle('saving', saving);
+  if (saving) {
+    setNoteSaving.controls = Array.from($('note-modal-overlay').querySelectorAll('button,input,select')).map(el => [el, el.disabled]);
+    setNoteSaving.controls.forEach(([el]) => { el.disabled = true; });
+    $('note-content').setAttribute('contenteditable', 'false');
+  } else {
+    (setNoteSaving.controls || []).forEach(([el, disabled]) => { el.disabled = disabled; });
+    setNoteSaving.controls = [];
+    $('note-content').setAttribute('contenteditable', 'true');
     $('note-save-btn').textContent = 'Save';
   }
-});
-$('note-delete-btn').addEventListener('click', async ()=>{
-  if (!editingNoteId) return;
-  if (!confirm('Delete this note and its attachments?')) return;
+}
+$('note-save-btn').addEventListener('click', async ()=>{
+  if (noteSaving) return;
   const id = editingNoteId;
+  const ctx = noteCtx;
+  const epoch = sessionEpoch;
+  const data = {
+    title: $('note-title').value.trim() || 'Untitled',
+    content: getEditorHtml(),
+    project: $('note-project').value || null,
+    pinned: $('note-pinned').checked,
+  };
+  setNoteSaving(true);
+  $('note-save-btn').textContent = 'Saving…';
   try {
-    await pb.collection('notes').delete(id);
-    notes = notes.filter(n=>n.id!==id);
-    taskLinkedNoteIds = taskLinkedNoteIds.filter(x=>x!==id);
-    closeNoteModal(); refresh();
-    if ($('task-modal-overlay').classList.contains('open')) renderTaskNotes();
-    toast('Note deleted');
-  } catch(e){ console.error(e); toast('Could not delete'); }
+    if (id) {
+      const latest = await backend.get('notes', id);
+      if (noteFingerprint(latest) !== noteFingerprint(editingNoteSnapshot) &&
+          !confirm('This note changed on another screen. Save your version over those changes?')) return;
+    }
+    for (let i = 0; i < pendingFiles.length; i++) {
+      if (!pendingFiles[i].uploaded) {
+        $('note-save-btn').textContent = `Uploading ${i + 1} of ${pendingFiles.length}…`;
+        pendingFiles[i].uploaded = await backend.upload(pendingFiles[i].file);
+      }
+    }
+    const previous = (editingNoteSnapshot && Array.isArray(editingNoteSnapshot.attachments)) ? editingNoteSnapshot.attachments : [];
+    data.attachments = previous.filter(item => !removedFileNames.includes(backend.filenameOf(item)))
+      .concat(pendingFiles.map(item => item.uploaded));
+    // The guide does not guarantee complete pagination or reference-safe
+    // deletion. Keep files that were ever attached to a saved note.
+    const toRemove = abandonedUploads.filter(item => !item.uncertain).map(item => item.filename);
+    const retainedFiles = removedFileNames.length || abandonedUploads.some(item => item.uncertain);
+    $('note-save-btn').textContent = 'Saving…';
+    // A lost response can leave the result unknown. Keep uploads on failure so
+    // a retry can reuse them and a possibly-saved note never loses its files.
+    fileSubmitMayHaveSucceeded = true;
+    const rec = id ? await backend.update('notes', id, data) : await backend.create('notes', data);
+    upsertLocal(notes, rec, true);
+    closeNoteModal({ saved: true });
+    refresh();
+    if (ctx && ctx.onSaved) await ctx.onSaved(rec);
+    const failed = await cleanupUnreferencedFiles(toRemove);
+    if (epoch !== sessionEpoch) return;
+    if (failed || retainedFiles) toast('Note saved. Removed files may remain in backend storage.', 5000);
+    else toast('Note saved');
+  } catch(e){
+    console.error(e);
+    if (epoch === sessionEpoch) toast('Could not save note. Your draft is still open; please retry.', 5000);
+  } finally {
+    setNoteSaving(false);
+  }
+});
+$('note-delete-btn').addEventListener('click', async () => {
+  if (noteSaving || !editingNoteId) return;
+  setNoteSaving(true);
+  try { await deleteNote(editingNoteId, true); }
+  finally { setNoteSaving(false); }
 });
 
 // =====================================================================
@@ -2722,8 +3016,8 @@ editor.addEventListener('paste', (e)=>{
   const text = cd.getData('text/plain');
   if (cd.files && cd.files.length && !html && !text) {
     e.preventDefault();
-    addFiles(Array.from(cd.files));
-    toast(`Added ${cd.files.length} file${cd.files.length>1?'s':''} to attachments`);
+    const added = addFiles(Array.from(cd.files));
+    if (added && added === cd.files.length) toast(`Added ${added} file${added>1?'s':''} to attachments`);
     return;
   }
   e.preventDefault();
@@ -2816,7 +3110,7 @@ function showCtx(items, x, y, targetEl, focusFirst){
 }
 function projectChoices(currentId, onPick){
   return [{ label: 'No project', checked: !currentId, onClick: () => onPick(null) }].concat(
-    projects.map((p, i) => ({ label: p.name, dot: p.color || colorForIndex(i), checked: p.id === currentId, onClick: () => onPick(p.id) }))
+    projects.map((p, i) => ({ label: p.name, dot: safeProjectColor(p.color, colorForIndex(i)), checked: p.id === currentId, onClick: () => onPick(p.id) }))
   );
 }
 function menuItemsFor(el){
@@ -2854,11 +3148,9 @@ function menuItemsFor(el){
     const n = notes.find(x => x.id === el.dataset.id);
     if (!n) return null;
     const openTasks = tasks.filter(t => t.status !== 'Done').sort(sortTasks).slice(0, 30);
-    const linkItem = linkFieldMissing()
-      ? { label: 'Link to task…', onClick: linkSetupToast }
-      : { label: 'Link to task', children: openTasks.map(t => ({
-          label: t.title, checked: (t.linked_notes || []).includes(n.id), onClick: () => linkNoteToTask(n.id, t.id),
-        })) };
+    const linkItem = { label: 'Link to task', children: openTasks.map(t => ({
+      label: t.title, checked: (t.linked_notes || []).includes(n.id), onClick: () => linkNoteToTask(n.id, t.id),
+    })) };
     return [
       { label: 'Open', onClick: () => openNoteModal(n.id) },
       { label: n.pinned ? 'Unpin' : 'Pin to top', onClick: () => updateNote(n.id, { pinned: !n.pinned }) },
@@ -2993,7 +3285,7 @@ document.addEventListener('keydown', (e)=>{
   }
   if ($('rail').classList.contains('open')) closeRail();
 });
+restoreSession();
 </script>
-    <script src="ledger-ai.js"></script>
 </body>
 </html>
