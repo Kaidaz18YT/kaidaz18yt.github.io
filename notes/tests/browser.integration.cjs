@@ -10,6 +10,7 @@ const ROOT = path.resolve(__dirname, '../..');
 const API = 'https://kaidaz18.duckdns.org/api/v1/kaidaz18-notes';
 const SDK = 'https://kaidaz18.duckdns.org/sdk/bread-client.js';
 const API_KEY = 'pk_live_BpZSqs73ax25L4X91Ok0D3fY';
+const ACCOUNT_EMAIL = 'kaioliver111@gmail.com';
 const sdkSource = `
 window.__breadSubscribers = {};
 window.__emitBread = (name, event = {}) => (window.__breadSubscribers[name] || []).slice().forEach(cb => cb(event));
@@ -74,8 +75,11 @@ function staticServer() {
   });
 }
 function mockBackend() {
-  return { users: [], tokens: {}, docs: { projects: [], tasks: [], notes: [] }, files: {}, sequence: 0,
-    uploads: 0, fail: {}, requests: [] };
+  return { users: [
+    { id: 'user-owner', email: ACCOUNT_EMAIL, password: 'password123' },
+    { id: 'user-other', email: 'other@example.com', password: 'password456' },
+  ], tokens: {}, docs: { projects: [], tasks: [], notes: [] }, files: {}, sequence: 0,
+    uploads: 0, fail: {}, requests: [], loginAttempts: [] };
 }
 function attachRoutes(context, state) {
   const cors = { 'access-control-allow-origin': '*', 'access-control-allow-headers': 'authorization, content-type, x-api-key',
@@ -102,7 +106,8 @@ function attachRoutes(context, state) {
       return reply(200, { id: user.id, email: user.email });
     }
     if (endpoint === '/auth/login' && method === 'POST') {
-      const input = body(), user = state.users.find(u => u.email === input.email && u.password === input.password);
+      const input = body(); state.loginAttempts.push(input);
+      const user = state.users.find(u => u.email === input.email && u.password === input.password);
       if (!user) return reply(401, { error: 'Invalid credentials' });
       const token = 'token-' + ++state.sequence; state.tokens[token] = user.id;
       return reply(200, { token, user: { id: user.id, email: user.email } });
@@ -115,7 +120,7 @@ function attachRoutes(context, state) {
     }
     if (endpoint === '/auth/me') {
       const user = state.users.find(u => u.id === userId);
-      return reply(200, { id: user.id, email: user.email });
+      return reply(200, state.omitProfileEmail ? { id: user.id } : { id: user.id, email: user.email });
     }
     if (endpoint === '/files' && method === 'POST') {
       if (state.fail.upload) { state.fail.upload--; return reply(500, { error: 'Upload failed' }); }
@@ -169,14 +174,22 @@ async function main() {
   const root = `http://127.0.0.1:${port}`;
   try {
     await page.goto(root + '/notes/', { waitUntil: 'domcontentloaded' });
-    await page.locator('#login-toggle').click();
-    await page.locator('#login-email').fill('alice@example.com');
+    assert.equal(await page.locator('#auth-form input:visible').count(), 1);
+    assert.equal(await page.locator('#auth-form input:visible').getAttribute('type'), 'password');
+    assert.equal(await page.locator('#login-email, #login-toggle, #login-confirm').count(), 0);
+    await page.locator('#login-password').fill('incorrect-password');
+    await page.locator('#login-btn').click();
+    await page.getByText('Could not sign in. Check your password and account status.').waitFor();
+    assert.equal(await page.locator('#app.visible').count(), 0);
     await page.locator('#login-password').fill('password123');
-    await page.locator('#login-confirm').fill('password123');
     await page.locator('#login-btn').click();
     await page.locator('#app.visible').waitFor();
     await page.getByText('No tasks here yet.').waitFor();
     const aliceId = state.users[0].id;
+    assert.ok(state.loginAttempts.every(attempt => attempt.email === ACCOUNT_EMAIL));
+    assert.equal(state.loginAttempts[1].password, 'password123');
+    assert.equal(await page.evaluate(() => Object.values(localStorage).some(value => String(value).includes('password123'))), false);
+    assert.equal(state.requests.some(r => r.endpoint === '/auth/signup'), false);
     assert.equal(state.requests.some(r => r.endpoint === '/auth/me' && r.headers.authorization?.startsWith('Bearer ')), true);
 
     await page.locator('#menu-btn').click();
@@ -307,29 +320,80 @@ async function main() {
     await board.locator('#sync-retry').click();
     await board.locator('#sync-notice').waitFor({ state: 'hidden' });
 
-    // Signing out in one tab clears the other. A different account cannot see
-    // the first account's documents even when the mock API returns everything.
+    // Signing out in one tab clears the other; the dashboard also accepts
+    // only a password and shares the restored owner session.
     await board.locator('#signout').click();
     await page.locator('#login-screen:not(.hidden)').waitFor();
     assert.equal(await board.evaluate(() => (window.__breadSubscribers.tasks || []).length), 0);
     assert.ok(state.requests.some(r => r.endpoint === '/auth/logout'));
     assert.equal(await page.locator('#tasks-view').innerText(), '');
-    await page.locator('#login-toggle').click();
-    await page.locator('#login-email').fill('bob@example.com');
-    await page.locator('#login-password').fill('password456');
-    await page.locator('#login-confirm').fill('password456');
-    await page.locator('#login-btn').click();
+    assert.equal(await board.locator('#auth-form input:visible').count(), 1);
+    assert.equal(await board.locator('#auth-form input:visible').getAttribute('type'), 'password');
+    await board.locator('#login-password').fill('incorrect-password');
+    await board.locator('#login-btn').click();
+    await board.getByText('Could not sign in. Check your password and account status.').waitFor();
+    assert.equal(await board.locator('#board.visible').count(), 0);
+    await board.locator('#login-password').fill('password123');
+    await board.locator('#login-btn').click();
+    await board.locator('#board.visible').waitFor();
     await page.locator('#app.visible').waitFor();
     await page.locator('#menu-btn').click(); await page.locator('#switch-tasks').click(); await page.locator('#rail-close').click();
-    await page.getByText('No tasks here yet.').waitFor();
-    assert.equal(await page.getByText('Updated on another screen', { exact: true }).count(), 0);
-    assert.equal(state.docs.tasks.length, 1);
+    await page.getByText('Updated on another screen', { exact: true }).waitFor();
+    assert.ok(state.loginAttempts.every(attempt => attempt.email === ACCOUNT_EMAIL));
+
+    // The mock deliberately returns other owners' documents; the UI must not
+    // display them. Real confidentiality still depends on backend rules.
+    state.docs.tasks.push({ id: 'other-task', ownerId: 'user-other', title: 'Other person task', priority: 'Medium', status: 'To Do' });
+    await page.evaluate(() => syncData());
+    assert.equal(await page.getByText('Other person task', { exact: true }).count(), 0);
+
+    // A saved session from the former multi-account UI must not be reused.
+    const foreignContext = await browser.newContext();
+    attachRoutes(foreignContext, state);
+    const foreignPage = await foreignContext.newPage();
+    foreignPage.on('pageerror', error => errors.push(error.message));
+    await foreignPage.goto(root + '/notes/', { waitUntil: 'domcontentloaded' });
+    state.tokens['other-account-token'] = 'user-other';
+    await foreignPage.evaluate(() => {
+      localStorage.setItem('__mock_bread_token__', 'other-account-token');
+      localStorage.setItem('ledger.bread.session.v1', '__sdk_managed_session__');
+    });
+    await foreignPage.reload({ waitUntil: 'domcontentloaded' });
+    await foreignPage.getByText('This saved session is for a different account. Please sign in again.').waitFor();
+    assert.equal(await foreignPage.locator('#app.visible').count(), 0);
+    assert.equal(await foreignPage.evaluate(() => localStorage.getItem('ledger.bread.session.v1')), null);
+
+    // The dashboard independently rejects the same kind of foreign session.
+    await foreignPage.goto(root + '/notes/dashboard/', { waitUntil: 'domcontentloaded' });
+    state.tokens['other-board-token'] = 'user-other';
+    await foreignPage.evaluate(() => {
+      localStorage.setItem('__mock_bread_token__', 'other-board-token');
+      localStorage.setItem('ledger.bread.session.v1', '__sdk_managed_session__');
+    });
+    await foreignPage.reload({ waitUntil: 'domcontentloaded' });
+    await foreignPage.getByText('This saved session is for a different account. Please sign in again.').waitFor();
+    assert.equal(await foreignPage.locator('#board.visible').count(), 0);
+
+    // Profiles without an email can log in, but cannot restore an unverified session.
+    await foreignPage.goto(root + '/notes/', { waitUntil: 'domcontentloaded' });
+    state.omitProfileEmail = true;
+    state.tokens['no-email-token'] = 'user-owner';
+    await foreignPage.evaluate(() => {
+      localStorage.setItem('__mock_bread_token__', 'no-email-token');
+      localStorage.setItem('ledger.bread.session.v1', '__sdk_managed_session__');
+    });
+    await foreignPage.reload({ waitUntil: 'domcontentloaded' });
+    await foreignPage.getByText('Could not verify the saved account. Please sign in again.').waitFor();
+    await foreignPage.locator('#login-password').fill('password123');
+    await foreignPage.locator('#login-btn').click();
+    await foreignPage.locator('#app.visible').waitFor();
+    state.omitProfileEmail = false;
+    await foreignContext.close();
 
     // Stored HTML, IDs and colours are untrusted even if a server rule is misconfigured.
-    const bobId = state.users.find(user => user.email === 'bob@example.com').id;
-    state.docs.projects.push({ id: 'project-unsafe\" onmouseover=\"window.__xss=1', ownerId: bobId,
-      name: 'Bob project', color: '#111111\" onmouseover=\"window.__xss=1' });
-    state.docs.notes.push({ id: 'note-unsafe\" onmouseover=\"window.__xss=1', ownerId: bobId,
+    state.docs.projects.push({ id: 'project-unsafe\" onmouseover=\"window.__xss=1', ownerId: aliceId,
+      name: 'Owner project', color: '#111111\" onmouseover=\"window.__xss=1' });
+    state.docs.notes.push({ id: 'note-unsafe\" onmouseover=\"window.__xss=1', ownerId: aliceId,
       title: 'Untrusted note', content: '<p>Safe text</p><img src=x onerror=\"window.__xss=1\"><svg onload=\"window.__xss=1\"></svg>',
       pinned: false, attachments: [], updated: new Date().toISOString() });
     await page.evaluate(() => syncData());
@@ -347,7 +411,7 @@ async function main() {
     await diagnostic.goto(root + '/notes/test/', { waitUntil: 'domcontentloaded' });
     await diagnostic.getByText(/All 5 checks passed/).waitFor();
     assert.deepEqual(errors, []);
-    console.log('Browser integration: signup, CRUD, uploads/retries, links, sessions, dashboard, conflicts, isolation and diagnostics passed.');
+    console.log('Browser integration: password-only sign-in, CRUD, uploads, sessions, dashboard, conflicts, account isolation and diagnostics passed.');
   } finally {
     await browser.close();
     await new Promise(resolve => server.close(resolve));

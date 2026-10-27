@@ -6,17 +6,26 @@ key** belongs in this repository. Never put an administrator key in the site.
 
 ## Account and data requirements
 
-- Sign in or create a BreadBackend account from `/notes/`. PocketBase accounts,
-  documents, and attachments are **not** imported automatically. Export and
-  migrate those separately if needed.
+- `/notes/` and `/notes/dashboard/` only ask for a password. The shared adapter
+  sends it to BreadBackend with the fixed account email
+  `kaioliver111@gmail.com`. That account must already exist in BreadBackend; the
+  website no longer offers signup. To change the account later, update the
+  `ACCOUNT_EMAIL` constant in `bread-backend.js`. The email and public key are
+  visible in frontend code; the password must never be added there.
+- PocketBase accounts, documents, and attachments are **not** imported
+  automatically. Export and migrate those separately if needed.
 - `auth.me()` must return a user with a stable `id` (or `userId`/`_id`). Each
   Ledger document needs an `ownerId` matching that ID. Projects, tasks and notes
   are ordinary JSON documents; note attachments are stored as an array of file
-  metadata, and task `linked_notes` is an array of note IDs.
-- **Configure and test server-side per-user rules** for collection reads,
+  metadata, and task `linked_notes` is an array of note IDs. For automatic
+  session restoration, the profile should also include the account email; if it
+  does not, Ledger asks for the password again rather than reuse an unverified
+  session. A profile for a different email is rejected.
+- **Configure and test server-side owner-only rules** for collection reads,
   writes, subscriptions, and file actions. `ownerId` filtering in the frontend
   only keeps the UI tidy; it is not security. The backend must derive ownership
-  from the authenticated user and reject access to other users' data.
+  from the authenticated user and reject access to other users' data. See
+  [BACKEND_RULES.md](BACKEND_RULES.md) for the recommended policy and checks.
 - The SDK must allow sessions to be restored after reload, either by returning a
   token from login or persisting its own session. Ledger calls the SDK's logout.
   If logout fails, the UI reports that server sign-out could not be confirmed.

@@ -8,13 +8,14 @@ const vm = require('node:vm');
 const source = fs.readFileSync(path.join(__dirname, '../bread-backend.js'), 'utf8');
 const BASE = 'https://kaidaz18.duckdns.org/api/v1/kaidaz18-notes';
 const KEY = 'ledger.bread.session.v1';
+const ACCOUNT_EMAIL = 'kaioliver111@gmail.com';
 
 function harness(options = {}) {
   const stored = options.stored || new Map();
   const requests = [];
   const listeners = {};
   const records = { projects: [], tasks: [], notes: [] };
-  const state = { records, listeners: {}, configs: [], logoutCalls: 0, uploads: 0, deletedFiles: [], next: 1 };
+  const state = { records, listeners: {}, configs: [], loginCalls: [], logoutCalls: 0, uploads: 0, deletedFiles: [], next: 1 };
   const localStorage = {
     getItem: key => stored.has(key) ? stored.get(key) : null,
     setItem: (key, value) => stored.set(key, String(value)),
@@ -30,9 +31,8 @@ function harness(options = {}) {
     constructor(config) {
       state.configs.push(config);
       this.auth = {
-        signup: async () => ({ id: 'alice' }),
-        login: async () => options.sdkManaged ? undefined : { token: 'token-for-alice' },
-        me: async () => ({ user: { id: 'alice', email: 'alice@example.com' } }),
+        login: async (email, password) => { state.loginCalls.push({ email, password }); return options.sdkManaged ? undefined : { token: 'token-for-alice' }; },
+        me: async () => { if (options.meError) throw options.meError; return { user: options.profile || { id: 'alice', email: ACCOUNT_EMAIL } }; },
         logout: async () => { state.logoutCalls++; if (options.logoutFails) throw new Error('logout failed'); },
       };
       this.files = {
@@ -59,9 +59,11 @@ function harness(options = {}) {
 
 test('uses the current SDK configuration, ownership fields, and documented list fallback', async () => {
   const { backend, state } = harness();
-  await backend.login('alice@example.com', 'password');
+  await backend.login('password');
   assert.equal(state.configs[0].baseUrl, 'https://kaidaz18.duckdns.org');
   assert.equal(state.configs[0].projectSlug, 'kaidaz18-notes');
+  assert.deepEqual(state.loginCalls[0], { email: ACCOUNT_EMAIL, password: 'password' });
+  assert.equal(typeof backend.signup, 'undefined');
   assert.equal(backend.user.ledgerId, 'alice');
   const note = await backend.create('notes', { title: 'Mine', ownerId: 'someone-else' });
   assert.equal(note.ownerId, 'alice');
@@ -77,7 +79,7 @@ test('uses the current SDK configuration, ownership fields, and documented list 
 
 test('scopes the restored bearer and API key to this exact project', async () => {
   const { backend, window, requests } = harness();
-  await backend.login('alice@example.com', 'password');
+  await backend.login('password');
   await window.fetch(BASE + '/collections/notes', { headers: { 'Content-Type': 'application/json' } });
   await window.fetch(BASE + '-other/collections/notes', { headers: {} });
   await window.fetch('https://elsewhere.example/collect', { headers: {} });
@@ -89,7 +91,7 @@ test('scopes the restored bearer and API key to this exact project', async () =>
 
 test('supports an SDK-managed session without a login return value', async () => {
   const first = harness({ sdkManaged: true });
-  await first.backend.login('alice@example.com', 'password');
+  await first.backend.login('password');
   assert.ok(first.backend.hasSession);
   assert.equal(first.stored.get(KEY), '__sdk_managed_session__');
   await first.window.fetch(BASE + '/auth/me', { headers: { Authorization: 'Bearer sdk-managed-token' } });
@@ -100,7 +102,7 @@ test('supports an SDK-managed session without a login return value', async () =>
 
 test('accepts fullUrl-only uploads, enforces the size limit, and handles missing delete support', async () => {
   const { backend, state } = harness();
-  await backend.login('alice@example.com', 'password');
+  await backend.login('password');
   const uploaded = await backend.upload({ name: 'My document.txt', type: 'text/plain', size: 4 });
   assert.equal(uploaded.filename, 'example name.txt');
   assert.equal(backend.fileUrl(uploaded), BASE + '/files/example%20name.txt');
@@ -110,7 +112,7 @@ test('accepts fullUrl-only uploads, enforces the size limit, and handles missing
   await assert.rejects(backend.upload({ name: 'too-large', size: backend.MAX_FILE_SIZE + 1 }), /50 MB/);
   assert.equal(state.uploads, 1);
   const external = harness({ fileResult: { fullUrl: 'https://cdn.example/file/abc' } });
-  await external.backend.login('alice@example.com', 'password');
+  await external.backend.login('password');
   const file = await external.backend.upload({ name: 'external.txt', size: 1, type: '' });
   assert.equal(file.filename, null);
   assert.equal(external.backend.fileUrl(file), 'https://cdn.example/file/abc');
@@ -119,13 +121,13 @@ test('accepts fullUrl-only uploads, enforces the size limit, and handles missing
 
 test('rejects known partial collections rather than displaying an incomplete workspace', async () => {
   const { backend } = harness({ listResult: { items: [], hasMore: true } });
-  await backend.login('alice@example.com', 'password');
+  await backend.login('password');
   await assert.rejects(backend.list('notes'), /partial collection/);
 });
 
 test('stops forwarding subscription events after logout, even if server logout fails', async () => {
   const { backend, state, stored } = harness({ logoutFails: true });
-  await backend.login('alice@example.com', 'password');
+  await backend.login('password');
   let received = 0;
   const unsubscribe = await backend.subscribe('notes', () => received++);
   state.listeners.notes({ action: 'create' });
@@ -143,14 +145,63 @@ test('stops forwarding subscription events after logout, even if server logout f
 
 test('accepts an SDK class exposed as a global lexical binding', async () => {
   const { backend } = harness({ lexicalSdk: true });
-  await backend.login('alice@example.com', 'password');
+  await backend.login('password');
   assert.equal(backend.user.ledgerId, 'alice');
 });
 
 
 test('does not silently hide documents without an owner field', async () => {
   const { backend, state } = harness();
-  await backend.login('alice@example.com', 'password');
+  await backend.login('password');
   state.records.notes.push({ id: 'legacy', title: 'Missing owner' });
   await assert.rejects(backend.list('notes'), /ownerId/);
+});
+
+
+test('the fixed email is used with only a password and the password is not stored', async () => {
+  const { backend, state, stored } = harness();
+  await backend.login('test-password');
+  assert.deepEqual(state.loginCalls[0], { email: ACCOUNT_EMAIL, password: 'test-password' });
+  assert.equal(Array.from(stored.values()).some(value => String(value).includes('test-password')), false);
+});
+
+test('rejects a fresh login if the backend reports a different account', async () => {
+  const { backend, state, stored } = harness({ profile: { id: 'other', email: 'other@example.com' } });
+  await assert.rejects(backend.login('test-password'), error => backend.isAccountError(error));
+  assert.equal(backend.user, null);
+  assert.equal(backend.hasSession, false);
+  assert.equal(stored.has(KEY), false);
+  assert.equal(state.logoutCalls, 1);
+});
+
+test('rejects and clears a saved session for a different account', async () => {
+  const stored = new Map([[KEY, 'old-session-token']]);
+  const { backend, state } = harness({ stored, profile: { id: 'other', email: 'other@example.com' } });
+  await assert.rejects(backend.restore(), error => backend.isAccountError(error));
+  assert.equal(backend.user, null);
+  assert.equal(backend.hasSession, false);
+  assert.equal(stored.has(KEY), false);
+  assert.equal(state.logoutCalls, 1);
+});
+
+test('allows a fresh login without a profile email, but requires a password again after reload', async () => {
+  const first = harness({ profile: { id: 'alice' } });
+  assert.equal((await first.backend.login('password')).ledgerId, 'alice');
+  const reloaded = harness({ stored: first.stored, profile: { id: 'alice' } });
+  await assert.rejects(reloaded.backend.restore(), error => reloaded.backend.isAccountError(error));
+  assert.equal(reloaded.backend.hasSession, false);
+});
+
+test('restores an intended account regardless of email casing', async () => {
+  const stored = new Map([[KEY, 'valid-session-token']]);
+  const { backend } = harness({ stored, profile: { id: 'alice', email: ACCOUNT_EMAIL.toUpperCase() } });
+  assert.equal((await backend.restore()).ledgerId, 'alice');
+});
+
+test('preserves a saved session when profile verification fails due to a network error', async () => {
+  const stored = new Map([[KEY, 'valid-session-token']]);
+  const { backend, state } = harness({ stored, meError: new Error('network unavailable') });
+  await assert.rejects(backend.restore(), /network unavailable/);
+  assert.equal(backend.hasSession, true);
+  assert.equal(state.logoutCalls, 0);
 });

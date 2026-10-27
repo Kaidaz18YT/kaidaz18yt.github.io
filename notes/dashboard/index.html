@@ -184,13 +184,12 @@
 <div id="login-screen">
   <form class="login-box" id="auth-form">
     <h1>Ledger — Board</h1>
-    <p>Sign in with your BreadBackend account.</p>
-    <input type="email" id="login-email" placeholder="Email" autocomplete="email" aria-label="Email" required>
+    <p>Enter your password to continue.</p>
     <input type="password" id="login-password" placeholder="Password" autocomplete="current-password" aria-label="Password" required>
     <button id="login-btn" type="submit">Sign in</button>
     <button id="login-retry" class="retry-session" type="button" hidden>Retry saved session</button>
     <div class="login-error" id="login-error" role="status"></div>
-    <a href="../">Open Ledger or create an account</a>
+    <a href="../">Open Ledger</a>
   </form>
 </div>
 
@@ -299,7 +298,8 @@ async function restoreSession(){
   } catch(error) {
     if (attempt !== authAttempt) return;
     console.error(error);
-    if (backend.isUnauthorized(error)) {
+    if (backend.isAccountError(error)) showLogin(error.message);
+    else if (backend.isUnauthorized(error)) {
       try { await backend.logout(); } catch (logoutError) { console.warn(logoutError); }
       if (attempt === authAttempt) showLogin('Your session has expired. Please sign in again.');
     } else showLogin('Could not restore your session. Check the connection and retry, or sign in again.');
@@ -311,7 +311,7 @@ $('auth-form').addEventListener('submit', async (event) => {
   $('login-btn').disabled = true; $('login-retry').disabled = true;
   $('login-error').textContent = 'Signing in…';
   try {
-    await backend.login($('login-email').value.trim(), $('login-password').value);
+    await backend.login($('login-password').value);
     if (attempt !== authAttempt) return;
     $('login-password').value = '';
     showBoard();
@@ -319,9 +319,10 @@ $('auth-form').addEventListener('submit', async (event) => {
     if (attempt !== authAttempt) return;
     console.error(error);
     const status = backend.statusOf(error);
-    $('login-error').textContent = status === 400 || status === 403 || backend.isUnauthorized(error)
-      ? 'Could not sign in. Check your email, password and account permissions.'
-      : 'Could not reach BreadBackend. Check the connection and server settings, then try again.';
+    $('login-error').textContent = backend.isAccountError(error) ? error.message
+      : status === 400 || status === 403 || backend.isUnauthorized(error)
+        ? 'Could not sign in. Check your password and account status.'
+        : 'Could not reach BreadBackend. Check the connection and server settings, then try again.';
     $('login-retry').hidden = !backend.hasSession;
   } finally { $('login-btn').disabled = false; $('login-retry').disabled = false; }
 });

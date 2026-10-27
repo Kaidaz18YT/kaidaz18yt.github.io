@@ -5,6 +5,8 @@
 
   const SERVER_URL = 'https://kaidaz18.duckdns.org';
   const PROJECT_SLUG = 'kaidaz18-notes';
+  // The browser sends this fixed email with the password; it is not a secret.
+  const ACCOUNT_EMAIL = 'kaioliver111@gmail.com';
   const BASE_URL = SERVER_URL + '/api/v1/' + PROJECT_SLUG;
   const API_KEY = 'pk_live_BpZSqs73ax25L4X91Ok0D3fY';
   const SESSION_KEY = 'ledger.bread.session.v1';
@@ -78,6 +80,28 @@
     const id = result.id ?? result.userId ?? result._id ?? result.email;
     if (id === undefined || id === null || id === '') throw new Error('The user profile has no account identifier.');
     return Object.assign({}, result, { ledgerId: String(id) });
+  }
+  function accountError(message) {
+    const error = new Error(message);
+    error.code = 'LEDGER_ACCOUNT_MISMATCH';
+    return error;
+  }
+  function isAccountError(error) { return !!error && error.code === 'LEDGER_ACCOUNT_MISMATCH'; }
+  async function loadProfile(freshLogin) {
+    if (!session) return null;
+    const version = authVersion;
+    const sessionAtStart = session;
+    const profile = normaliseUser(await sdk().auth.me());
+    if (version !== authVersion || session !== sessionAtStart) throw new Error('The session changed. Please try again.');
+    const email = typeof profile.email === 'string' ? profile.email.trim().toLowerCase() : '';
+    if (email && email !== ACCOUNT_EMAIL.toLowerCase()) {
+      throw accountError('This saved session is for a different account. Please sign in again.');
+    }
+    // A fresh password login was sent for the fixed email. Without an email in
+    // me(), however, a previously saved session cannot be safely identified.
+    if (!email && !freshLogin) throw accountError('Could not verify the saved account. Please sign in again.');
+    user = profile;
+    return user;
   }
   function currentUserId() {
     if (!user) throw new Error('Please sign in before accessing your data.');
@@ -171,6 +195,7 @@
     get revision() { return revision; },
     statusOf,
     isUnauthorized,
+    isAccountError,
     filenameOf,
     fileUrl(attachment) {
       const fullUrl = attachment && typeof attachment === 'object' ? safeFileUrl(attachment.fullUrl) : safeFileUrl(/^https:\/\//i.test(String(attachment)) ? attachment : null);
@@ -179,32 +204,36 @@
       return filename ? BASE_URL + '/files/' + encodeURIComponent(filename) : '';
     },
 
-    async signup(email, password) {
-      return sdk().auth.signup(email, password);
-    },
-    async login(email, password) {
-      // Make sure a failed restore or previous account cannot supply a stale token.
+    async login(password) {
+      // The email is fixed; only the password is entered on the page.
       const version = ++authVersion;
       saveSession(null);
       user = null;
       client = null;
-      const result = await sdk().auth.login(email, password);
+      const result = await sdk().auth.login(ACCOUNT_EMAIL, password);
       if (version !== authVersion) throw new Error('The session changed. Please try again.');
       const newToken = result && (result.token || result.accessToken || result.access_token);
-      // The current guide does not promise a return value from login. In that
-      // case let the SDK manage its session, and attempt to restore it later.
+      // The guide does not promise a return value from login. In that case let
+      // the SDK manage its session and attempt to restore it later.
       saveSession(typeof newToken === 'string' && newToken ? newToken : SDK_SESSION);
       syncClientToken();
-      return this.restore();
+      try { return await loadProfile(true); }
+      catch (error) {
+        if (isAccountError(error) && version === authVersion) {
+          try { await this.logout(); } catch (_) {}
+        }
+        throw error;
+      }
     },
     async restore() {
-      if (!session) return null;
       const version = authVersion;
-      const sessionAtStart = session;
-      const profile = await sdk().auth.me();
-      if (version !== authVersion || session !== sessionAtStart) throw new Error('The session changed. Please try again.');
-      user = normaliseUser(profile);
-      return user;
+      try { return await loadProfile(false); }
+      catch (error) {
+        if (isAccountError(error) && version === authVersion) {
+          try { await this.logout(); } catch (_) {}
+        }
+        throw error;
+      }
     },
     async logout() {
       const version = ++authVersion;
