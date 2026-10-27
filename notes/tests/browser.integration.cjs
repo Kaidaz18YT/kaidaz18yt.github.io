@@ -141,14 +141,20 @@ function attachRoutes(context, state) {
     if (state.fail[failure]) { state.fail[failure]--; return reply(500, { error: 'Simulated failure' }); }
     if (method === 'GET' && !id) return reply(200, docs); // deliberately return all users to exercise the UI filter
     if (method === 'POST' && !id) {
-      const record = { ...body(), id: 'doc-' + ++state.sequence }; docs.push(record);
+      const input = body();
+      // Simulate the ownership requirement in the recommended create rule.
+      if (input.ownerId !== userId) return reply(403, { error: 'Invalid owner' });
+      const record = { ...input, id: 'doc-' + ++state.sequence }; docs.push(record);
       return reply(200, record);
     }
     const index = docs.findIndex(doc => doc.id === id);
     if (index < 0) return reply(404, { error: 'Document not found' });
     if (method === 'GET') return reply(200, docs[index]);
     if (method === 'PATCH') {
-      const patch = body(); docs[index] = { ...docs[index], ...patch };
+      const patch = body();
+      // The recommended update rule requires the current owner in the patch.
+      if (docs[index].ownerId !== userId || patch.ownerId !== userId) return reply(403, { error: 'Invalid owner' });
+      docs[index] = { ...docs[index], ...patch };
       // Exercise SDKs which return only the updated fields.
       return reply(200, { id, ...patch });
     }
@@ -412,6 +418,13 @@ async function main() {
     await diagnostic.getByText(/All 5 checks passed/).waitFor();
     assert.deepEqual(errors, []);
     console.log('Browser integration: password-only sign-in, CRUD, uploads, sessions, dashboard, conflicts, account isolation and diagnostics passed.');
+  } catch (error) {
+    console.error('Browser test diagnostics:', JSON.stringify({
+      records: state.docs, errors, recentRequests: state.requests.slice(-8).map(({endpoint, method}) => ({endpoint, method})),
+      notesView: await page.locator('#notes-view').innerText().catch(() => ''),
+      toast: await page.locator('#toast').innerText().catch(() => ''),
+    }));
+    throw error;
   } finally {
     await browser.close();
     await new Promise(resolve => server.close(resolve));

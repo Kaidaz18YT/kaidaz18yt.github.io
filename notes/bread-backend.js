@@ -302,9 +302,9 @@
     },
     async update(name, id, data) {
       const snapshot = sessionSnapshot();
-      const payload = Object.assign({}, data, { updated: new Date().toISOString() });
-      // Ownership and creation time cannot be changed through this helper.
-      delete payload.ownerId;
+      // The owner is sent on PATCH so the server can verify it is unchanged.
+      // Ignore any caller-supplied ownerId; ownership comes from the session.
+      const payload = Object.assign({}, data, { ownerId: snapshot.id, updated: new Date().toISOString() });
       delete payload.created;
       const result = recordFrom(await collection(name).update(id, payload));
       assertSession(snapshot);

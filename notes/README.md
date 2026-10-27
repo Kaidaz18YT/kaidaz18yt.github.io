@@ -24,8 +24,9 @@ key** belongs in this repository. Never put an administrator key in the site.
 - **Configure and test server-side owner-only rules** for collection reads,
   writes, subscriptions, and file actions. `ownerId` filtering in the frontend
   only keeps the UI tidy; it is not security. The backend must derive ownership
-  from the authenticated user and reject access to other users' data. See
-  [BACKEND_RULES.md](BACKEND_RULES.md) for the recommended policy and checks.
+  from the authenticated user and reject access to other users' data. The
+  recommended JSON is in [backend-rules.json](backend-rules.json); see
+  [BACKEND_RULES.md](BACKEND_RULES.md) for deployment steps and security checks.
 - The SDK must allow sessions to be restored after reload, either by returning a
   token from login or persisting its own session. Ledger calls the SDK's logout.
   If logout fails, the UI reports that server sign-out could not be confirmed.
@@ -76,7 +77,7 @@ but it does **not** verify privacy rules or real account access.
 The adapter tests use only Node.js:
 
 ```sh
-node --test notes/tests/bread-backend.test.cjs
+node --test notes/tests/*.test.cjs
 ```
 
 The browser integration test uses a **mock** BreadBackend, not the live server.

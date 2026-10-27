@@ -15,7 +15,7 @@ function harness(options = {}) {
   const requests = [];
   const listeners = {};
   const records = { projects: [], tasks: [], notes: [] };
-  const state = { records, listeners: {}, configs: [], loginCalls: [], logoutCalls: 0, uploads: 0, deletedFiles: [], next: 1 };
+  const state = { records, listeners: {}, configs: [], loginCalls: [], updateCalls: [], logoutCalls: 0, uploads: 0, deletedFiles: [], next: 1 };
   const localStorage = {
     getItem: key => stored.has(key) ? stored.get(key) : null,
     setItem: (key, value) => stored.set(key, String(value)),
@@ -44,7 +44,7 @@ function harness(options = {}) {
       return {
         get: async () => options.listResult || records[name],
         create: async data => { const record = { ...data, id: 'doc-' + state.next++ }; records[name].push(record); return record; },
-        update: async (id, data) => { const index = records[name].findIndex(record => record.id === id); records[name][index] = { ...records[name][index], ...data }; return { id, ...data }; },
+        update: async (id, data) => { state.updateCalls.push({ name, id, data }); const index = records[name].findIndex(record => record.id === id); records[name][index] = { ...records[name][index], ...data }; return { id, ...data }; },
         delete: async id => { records[name] = records[name].filter(record => record.id !== id); },
         subscribe: callback => { state.listeners[name] = callback; return () => { delete state.listeners[name]; }; },
       };
@@ -75,6 +75,8 @@ test('uses the current SDK configuration, ownership fields, and documented list 
   const updated = await backend.update('notes', note.id, { title: 'Changed', ownerId: 'bob' });
   assert.equal(updated.title, 'Changed');
   assert.equal(state.records.notes[0].ownerId, 'alice');
+  assert.equal(state.updateCalls[0].data.ownerId, 'alice');
+  assert.equal(updated.ownerId, 'alice');
 });
 
 test('scopes the restored bearer and API key to this exact project', async () => {
