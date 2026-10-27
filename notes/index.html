@@ -98,10 +98,10 @@
   }
   .login-box button:hover { background: var(--accent); }
   .login-error { color: var(--danger); font-size: 13px; margin-top: 10px; min-height: 16px; }
-  .login-box .login-toggle, .login-box .login-retry {
+  .login-box .login-retry {
     background: none; color: var(--accent); padding: 7px 0; margin-top: 6px; font-size: 13px;
   }
-  .login-box .login-toggle:hover, .login-box .login-retry:hover { background: none; color: var(--ink); }
+  .login-box .login-retry:hover { background: none; color: var(--ink); }
   .login-box .login-help { margin: 16px 0 0; color: var(--ink-faint); font-size: 11.5px; }
   #sync-notice {
     flex-shrink: 0; background: #33261A; color: var(--ink); border-bottom: 1px solid #6B5233;
@@ -1018,12 +1018,9 @@
 <div id="login-screen">
   <form class="login-box" id="auth-form">
     <h1>Ledger</h1>
-    <p id="auth-subtitle">Sign in with your BreadBackend account.</p>
-    <input type="email" id="login-email" placeholder="Email" autocomplete="email" aria-label="Email" required>
+    <p>Enter your password to continue.</p>
     <input type="password" id="login-password" placeholder="Password" autocomplete="current-password" aria-label="Password" required>
-    <input type="password" id="login-confirm" placeholder="Confirm password" autocomplete="new-password" aria-label="Confirm password" hidden>
     <button id="login-btn" type="submit">Sign in</button>
-    <button id="login-toggle" class="login-toggle" type="button">Need an account? Sign up</button>
     <button id="login-retry" class="login-retry" type="button" hidden>Retry saved session</button>
     <div class="login-error" id="login-error" role="status"></div>
     <p class="login-help">This uses a new backend. Existing PocketBase accounts and data are not imported automatically. Privacy depends on server-side access rules.</p>
@@ -1323,24 +1320,12 @@ let syncPromise = null;
 let syncAgain = false;
 let subscriptions = [];
 let dataReady = false;
-let signupMode = false;
 const POLL_MS = 30000;
 
-function setAuthMode(signup){
-  signupMode = signup;
-  $('auth-subtitle').textContent = signup ? 'Create a BreadBackend account.' : 'Sign in with your BreadBackend account.';
-  $('login-btn').textContent = signup ? 'Create account' : 'Sign in';
-  $('login-toggle').textContent = signup ? 'Already have an account? Sign in' : 'Need an account? Sign up';
-  $('login-confirm').hidden = !signup;
-  $('login-confirm').required = signup;
-  $('login-password').autocomplete = signup ? 'new-password' : 'current-password';
-  $('login-error').textContent = '';
-}
 function showLogin(message){
   $('login-screen').classList.remove('hidden');
   $('app').classList.remove('visible');
   $('login-password').value = '';
-  $('login-confirm').value = '';
   $('login-retry').hidden = !backend.hasSession;
   $('login-error').textContent = message || '';
 }
@@ -1403,10 +1388,11 @@ function showApp(){
   startSubscriptions();
   pollTimer = setInterval(() => { if (!document.hidden) syncData(); }, POLL_MS);
 }
-function authMessage(error, action){
+function authMessage(error){
+  if (backend.isAccountError(error)) return error.message;
   const message = String(error && error.message || '');
-  if (backend.statusOf(error) === 400 || backend.isUnauthorized(error) || backend.statusOf(error) === 403 || /invalid.{0,20}(password|credentials)|incorrect|already exists/i.test(message)) {
-    return action === 'signup' ? 'Could not create the account. ' + (message || 'Check the details and try again.') : 'Could not sign in. Check your email, password and account permissions.';
+  if (backend.statusOf(error) === 400 || backend.isUnauthorized(error) || backend.statusOf(error) === 403 || /invalid.{0,20}(password|credentials)|incorrect/i.test(message)) {
+    return 'Could not sign in. Check your password and account status.';
   }
   return 'Could not reach BreadBackend. Check the connection and server settings, then try again.' + (message ? ' ' + message : '');
 }
@@ -1422,45 +1408,33 @@ async function restoreSession(){
   } catch (error) {
     if (attempt !== authAttempt) return;
     console.error(error);
-    if (backend.isUnauthorized(error)) {
+    if (backend.isAccountError(error)) showLogin(error.message);
+    else if (backend.isUnauthorized(error)) {
       try { await backend.logout(); } catch (logoutError) { console.warn(logoutError); }
       if (attempt === authAttempt) showLogin('Your session has expired. Please sign in again.');
     } else showLogin('Could not restore your session. Check the connection and retry, or sign in again.');
   }
 }
-$('login-toggle').addEventListener('click', () => setAuthMode(!signupMode));
 $('login-retry').addEventListener('click', restoreSession);
 $('auth-form').addEventListener('submit', async (event) => {
   event.preventDefault();
-  const email = $('login-email').value.trim();
   const password = $('login-password').value;
-  if (!email || !password) return;
-  if (signupMode && password !== $('login-confirm').value) {
-    $('login-error').textContent = 'Passwords do not match.';
-    return;
-  }
+  if (!password) return;
   const attempt = ++authAttempt;
-  const creating = signupMode;
-  let accountCreated = false;
-  $('login-btn').disabled = true; $('login-toggle').disabled = true; $('login-retry').disabled = true;
-  $('login-error').textContent = creating ? 'Creating account…' : 'Signing in…';
+  $('login-btn').disabled = true; $('login-retry').disabled = true;
+  $('login-error').textContent = 'Signing in…';
   try {
-    if (creating) { await backend.signup(email, password); accountCreated = true; }
+    await backend.login(password);
     if (attempt !== authAttempt) return;
-    await backend.login(email, password);
-    if (attempt !== authAttempt) return;
-    $('login-password').value = ''; $('login-confirm').value = '';
+    $('login-password').value = '';
     showApp();
   } catch (error) {
     if (attempt !== authAttempt) return;
     console.error(error);
-    if (accountCreated) {
-      setAuthMode(false);
-      $('login-error').textContent = 'Account created. Check your email for a verification link, then sign in. ' + authMessage(error, 'login');
-    } else $('login-error').textContent = authMessage(error, creating ? 'signup' : 'login');
+    $('login-error').textContent = authMessage(error);
     $('login-retry').hidden = !backend.hasSession;
   } finally {
-    $('login-btn').disabled = false; $('login-toggle').disabled = false; $('login-retry').disabled = false;
+    $('login-btn').disabled = false; $('login-retry').disabled = false;
   }
 });
 $('logout-btn').addEventListener('click', async () => {

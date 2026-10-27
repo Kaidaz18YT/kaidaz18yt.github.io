@@ -1,0 +1,27 @@
+{
+  "version": 5,
+  "default": {
+    "read": { "allow": "never" },
+    "write": { "allow": "never" }
+  },
+  "collections": {
+    "projects": {
+      "read": { "expr": "request.auth.email == 'kaioliver111@gmail.com' && request.auth.uid == resource.data.ownerId" },
+      "create": { "expr": "request.auth.email == 'kaioliver111@gmail.com' && request.auth.uid == request.data.ownerId" },
+      "update": { "expr": "request.auth.email == 'kaioliver111@gmail.com' && request.auth.uid == resource.data.ownerId && request.auth.uid == request.data.ownerId" },
+      "delete": { "expr": "request.auth.email == 'kaioliver111@gmail.com' && request.auth.uid == resource.data.ownerId" }
+    },
+    "tasks": {
+      "read": { "expr": "request.auth.email == 'kaioliver111@gmail.com' && request.auth.uid == resource.data.ownerId" },
+      "create": { "expr": "request.auth.email == 'kaioliver111@gmail.com' && request.auth.uid == request.data.ownerId" },
+      "update": { "expr": "request.auth.email == 'kaioliver111@gmail.com' && request.auth.uid == resource.data.ownerId && request.auth.uid == request.data.ownerId" },
+      "delete": { "expr": "request.auth.email == 'kaioliver111@gmail.com' && request.auth.uid == resource.data.ownerId" }
+    },
+    "notes": {
+      "read": { "expr": "request.auth.email == 'kaioliver111@gmail.com' && request.auth.uid == resource.data.ownerId" },
+      "create": { "expr": "request.auth.email == 'kaioliver111@gmail.com' && request.auth.uid == request.data.ownerId" },
+      "update": { "expr": "request.auth.email == 'kaioliver111@gmail.com' && request.auth.uid == resource.data.ownerId && request.auth.uid == request.data.ownerId" },
+      "delete": { "expr": "request.auth.email == 'kaioliver111@gmail.com' && request.auth.uid == resource.data.ownerId" }
+    }
+  }
+}
