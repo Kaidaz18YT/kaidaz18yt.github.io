@@ -13,6 +13,7 @@ const API_KEY = 'pk_live_BpZSqs73ax25L4X91Ok0D3fY';
 const ACCOUNT_EMAIL = 'kaioliver111@gmail.com';
 const sdkSource = `
 window.__breadSubscribers = {};
+window.__breadSubscribeCalls = 0;
 window.__emitBread = (name, event = {}) => (window.__breadSubscribers[name] || []).slice().forEach(cb => cb(event));
 window.BreadClient = class BreadClient {
   constructor({baseUrl, projectSlug, apiKey}) {
@@ -43,6 +44,7 @@ window.BreadClient = class BreadClient {
       update: (id,data) => this.request(root + '/' + encodeURIComponent(id), 'PATCH', data),
       delete: (id) => this.request(root + '/' + encodeURIComponent(id), 'DELETE'),
       subscribe: (callback) => {
+        window.__breadSubscribeCalls++;
         const listeners = window.__breadSubscribers[name] ||= []; listeners.push(callback);
         return () => { const index = listeners.indexOf(callback); if (index >= 0) listeners.splice(index, 1); };
       }
@@ -79,14 +81,23 @@ function mockBackend() {
     { id: 'user-owner', email: ACCOUNT_EMAIL, password: 'password123' },
     { id: 'user-other', email: 'other@example.com', password: 'password456' },
   ], tokens: {}, docs: { projects: [], tasks: [], notes: [] }, files: {}, sequence: 0,
-    uploads: 0, fail: {}, requests: [], loginAttempts: [] };
+    uploads: 0, fail: {}, requests: [], loginAttempts: [], sdkRequests: 0, sdkFailures: 0, sdkMissingExports: 0, sdkLexical: false };
 }
 function attachRoutes(context, state) {
   const cors = { 'access-control-allow-origin': '*', 'access-control-allow-headers': 'authorization, content-type, x-api-key',
     'access-control-allow-methods': 'GET, POST, PATCH, DELETE, OPTIONS' };
   context.route('https://fonts.googleapis.com/**', route => route.abort());
   context.route('https://fonts.gstatic.com/**', route => route.abort());
-  context.route(SDK, route => route.fulfill({ status: 200, contentType: 'application/javascript', body: sdkSource, headers: cors }));
+  context.route(SDK, route => {
+    state.sdkRequests++;
+    if (state.sdkFailures) { state.sdkFailures--; return route.abort('failed'); }
+    if (state.sdkMissingExports) {
+      state.sdkMissingExports--;
+      return route.fulfill({ status: 200, contentType: 'application/javascript', body: '/* no SDK exported */', headers: cors });
+    }
+    const body = state.sdkLexical ? sdkSource.replace('window.BreadClient = class BreadClient', 'class BreadClient') : sdkSource;
+    return route.fulfill({ status: 200, contentType: 'application/javascript', body, headers: cors });
+  });
   context.route(API + '/**', async route => {
     const request = route.request();
     const url = new URL(request.url());
@@ -183,6 +194,19 @@ async function main() {
     assert.equal(await page.locator('#auth-form input:visible').count(), 1);
     assert.equal(await page.locator('#auth-form input:visible').getAttribute('type'), 'password');
     assert.equal(await page.locator('#login-email, #login-toggle, #login-confirm').count(), 0);
+    const connectionLink = page.getByRole('link', { name: 'Run connection test' });
+    assert.equal(await connectionLink.count(), 1);
+    assert.equal(await connectionLink.getAttribute('target'), null);
+    assert.equal(state.sdkRequests, 0, 'the sign-in screen must not block on the SDK');
+    state.sdkFailures = 1;
+    state.sdkMissingExports = 1;
+    await page.locator('#login-password').fill('password123');
+    await page.locator('#login-btn').click();
+    await page.getByText('Could not load the BreadBackend SDK. Run the connection test, then try again.').waitFor();
+    assert.equal(state.loginAttempts.length, 0);
+    await page.locator('#login-btn').click();
+    await page.getByText('BreadBackend loaded, but its SDK could not start on this device. Run the connection test.').waitFor();
+    assert.equal(state.loginAttempts.length, 0);
     await page.locator('#login-password').fill('incorrect-password');
     await page.locator('#login-btn').click();
     await page.getByText('Could not sign in. Check your password and account status.').waitFor();
@@ -273,12 +297,22 @@ async function main() {
     // The dashboard shares the session and refreshes from BreadBackend.
     const board = await context.newPage();
     board.on('pageerror', error => errors.push(error.message));
+    state.sdkFailures = 1;
     await board.goto(root + '/notes/dashboard/', { waitUntil: 'domcontentloaded' });
+    await board.getByText('Could not load the BreadBackend SDK. Run the connection test, then try again.').waitFor();
+    assert.equal(await board.locator('#login-retry').isVisible(), true);
+    assert.equal(await board.evaluate(() => localStorage.getItem('ledger.bread.session.v1')), '__sdk_managed_session__');
+    await board.locator('#login-retry').click();
     await board.locator('#board.visible').waitFor();
     await board.getByText('Publish video', { exact: true }).waitFor();
-    state.docs.tasks[0].title = 'Updated on another screen';
-    await board.waitForFunction(() => (window.__breadSubscribers.tasks || []).length > 0);
-    await board.evaluate(() => window.__emitBread('tasks', { action: 'update' }));
+    // A write in the main tab should refresh the dashboard immediately,
+    // without opening the SDK's token-in-URL realtime stream.
+    assert.equal(await page.evaluate(() => window.__breadSubscribeCalls), 0);
+    assert.equal(await board.evaluate(() => window.__breadSubscribeCalls), 0);
+    assert.match(await board.locator('.sync-caption').innerText(), /every 30 seconds/);
+    await page.evaluate(async id => {
+      await window.LedgerBackend.update('tasks', id, { title: 'Updated on another screen' });
+    }, state.docs.tasks[0].id);
     await board.getByText('Updated on another screen', { exact: true }).waitFor();
 
     // Change from another screen and verify that saving asks before overwriting.
@@ -330,7 +364,7 @@ async function main() {
     // only a password and shares the restored owner session.
     await board.locator('#signout').click();
     await page.locator('#login-screen:not(.hidden)').waitFor();
-    assert.equal(await board.evaluate(() => (window.__breadSubscribers.tasks || []).length), 0);
+    assert.equal(await board.evaluate(() => window.__breadSubscribeCalls), 0);
     assert.ok(state.requests.some(r => r.endpoint === '/auth/logout'));
     assert.equal(await page.locator('#tasks-view').innerText(), '');
     assert.equal(await board.locator('#auth-form input:visible').count(), 1);
@@ -412,12 +446,69 @@ async function main() {
     assert.equal(await page.evaluate(() => window.__xss || 0), 0);
     await page.locator('[data-close="note"]').first().click();
 
+    // A fresh dashboard can retry its SDK, including a global lexical SDK class.
+    const freshContext = await browser.newContext();
+    attachRoutes(freshContext, state);
+    const freshBoard = await freshContext.newPage();
+    freshBoard.on('pageerror', error => errors.push(error.message));
+    await freshBoard.goto(root + '/notes/dashboard/', { waitUntil: 'domcontentloaded' });
+    state.sdkFailures = 1;
+    state.sdkLexical = true;
+    await freshBoard.locator('#login-password').fill('password123');
+    await freshBoard.locator('#login-btn').click();
+    await freshBoard.getByText('Could not load the BreadBackend SDK. Run the connection test, then try again.').waitFor();
+    await freshBoard.locator('#login-btn').click();
+    await freshBoard.locator('#board.visible').waitFor();
+    assert.equal(await freshBoard.evaluate(() => typeof window.BreadClient), 'undefined');
+    state.sdkLexical = false;
+    await freshContext.close();
+
+    // An isolated browser has no storage events from this context. Shorten
+    // only its 30-second timer to exercise cross-device polling deterministically.
+    const pollContext = await browser.newContext();
+    await pollContext.addInitScript(() => {
+      const originalSetInterval = window.setInterval.bind(window);
+      window.setInterval = (fn, delay, ...args) => originalSetInterval(fn, delay === 30000 ? 100 : delay, ...args);
+      Object.defineProperty(document, 'hidden', { configurable: true, get: () => false });
+    });
+    attachRoutes(pollContext, state);
+    const pollPage = await pollContext.newPage();
+    pollPage.on('pageerror', error => errors.push(error.message));
+    await pollPage.goto(root + '/notes/dashboard/', { waitUntil: 'domcontentloaded' });
+    await pollPage.locator('#login-password').fill('password123');
+    await pollPage.locator('#login-btn').click();
+    await pollPage.locator('#board.visible').waitFor();
+    await pollPage.getByText('Updated on another screen', { exact: true }).waitFor();
+    state.docs.tasks[0].title = 'Changed on another device';
+    await pollPage.getByText('Changed on another device', { exact: true }).waitFor();
+    assert.equal(await pollPage.evaluate(() => window.__breadSubscribeCalls), 0);
+    await pollContext.close();
+    assert.equal(state.requests.some(r => r.endpoint === '/realtime'), false);
+
+    // The diagnostics link stays inside a home-screen-style browsing context.
+    const standaloneContext = await browser.newContext();
+    await standaloneContext.addInitScript(() => {
+      Object.defineProperty(window.navigator, 'standalone', { configurable: true, value: true });
+    });
+    attachRoutes(standaloneContext, state);
+    const standalonePage = await standaloneContext.newPage();
+    standalonePage.on('pageerror', error => errors.push(error.message));
+    await standalonePage.goto(root + '/notes/', { waitUntil: 'domcontentloaded' });
+    await standalonePage.getByRole('link', { name: 'Run connection test' }).click();
+    await standalonePage.getByText('Running in the home-screen app').waitFor();
+    await standalonePage.getByText(/All 5 checks passed/).waitFor();
+    await standalonePage.getByRole('link', { name: 'Back to Ledger' }).click();
+    await standalonePage.locator('#login-screen:not(.hidden)').waitFor();
+    await standaloneContext.close();
+
     const diagnostic = await context.newPage();
     diagnostic.on('pageerror', error => errors.push(error.message));
     await diagnostic.goto(root + '/notes/test/', { waitUntil: 'domcontentloaded' });
     await diagnostic.getByText(/All 5 checks passed/).waitFor();
+    assert.equal(await diagnostic.getByText('Running in a browser tab').count(), 1);
+    assert.equal(await diagnostic.getByRole('link', { name: 'Back to Ledger' }).count(), 1);
     assert.deepEqual(errors, []);
-    console.log('Browser integration: password-only sign-in, CRUD, uploads, sessions, dashboard, conflicts, account isolation and diagnostics passed.');
+    console.log('Browser integration: SDK load/retry, sign-in, CRUD, cross-tab sync, polling, dashboard, isolation and diagnostics passed.');
   } catch (error) {
     console.error('Browser test diagnostics:', JSON.stringify({
       records: state.docs, errors, recentRequests: state.requests.slice(-8).map(({endpoint, method}) => ({endpoint, method})),

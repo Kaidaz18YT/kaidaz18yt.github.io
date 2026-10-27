@@ -190,13 +190,14 @@
     <button id="login-retry" class="retry-session" type="button" hidden>Retry saved session</button>
     <div class="login-error" id="login-error" role="status"></div>
     <a href="../">Open Ledger</a>
+    <a href="../test/">Run connection test</a>
   </form>
 </div>
 
 <div id="board">
   <div id="board-head">
     <h1>What's due</h1>
-    <div><div id="clock"><span id="live-dot"></span><span id="clock-text"></span></div><div class="sync-caption">Live updates · 30-second refresh fallback</div></div>
+    <div><div id="clock"><span id="live-dot"></span><span id="clock-text"></span></div><div class="sync-caption">Refreshes every 30 seconds</div></div>
   </div>
   <div id="sync-notice" role="status" hidden><span id="sync-message"></span> <button id="sync-retry" type="button">Retry</button></div>
   <div id="list"></div>
@@ -204,7 +205,6 @@
 
 <button id="signout" hidden>Sign out</button>
 
-<script src="https://kaidaz18.duckdns.org/sdk/bread-client.js"></script>
 <script src="../bread-backend.js"></script>
 <script>
 const backend = window.LedgerBackend;
@@ -250,7 +250,7 @@ function startSubscriptions(){
       const unsubscribe = await backend.subscribe(name, queueSync);
       if (requestEpoch !== epoch) { if (unsubscribe) unsubscribe(); return; }
       if (unsubscribe) subscriptions.push(unsubscribe);
-    } catch (error) { if (requestEpoch === epoch) console.warn('Live updates unavailable for ' + name, error); }
+    } catch (error) { if (requestEpoch === epoch) console.warn('Cross-tab updates unavailable for ' + name, error); }
   });
 }
 function stopBoard(){
@@ -298,7 +298,7 @@ async function restoreSession(){
   } catch(error) {
     if (attempt !== authAttempt) return;
     console.error(error);
-    if (backend.isAccountError(error)) showLogin(error.message);
+    if (backend.isAccountError(error) || backend.isSdkError(error)) showLogin(error.message);
     else if (backend.isUnauthorized(error)) {
       try { await backend.logout(); } catch (logoutError) { console.warn(logoutError); }
       if (attempt === authAttempt) showLogin('Your session has expired. Please sign in again.');
@@ -319,7 +319,7 @@ $('auth-form').addEventListener('submit', async (event) => {
     if (attempt !== authAttempt) return;
     console.error(error);
     const status = backend.statusOf(error);
-    $('login-error').textContent = backend.isAccountError(error) ? error.message
+    $('login-error').textContent = backend.isAccountError(error) || backend.isSdkError(error) ? error.message
       : status === 400 || status === 403 || backend.isUnauthorized(error)
         ? 'Could not sign in. Check your password and account status.'
         : 'Could not reach BreadBackend. Check the connection and server settings, then try again.';

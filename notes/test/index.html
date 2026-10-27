@@ -21,6 +21,7 @@
   }
   h1{ font-size:20px; margin: 20px 0 4px; }
   .sub{ color:var(--ink-dim); font-size:13.5px; margin-bottom:20px; }
+  .sub a{ color:var(--accent); }
   .rerun{
     background: var(--accent); color:#0d0d0c; border:none; font-weight:600;
     padding:10px 16px; border-radius:6px; font-size:14px; margin-bottom:18px;
@@ -58,7 +59,7 @@
 </head>
 <body>
 <h1>Ledger — Connection Test</h1>
-<div class="sub">Checks the BreadBackend SDK, API and browser storage. Run this on the device and network where Ledger is failing.</div>
+<div class="sub">Checks the BreadBackend SDK, API and browser storage. Run this on the device and network where Ledger is failing. If the SDK check fails, <a href="https://kaidaz18.duckdns.org/sdk/bread-client.js" target="_blank" rel="noopener">open the SDK URL</a> in Safari; you should see JavaScript, not a certificate warning.<br><span id="test-context"></span> · <a href="../">Back to Ledger</a></div>
 <button class="rerun" id="rerun">Run tests again</button>
 
 <div id="tests"></div>
@@ -69,6 +70,8 @@ const $ = (s,el=document)=>el.querySelector(s);
 const BASE = 'https://kaidaz18.duckdns.org/api/v1/kaidaz18-notes';
 const API_KEY = 'pk_live_BpZSqs73ax25L4X91Ok0D3fY';
 const SDK = 'https://kaidaz18.duckdns.org/sdk/bread-client.js';
+const standalone = window.navigator.standalone === true || (window.matchMedia && window.matchMedia('(display-mode: standalone)').matches);
+$('#test-context').textContent = standalone ? 'Running in the home-screen app' : 'Running in a browser tab';
 
 async function fetchWithTimeout(url, options = {}){
   const controller = new AbortController();
@@ -101,7 +104,7 @@ const TESTS = [
       await loadSdk();
       return { detail: 'The SDK loaded and exposes BreadClient.' };
     },
-    hint: 'Check that kaidaz18.duckdns.org is reachable and that /sdk/bread-client.js is available. A content blocker, DNS, server or certificate issue may prevent loading it.'
+    hint: 'Open the SDK URL above in Safari and compare Wi-Fi with mobile data. A network, DNS, server, content blocker, certificate, or unsupported SDK syntax can prevent it loading. Never bypass a certificate warning.'
   },
   {
     id: 'api', name: 'Project collections API and browser CORS',
