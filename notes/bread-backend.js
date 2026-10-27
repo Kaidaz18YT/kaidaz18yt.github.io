@@ -8,8 +8,11 @@
   // The browser sends this fixed email with the password; it is not a secret.
   const ACCOUNT_EMAIL = 'kaioliver111@gmail.com';
   const BASE_URL = SERVER_URL + '/api/v1/' + PROJECT_SLUG;
+  const SDK_URL = SERVER_URL + '/sdk/bread-client.js';
+  const SDK_TIMEOUT_MS = 12000;
   const API_KEY = 'pk_live_BpZSqs73ax25L4X91Ok0D3fY';
   const SESSION_KEY = 'ledger.bread.session.v1';
+  const DATA_CHANGE_KEY = 'ledger.bread.change.v1';
   const SDK_SESSION = '__sdk_managed_session__';
   const MAX_FILE_SIZE = 50 * 1024 * 1024;
   const COLLECTIONS = new Set(['projects', 'tasks', 'notes']);
@@ -19,8 +22,11 @@
   let token = session === SDK_SESSION ? null : session;
   let user = null;
   let client = null;
+  let sdkLoadPromise = null;
   let revision = 0;
   let authVersion = 0;
+  const tabId = Date.now().toString(36) + '-' + Math.random().toString(36).slice(2);
+  let changeSequence = 0;
 
   function readSession() {
     try { return window.localStorage.getItem(SESSION_KEY) || null; }
@@ -43,6 +49,16 @@
       try { client.token = token; } catch (_) {}
     }
   }
+  function notifyOtherTabs(name) {
+    // Only an invalidation signal is shared: never put document data, the user
+    // ID or a bearer token in the cross-tab message. Storage may be disabled;
+    // the regular polling and visibility refresh remain available in that case.
+    try {
+      window.localStorage.setItem(DATA_CHANGE_KEY, JSON.stringify({
+        collection: name, nonce: tabId + '-' + (++changeSequence),
+      }));
+    } catch (_) {}
+  }
 
   // BreadClient documents login but not how to restore its token in a new
   // instance. Attach our saved session to SDK fetches for this project only.
@@ -64,11 +80,55 @@
     return nativeFetch(input, options);
   };
 
-  function sdk() {
+  function sdkConstructor() {
     // A classic script may expose a global lexical class rather than a window property.
-    const BreadSDK = typeof window.BreadClient === 'function' ? window.BreadClient
+    return typeof window.BreadClient === 'function' ? window.BreadClient
       : typeof BreadClient === 'function' ? BreadClient : null;
-    if (!BreadSDK) throw new Error('The BreadBackend SDK could not be loaded. Check your connection and try again.');
+  }
+  function sdkError(message) {
+    const error = new Error(message);
+    error.code = 'LEDGER_SDK_UNAVAILABLE';
+    return error;
+  }
+  function isSdkError(error) { return !!error && error.code === 'LEDGER_SDK_UNAVAILABLE'; }
+  function ensureSdkLoaded() {
+    if (sdkConstructor()) return Promise.resolve();
+    if (sdkLoadPromise) return sdkLoadPromise;
+    // A failed startup load must not prevent all later sign-in attempts. Load
+    // the SDK on demand and retry on the next attempt if the network recovers.
+    const pending = new Promise((resolve, reject) => {
+      let script, timer, finished = false;
+      const finish = error => {
+        if (finished) return;
+        finished = true;
+        if (timer !== undefined) window.clearTimeout(timer);
+        if (script) {
+          script.onload = null; script.onerror = null;
+          if (script.parentNode) script.parentNode.removeChild(script);
+        }
+        if (error) reject(error); else resolve();
+      };
+      try {
+        script = window.document.createElement('script');
+        script.async = true;
+        script.src = SDK_URL;
+        script.onload = () => {
+          if (sdkConstructor()) finish();
+          else finish(sdkError('BreadBackend loaded, but its SDK could not start on this device. Run the connection test.'));
+        };
+        script.onerror = () => finish(sdkError('Could not load the BreadBackend SDK. Run the connection test, then try again.'));
+        timer = window.setTimeout(() => finish(sdkError('Loading the BreadBackend SDK timed out. Run the connection test, then try again.')), SDK_TIMEOUT_MS);
+        window.document.head.appendChild(script);
+      } catch (_) {
+        finish(sdkError('Could not load the BreadBackend SDK. Run the connection test, then try again.'));
+      }
+    });
+    sdkLoadPromise = pending.finally(() => { sdkLoadPromise = null; });
+    return sdkLoadPromise;
+  }
+  function sdk() {
+    const BreadSDK = sdkConstructor();
+    if (!BreadSDK) throw sdkError('Could not load the BreadBackend SDK. Run the connection test, then try again.');
     if (!client) client = new BreadSDK({ baseUrl: SERVER_URL, projectSlug: PROJECT_SLUG, apiKey: API_KEY });
     syncClientToken();
     return client;
@@ -196,6 +256,7 @@
     statusOf,
     isUnauthorized,
     isAccountError,
+    isSdkError,
     filenameOf,
     fileUrl(attachment) {
       const fullUrl = attachment && typeof attachment === 'object' ? safeFileUrl(attachment.fullUrl) : safeFileUrl(/^https:\/\//i.test(String(attachment)) ? attachment : null);
@@ -207,6 +268,8 @@
     async login(password) {
       // The email is fixed; only the password is entered on the page.
       const version = ++authVersion;
+      await ensureSdkLoaded();
+      if (version !== authVersion) throw new Error('The session changed. Please try again.');
       saveSession(null);
       user = null;
       client = null;
@@ -226,9 +289,13 @@
       }
     },
     async restore() {
+      if (!session) return null;
       const version = authVersion;
-      try { return await loadProfile(false); }
-      catch (error) {
+      try {
+        await ensureSdkLoaded();
+        if (version !== authVersion) throw new Error('The session changed. Please try again.');
+        return await loadProfile(false);
+      } catch (error) {
         if (isAccountError(error) && version === authVersion) {
           try { await this.logout(); } catch (_) {}
         }
@@ -298,6 +365,7 @@
       assertSession(snapshot);
       const record = normaliseRecord(Object.assign({}, payload, result));
       revision++;
+      notifyOtherTabs(name);
       return record;
     },
     async update(name, id, data) {
@@ -310,6 +378,7 @@
       assertSession(snapshot);
       const record = normaliseRecord(Object.assign({}, payload, result), id);
       revision++;
+      notifyOtherTabs(name);
       return record;
     },
     async delete(name, id) {
@@ -317,6 +386,7 @@
       await collection(name).delete(id);
       assertSession(snapshot);
       revision++;
+      notifyOtherTabs(name);
     },
     async upload(file) {
       const snapshot = sessionSnapshot();
@@ -339,18 +409,34 @@
     },
     async subscribe(name, callback) {
       const snapshot = sessionSnapshot();
-      const source = collection(name);
-      if (typeof source.subscribe !== 'function') return null;
-      const unsubscribe = await source.subscribe(event => {
-        try { assertSession(snapshot); callback(event); } catch (_) { /* signed out or account changed */ }
-      });
-      try { assertSession(snapshot); }
-      catch (error) { if (typeof unsubscribe === 'function') unsubscribe(); throw error; }
-      return typeof unsubscribe === 'function' ? unsubscribe : null;
+      if (!COLLECTIONS.has(name)) throw new Error('Unknown Ledger collection.');
+      if (typeof callback !== 'function') throw new TypeError('A change callback is required.');
+      // The hosted SDK currently places the bearer token in the EventSource
+      // URL, and the realtime endpoint is rejecting those requests. Do not open
+      // that stream until secure server/SDK authentication is confirmed.
+      // Same-origin tabs can still invalidate each other's data immediately;
+      // the pages poll for changes made on other devices.
+      let active = true;
+      const onChange = event => {
+        if (!active || !event.detail || event.detail.collection !== name) return;
+        try { assertSession(snapshot); } catch (_) { return; }
+        callback(event.detail);
+      };
+      window.addEventListener('ledger-data-change', onChange);
+      return () => { active = false; window.removeEventListener('ledger-data-change', onChange); };
     },
   };
 
   window.addEventListener('storage', function (event) {
+    if (event.key === DATA_CHANGE_KEY) {
+      try {
+        const change = JSON.parse(event.newValue || 'null');
+        if (change && COLLECTIONS.has(change.collection)) {
+          window.dispatchEvent(new CustomEvent('ledger-data-change', { detail: { collection: change.collection } }));
+        }
+      } catch (_) { /* Ignore malformed storage messages. */ }
+      return;
+    }
     if (event.key !== SESSION_KEY && event.key !== null) return;
     authVersion++;
     session = readSession();
