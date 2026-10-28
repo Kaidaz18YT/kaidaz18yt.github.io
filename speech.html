@@ -1,59 +1,369 @@
 <!DOCTYPE html>
 <html lang="en">
 <head>
-    <meta charset="UTF-8">
-    <title>Voice Notes App</title>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1, viewport-fit=cover">
+<title>Voice Notes — free speech to text in your browser</title>
+<meta name="description" content="Free browser dictation: press start, talk, and your words appear as text you can copy into notes, emails or a doc. Works on Chrome, Edge and Safari; nothing is uploaded or recorded to a server.">
+<meta name="keywords" content="voice notes, speech to text online, browser dictation, free dictation tool, talk to type, speech recognition web app">
+<meta name="robots" content="index, follow, max-image-preview:large">
+<meta name="author" content="Kaidaz18">
+<meta name="theme-color" content="#1C1B1A">
+<link rel="canonical" href="https://kaidaz18yt.github.io/speech.html">
+<link rel="icon" type="image/png" sizes="192x192" href="https://kaidaz18yt.github.io/assets/head-192.png">
+<link rel="icon" type="image/x-icon" href="https://kaidaz18yt.github.io/favicon.ico">
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+<link href="https://fonts.googleapis.com/css2?family=IBM+Plex+Sans:ital,wght@0,400;0,500;0,600;0,700;1,400&family=IBM+Plex+Mono:wght@400;500&display=swap" rel="stylesheet">
+
+<script type="application/ld+json">
+{
+  "@context": "https://schema.org",
+  "@graph": [
+    {
+      "@type": "WebApplication",
+      "@id": "https://kaidaz18yt.github.io/speech.html#app",
+      "name": "Voice Notes",
+      "url": "https://kaidaz18yt.github.io/speech.html",
+      "description": "Free browser dictation tool. Speak and your words appear as text you can copy anywhere.",
+      "applicationCategory": "UtilitiesApplication",
+      "operatingSystem": "Any device with a modern web browser",
+      "browserRequirements": "Requires JavaScript and the Web Speech API (Chrome, Edge or Safari)",
+      "isAccessibleForFree": true,
+      "inLanguage": "en",
+      "featureList": [
+        "Dictate text in the browser",
+        "Copy the transcript in one click",
+        "Choose your language and dialect",
+        "No recording is uploaded or stored"
+      ],
+      "offers": { "@type": "Offer", "price": "0", "priceCurrency": "USD" },
+      "author": { "@type": "Person", "name": "Kaidaz18", "url": "https://kaidaz18yt.github.io/" }
+    },
+    {
+      "@type": "BreadcrumbList",
+      "itemListElement": [
+        { "@type": "ListItem", "position": 1, "name": "Kaidaz18", "item": "https://kaidaz18yt.github.io/" },
+        { "@type": "ListItem", "position": 2, "name": "Voice Notes", "item": "https://kaidaz18yt.github.io/speech.html" }
+      ]
+    },
+    {
+      "@type": "FAQPage",
+      "mainEntity": [
+        {
+          "@type": "Question",
+          "name": "Is this dictation tool free?",
+          "acceptedAnswer": { "@type": "Answer", "text": "Yes. Voice Notes is free, has no account and no word limit of its own. It uses the speech recognition that is already built into your browser." }
+        },
+        {
+          "@type": "Question",
+          "name": "Does it record my voice?",
+          "acceptedAnswer": { "@type": "Answer", "text": "The page never stores or uploads audio. Your browser passes the speech to its speech recognition service — Google in Chrome, Apple in Safari — and only the text comes back to this page." }
+        },
+        {
+          "@type": "Question",
+          "name": "Which browsers support it?",
+          "acceptedAnswer": { "@type": "Answer", "text": "Chrome, Edge and Safari on desktop and Android, plus Safari on iOS. Firefox does not support the Web Speech API yet, so the page will tell you to try another browser." }
+        },
+        {
+          "@type": "Question",
+          "name": "Can I use it offline or on a school Chromebook?",
+          "acceptedAnswer": { "@type": "Answer", "text": "It works on a Chromebook in Chrome, but speech recognition needs an internet connection because the browser sends the audio to its own recognition service. Nothing is sent to this website." }
+        }
+      ]
+    }
+  ]
+}
+</script>
+
+<meta property="og:type" content="website">
+<meta property="og:site_name" content="Kaidaz18">
+<meta property="og:url" content="https://kaidaz18yt.github.io/speech.html">
+<meta property="og:title" content="Voice Notes — free speech to text in your browser">
+<meta property="og:description" content="Press start, talk, and your words appear as text you can copy anywhere. Free, no account, nothing recorded to a server.">
+<meta property="og:image" content="https://kaidaz18yt.github.io/media/meta-image.jpg">
+<meta property="og:image:width" content="1200">
+<meta property="og:image:height" content="630">
+
+<meta name="twitter:card" content="summary_large_image">
+<meta name="twitter:title" content="Voice Notes — free speech to text in your browser">
+<meta name="twitter:description" content="Press start, talk, and your words appear as text you can copy anywhere. Free, no account, nothing recorded to a server.">
+<meta name="twitter:image" content="https://kaidaz18yt.github.io/media/meta-image.jpg">
+
+<style>
+:root{
+  --bg:#1C1B1A;--bg-raised:#242321;--bg-hover:#2C2B28;--border:#38362f;--border-soft:#2c2b27;
+  --ink:#EDEAE3;--ink-dim:#A8A399;--ink-faint:#6f6b62;
+  --accent:#7C93CC;--accent-dim:#4A5D8A;--amber:#C9A15C;--sage:#8FA184;--danger:#C97C6E;
+  --brand-red:#C1443A;--radius:3px;color-scheme:dark;
+}
+*{box-sizing:border-box}
+html,body{height:100%;margin:0}
+body{background:var(--bg);color:var(--ink);font-family:'IBM Plex Sans',system-ui,sans-serif;font-size:15px;line-height:1.55;-webkit-font-smoothing:antialiased}
+a{color:var(--accent);text-decoration:none;transition:color .18s ease}
+a:hover{text-decoration:underline}
+button{font-family:inherit;cursor:pointer}
+.mono{font-family:'IBM Plex Mono',monospace}
+:focus-visible{outline:2px solid var(--accent);outline-offset:2px}
+.page-wrap{max-width:820px;margin:0 auto;padding:0 28px}
+nav.crumbs{padding:18px 0 0;font-size:13px;color:var(--ink-faint)}
+nav.crumbs a{color:var(--ink-dim)}
+header.hero{padding:34px 0 26px}
+.hero-eyebrow{font-family:'IBM Plex Mono',monospace;font-size:11.5px;letter-spacing:.12em;text-transform:uppercase;color:var(--ink-faint);margin-bottom:14px}
+h1{font-size:clamp(26px,5vw,38px);line-height:1.15;letter-spacing:-.02em;margin:0 0 14px;font-weight:600}
+.lede{color:var(--ink-dim);font-size:16px;max-width:60ch;margin:0}
+.section{border-top:1px solid var(--border-soft);padding:26px 0}
+h2{font-size:20px;margin:0 0 6px;font-weight:600;letter-spacing:-.01em}
+h3{font-size:15px;margin:20px 0 6px}
+.section-sub{color:var(--ink-faint);font-size:13.5px;margin-bottom:18px}
+.tool{background:var(--bg-raised);border:1px solid var(--border-soft);border-radius:var(--radius);padding:20px}
+.row{display:flex;gap:10px;flex-wrap:wrap;align-items:center;margin-bottom:14px}
+.btn{border:1px solid var(--border);background:var(--bg-hover);color:var(--ink);padding:10px 16px;border-radius:var(--radius);font-size:14px;font-weight:500;transition:border-color .18s ease,background .18s ease}
+.btn:hover{border-color:var(--ink-faint)}
+.btn-primary{background:var(--brand-red);border-color:var(--brand-red);color:#fff}
+.btn-primary:hover{background:#a83a31;border-color:#a83a31}
+.btn.recording{background:var(--brand-red);border-color:var(--brand-red);color:#fff}
+.btn:disabled{opacity:.45;cursor:not-allowed}
+select{background:var(--bg);color:var(--ink);border:1px solid var(--border);border-radius:var(--radius);padding:9px 10px;font-family:inherit;font-size:13.5px}
+label.field{display:flex;flex-direction:column;gap:5px;font-size:12.5px;color:var(--ink-dim)}
+textarea{
+  width:100%;min-height:190px;resize:vertical;
+  background:var(--bg);color:var(--ink);border:1px solid var(--border);border-radius:var(--radius);
+  padding:12px 14px;font-family:inherit;font-size:15px;line-height:1.6;
+}
+textarea:focus{outline:none;border-color:var(--accent)}
+.hint{color:var(--ink-faint);font-size:12.5px;margin-top:8px;min-height:1.2em}
+.status{font-size:13px;color:var(--ink-dim);margin-top:10px;min-height:1.3em}
+.status.live{color:var(--sage)}
+.status.err{color:var(--danger)}
+.unsupported{display:none;background:rgba(201,124,110,.12);border:1px solid rgba(201,124,110,.4);color:#E8C4BC;border-radius:var(--radius);padding:12px 14px;font-size:13.5px;margin-bottom:14px}
+.unsupported.show{display:block}
+.prose p{color:var(--ink-dim);max-width:70ch}
+.prose strong{color:var(--ink)}
+.steps{padding-left:20px;color:var(--ink-dim);margin:0}
+.steps li{margin-bottom:8px}
+.faq details{background:var(--bg-raised);border:1px solid var(--border-soft);border-radius:var(--radius);margin-bottom:8px}
+.faq summary{cursor:pointer;padding:12px 15px;font-weight:600;font-size:14px;list-style:none;display:flex;justify-content:space-between;gap:12px}
+.faq summary::-webkit-details-marker{display:none}
+.faq summary::after{content:"+";font-family:'IBM Plex Mono',monospace;color:var(--ink-faint)}
+.faq details[open] summary::after{content:"–"}
+.faq p{margin:0;padding:0 15px 13px;color:var(--ink-dim);font-size:13.5px}
+footer.site-footer{border-top:1px solid var(--border-soft);padding:24px 0 44px;font-size:12.5px;color:var(--ink-faint);display:flex;justify-content:space-between;gap:16px;flex-wrap:wrap}
+.footer-links{display:flex;gap:16px;flex-wrap:wrap}
+.footer-links a{color:var(--ink-faint)}
+.footer-links a:hover{color:var(--accent)}
+@media (prefers-reduced-motion:reduce){*{transition:none!important;animation:none!important}}
+</style>
 </head>
 <body>
-    <h1>My Voice Notes</h1>
-    <button id="start-btn">🎙️ Start Dictation</button>
-    <p id="status">Click the button to start speaking...</p>
 
-    <h3>Raw Browser Transcript:</h3>
-    <textarea id="output-text" rows="4" cols="50"></textarea>
+<div class="page-wrap">
+  <nav class="crumbs" aria-label="Breadcrumb">
+    <a href="https://kaidaz18yt.github.io/">Kaidaz18</a> / Voice Notes
+  </nav>
 
-    <script>
-        // Check if the browser supports speech recognition
-        const SpeechRecognition = window.SpeechRecognition || window.webkitSpeechRecognition;
+  <header class="hero">
+    <div class="hero-eyebrow">free · in your browser</div>
+    <h1>Voice Notes — talk and get your words as text</h1>
+    <p class="lede">Press start, speak, and the words appear in the box. Copy them into an email, a doc or Minecraft chat. Nothing is recorded to this site and there is no account.</p>
+  </header>
 
-        if (!SpeechRecognition) {
-            alert("Your browser does not support the Web Speech API. Try Google Chrome or Safari!");
-        } else {
-            const recognition = new SpeechRecognition();
-            // keeps listening even if you pause slightly
-            recognition.continuous = false;
-            // shows final results only
-            recognition.interimResults = false;
-            recognition.lang = 'en-US';
+  <section class="section" id="tool">
+    <h2>Dictate a note</h2>
+    <div class="section-sub">Uses the speech recognition built into your browser.</div>
 
-            const startBtn = document.getElementById('start-btn');
-            const statusText = document.getElementById('status');
-            const outputText = document.getElementById('output-text');
+    <div class="tool">
+      <div class="unsupported" id="unsupported" role="alert">
+        This browser doesn't support the Web Speech API. Try Chrome, Edge or Safari — the page will work there.
+      </div>
 
-            startBtn.addEventListener('click', () => {
-                recognition.start();
-                statusText.innerText = "Listening... Speak now!";
-            });
+      <div class="row">
+        <button class="btn btn-primary" id="start-btn" type="button">🎙 Start dictation</button>
+        <button class="btn" id="copy-btn" type="button">Copy text</button>
+        <button class="btn" id="clear-btn" type="button">Clear</button>
+        <label class="field" style="margin-left:auto;">
+          Language
+          <select id="lang">
+            <option value="en-AU">English (Australia)</option>
+            <option value="en-US" selected>English (US)</option>
+            <option value="en-GB">English (UK)</option>
+            <option value="en-NZ">English (New Zealand)</option>
+            <option value="es-ES">Español</option>
+            <option value="fr-FR">Français</option>
+            <option value="de-DE">Deutsch</option>
+            <option value="ja-JP">日本語</option>
+          </select>
+        </label>
+      </div>
 
-            recognition.onresult = (event) => {
-                const speechToText = event.results[0][0].transcript;
-                outputText.value = speechToText;
-                statusText.innerText = "Speech captured! Ready to send to LLM.";
+      <label class="field" for="output-text" style="width:100%;">
+        Your note
+        <textarea id="output-text" placeholder="Your words will appear here…" aria-describedby="status"></textarea>
+      </label>
+      <div class="hint" id="hint">Tip: pause for a second between sentences — each pause ends a phrase and adds it to the note.</div>
+      <div class="status" id="status" role="status" aria-live="polite">Ready when you are.</div>
+    </div>
+  </section>
 
-                // NEXT STEP: Call your cloud LLM API function here
-                // sendToLLM(speechToText);
-            };
+  <section class="section prose" id="how">
+    <h2>How to use it</h2>
+    <div class="section-sub">About ten seconds to get going.</div>
+    <ol class="steps">
+      <li>Allow the microphone when your browser asks. Nothing is saved or sent to this website.</li>
+      <li>Press <strong>Start dictation</strong> and speak normally. The button turns red while it is listening.</li>
+      <li>Press it again to stop. Press it once more to add more text to the same note.</li>
+      <li>Hit <strong>Copy text</strong> and paste it wherever you need it.</li>
+    </ol>
+    <p style="margin-top:16px;">This is handy for writing on a tablet, for long notes you would rather speak than type, and for students who find typing slow or tiring. It runs on the same browser speech recognition that powers voice search, so it needs an internet connection — but the audio goes to your browser's own service, not to this site.</p>
+  </section>
 
-            recognition.onerror = (event) => {
-                statusText.innerText = "Error occurred in recognition: " + event.error;
-            };
+  <section class="section faq" id="faq">
+    <h2>Questions</h2>
+    <div class="section-sub">The short answers.</div>
 
-            recognition.onend = () => {
-                if(statusText.innerText === "Listening... Speak now!") {
-                    statusText.innerText = "Stopped listening.";
-                }
-            };
-        }
-    </script>
+    <details open>
+      <summary>Is this dictation tool free?</summary>
+      <p>Yes. Voice Notes is free, has no account and no word limit of its own. It uses the speech recognition that is already built into your browser.</p>
+    </details>
+    <details>
+      <summary>Does it record my voice?</summary>
+      <p>The page never stores or uploads audio. Your browser passes the speech to its speech recognition service — Google in Chrome, Apple in Safari — and only the text comes back to this page.</p>
+    </details>
+    <details>
+      <summary>Which browsers support it?</summary>
+      <p>Chrome, Edge and Safari on desktop and Android, plus Safari on iOS. Firefox does not support the Web Speech API yet, so the page will tell you to try another browser.</p>
+    </details>
+    <details>
+      <summary>Can I use it offline or on a school Chromebook?</summary>
+      <p>It works on a Chromebook in Chrome, but speech recognition needs an internet connection because the browser sends the audio to its own recognition service. Nothing is sent to this website.</p>
+    </details>
+  </section>
+
+  <footer class="site-footer">
+    <span>Made by <a href="https://kaidaz18yt.github.io/">Kaidaz18</a>.</span>
+    <div class="footer-links">
+      <a href="https://kaidaz18yt.github.io/">All tools</a>
+      <a href="https://kaidaz18yt.github.io/joincode-maker/">Join Code Maker</a>
+      <a href="https://kaidaz18yt.github.io/beta-api-enable/">Beta API Enabler</a>
+    </div>
+  </footer>
+</div>
+
+<script>
+(function () {
+  'use strict';
+
+  var $ = function (id) { return document.getElementById(id); };
+  var startBtn = $('start-btn'), copyBtn = $('copy-btn'), clearBtn = $('clear-btn');
+  var output = $('output-text'), statusEl = $('status'), langSel = $('lang'), unsupported = $('unsupported');
+
+  var Recognition = window.SpeechRecognition || window.webkitSpeechRecognition;
+  if (!Recognition) {
+    unsupported.classList.add('show');
+    startBtn.disabled = true;
+    copyBtn.disabled = true;
+    statusEl.textContent = 'Speech recognition is not available in this browser.';
+    wireCopyAndClear();
+    return;
+  }
+
+  var recognition = new Recognition();
+  var listening = false;
+  recognition.continuous = true;
+  recognition.interimResults = true;
+  recognition.lang = langSel.value;
+
+  function setStatus(text, kind) {
+    statusEl.textContent = text;
+    statusEl.className = 'status' + (kind ? ' ' + kind : '');
+  }
+
+  function appendText(text) {
+    if (!text) return;
+    var current = output.value;
+    var needsSpace = current && !/\s$/.test(current);
+    output.value = current + (needsSpace ? ' ' : '') + text.trim();
+    output.scrollTop = output.scrollHeight;
+  }
+
+  startBtn.addEventListener('click', function () {
+    if (listening) { recognition.stop(); return; }
+    recognition.lang = langSel.value;
+    try {
+      recognition.start();
+    } catch (_) {
+      // start() throws if called twice; safe to ignore.
+    }
+  });
+
+  recognition.onstart = function () {
+    listening = true;
+    startBtn.textContent = '■ Stop listening';
+    startBtn.classList.add('recording');
+    setStatus('Listening… speak now.', 'live');
+    output.focus();
+  };
+
+  recognition.onresult = function (event) {
+    var finalText = '';
+    for (var i = event.resultIndex; i < event.results.length; i++) {
+      if (event.results[i].isFinal) finalText += event.results[i][0].transcript;
+    }
+    if (finalText) {
+      appendText(finalText);
+      setStatus('Got it — keep talking, or press stop.', 'live');
+    }
+  };
+
+  recognition.onerror = function (event) {
+    var messages = {
+      'not-allowed': 'Microphone access was blocked. Allow it in the address bar, then try again.',
+      'service-not-allowed': 'Your browser blocked the speech service. Check microphone permissions.',
+      'no-speech': 'I didn\'t hear anything. Try again and speak a little closer to the mic.',
+      'audio-capture': 'No microphone was found. Plug one in or check your system settings.',
+      'network': 'The speech service needs an internet connection.'
+    };
+    setStatus(messages[event.error] || ('Speech recognition error: ' + event.error), 'err');
+  };
+
+  recognition.onend = function () {
+    listening = false;
+    startBtn.textContent = '🎙 Start dictation';
+    startBtn.classList.remove('recording');
+    if (statusEl.className.indexOf('err') === -1) {
+      setStatus(output.value ? 'Stopped. Press start again to keep adding.' : 'Stopped listening.');
+    }
+  };
+
+  langSel.addEventListener('change', function () {
+    recognition.lang = langSel.value;
+    if (listening) { recognition.stop(); }
+  });
+
+  function wireCopyAndClear() {
+    copyBtn.addEventListener('click', function () {
+      if (!output.value.trim()) { setStatus('Nothing to copy yet.', 'err'); return; }
+      var done = function () { setStatus('Copied to your clipboard.', 'live'); };
+      if (navigator.clipboard && navigator.clipboard.writeText) {
+        navigator.clipboard.writeText(output.value).then(done, fallback);
+      } else {
+        fallback();
+      }
+      function fallback() {
+        output.select();
+        try { document.execCommand('copy'); done(); }
+        catch (_) { setStatus('Copy was blocked — select the text and copy it yourself.', 'err'); }
+      }
+    });
+    clearBtn.addEventListener('click', function () {
+      output.value = '';
+      setStatus('Cleared.');
+      output.focus();
+    });
+  }
+
+  wireCopyAndClear();
+})();
+</script>
 </body>
 </html>

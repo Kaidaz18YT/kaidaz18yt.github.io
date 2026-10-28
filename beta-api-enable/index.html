@@ -3,8 +3,107 @@
 <head>
 <meta charset="utf-8">
 <meta name="viewport" content="width=device-width, initial-scale=1, viewport-fit=cover">
-<title>Beta APIs Enabler — kaidaz18</title>
-<meta name="description" content="Turn on Beta APIs in a Minecraft Bedrock or Education world by dropping in its .mcworld file. Runs entirely in your browser.">
+<title>Beta API Enabler — turn on Beta APIs in Minecraft Bedrock &amp; Education worlds</title>
+<meta name="description" content="Free browser tool that turns on Beta APIs (experiments) in a Minecraft Bedrock or Education Edition world: drop in your .mcworld file and download it ready for add-ons. Nothing is uploaded.">
+<meta name="keywords" content="beta api enabler, minecraft beta apis, enable beta apis minecraft bedrock, minecraft education beta apis, mcworld experiments, minecraft gametest toggle">
+<meta name="robots" content="index, follow, max-image-preview:large">
+<meta name="theme-color" content="#1C1B1A">
+<link rel="canonical" href="https://kaidaz18yt.github.io/beta-api-enable/">
+<link rel="icon" type="image/png" sizes="192x192" href="https://kaidaz18yt.github.io/assets/head-192.png">
+<link rel="icon" type="image/x-icon" href="https://kaidaz18yt.github.io/favicon.ico">
+
+<script type="application/ld+json">
+{
+  "@context": "https://schema.org",
+  "@graph": [
+    {
+      "@type": "WebApplication",
+      "@id": "https://kaidaz18yt.github.io/beta-api-enable/#app",
+      "name": "Beta API Enabler",
+      "alternateName": ["Minecraft Beta APIs Enabler", "Bedrock Beta API toggle"],
+      "url": "https://kaidaz18yt.github.io/beta-api-enable/",
+      "description": "Turns on Beta APIs and other experiments in a Minecraft Bedrock or Education Edition world by editing the .mcworld file in the browser.",
+      "applicationCategory": "UtilitiesApplication",
+      "operatingSystem": "Any device with a modern web browser",
+      "browserRequirements": "Requires JavaScript",
+      "isAccessibleForFree": true,
+      "inLanguage": "en",
+      "featureList": [
+        "Enable Beta APIs and GameTest in a world",
+        "Toggle custom biomes, Molang and camera experiments",
+        "Runs locally — the world file is never uploaded",
+        "Works with .mcworld and .zip exports from Bedrock and Education Edition"
+      ],
+      "offers": { "@type": "Offer", "price": "0", "priceCurrency": "USD" },
+      "author": { "@type": "Person", "name": "Kaidaz18", "url": "https://kaidaz18yt.github.io/" }
+    },
+    {
+      "@type": "BreadcrumbList",
+      "itemListElement": [
+        { "@type": "ListItem", "position": 1, "name": "Kaidaz18", "item": "https://kaidaz18yt.github.io/" },
+        { "@type": "ListItem", "position": 2, "name": "Beta API Enabler", "item": "https://kaidaz18yt.github.io/beta-api-enable/" }
+      ]
+    },
+    {
+      "@type": "HowTo",
+      "name": "How to enable Beta APIs in a Minecraft Bedrock or Education world",
+      "description": "Switch on the Beta APIs experiment for an existing world without rebuilding it.",
+      "totalTime": "PT1M",
+      "tool": [{ "@type": "HowToTool", "name": "A web browser" }, { "@type": "HowToTool", "name": "Your .mcworld file" }],
+      "step": [
+        { "@type": "HowToStep", "position": 1, "name": "Export your world", "text": "In Minecraft, edit the world, scroll to the bottom of settings and choose Export World. Save the .mcworld file." },
+        { "@type": "HowToStep", "position": 2, "name": "Drop it into the tool", "text": "Drop the .mcworld file onto the page. It reads the world's level.dat and shows which experiments are already on." },
+        { "@type": "HowToStep", "position": 3, "name": "Enable and download", "text": "Press Enable and download to get a new file named yourworld-beta-apis.mcworld." },
+        { "@type": "HowToStep", "position": 4, "name": "Open the new file", "text": "Double-click the downloaded file to import it. It appears as a separate world next to your original." }
+      ]
+    },
+    {
+      "@type": "FAQPage",
+      "mainEntity": [
+        {
+          "@type": "Question",
+          "name": "Is my world uploaded anywhere?",
+          "acceptedAnswer": { "@type": "Answer", "text": "No. The world file is opened, edited and re-packed locally in your browser. There is no server and no upload, so the world never leaves your device." }
+        },
+        {
+          "@type": "Question",
+          "name": "Will enabling Beta APIs turn off achievements?",
+          "acceptedAnswer": { "@type": "Answer", "text": "Yes. Minecraft disables achievements in any world that has experiments enabled. That is a game rule, not something this site adds." }
+        },
+        {
+          "@type": "Question",
+          "name": "Do I still need a beta version of my add-on?",
+          "acceptedAnswer": { "@type": "Answer", "text": "Yes. The world toggle only permits beta modules. The behaviour pack's manifest must also depend on a beta version of @minecraft/server." }
+        },
+        {
+          "@type": "Question",
+          "name": "Does it work with Minecraft Java Edition worlds?",
+          "acceptedAnswer": { "@type": "Answer", "text": "No. Beta APIs are a Bedrock and Education Edition feature, and the tool will tell you if it sees a Java world." }
+        },
+        {
+          "@type": "Question",
+          "name": "Does the original world file get changed?",
+          "acceptedAnswer": { "@type": "Answer", "text": "No. Only level.dat inside the downloaded copy is edited. Your original .mcworld stays exactly as it was, and the new file is imported as a separate world." }
+        }
+      ]
+    }
+  ]
+}
+</script>
+
+<meta property="og:type" content="website">
+<meta property="og:site_name" content="Kaidaz18">
+<meta property="og:url" content="https://kaidaz18yt.github.io/beta-api-enable/">
+<meta property="og:title" content="Beta API Enabler — turn on Beta APIs in Minecraft Bedrock &amp; Education worlds">
+<meta property="og:description" content="Drop in your .mcworld file and get the same world back with Beta APIs switched on. Free, and it all happens in your browser.">
+<meta property="og:image" content="https://kaidaz18yt.github.io/media/meta-image.jpg">
+<meta property="og:image:width" content="1200">
+<meta property="og:image:height" content="630">
+
+<meta name="twitter:card" content="summary_large_image">
+<meta name="twitter:title" content="Beta API Enabler — turn on Beta APIs in Minecraft Bedrock &amp; Education worlds">
+<meta name="twitter:description" content="Drop in your .mcworld file and get the same world back with Beta APIs switched on. Free, and it all happens in your browser.">
+<meta name="twitter:image" content="https://kaidaz18yt.github.io/media/meta-image.jpg">
 <link rel="preconnect" href="https://fonts.googleapis.com">
 <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
 <link href="https://fonts.googleapis.com/css2?family=IBM+Plex+Mono:wght@400;500&family=IBM+Plex+Sans:wght@400;500;600;700&display=swap" rel="stylesheet">
@@ -109,6 +208,13 @@ summary{padding:12px 0;font-size:13px;color:var(--ink-dim);cursor:pointer}
 .footer-links{display:flex;gap:16px}
 .footer-links a{color:var(--ink-faint)}
 .footer-links a:hover{color:var(--accent)}
+.faq{display:flex;flex-direction:column;gap:8px}
+.faq details{background:var(--bg-raised);border:1px solid var(--border-soft);border-radius:var(--radius)}
+.faq summary{cursor:pointer;padding:12px 15px;font-weight:600;font-size:14px;list-style:none;display:flex;justify-content:space-between;gap:12px}
+.faq summary::-webkit-details-marker{display:none}
+.faq summary::after{content:"+";font-family:'IBM Plex Mono',monospace;color:var(--ink-faint);flex-shrink:0}
+.faq details[open] summary::after{content:"\2013"}
+.faq p{margin:0;padding:0 15px 13px;color:var(--ink-dim);font-size:13.5px;line-height:1.6}
 
 @media (max-width:760px){
   .page-wrap{padding:0 18px}.topbar-inner{padding:14px 18px}
@@ -129,8 +235,8 @@ summary{padding:12px 0;font-size:13px;color:var(--ink-dim);cursor:pointer}
   <section class="hero">
     <div class="hero-text">
       <div class="hero-eyebrow">minecraft bedrock &amp; education</div>
-      <h1>Turn on Beta APIs in any world.</h1>
-      <p class="lede">Drop in your .mcworld file, get the same world back with Beta APIs switched on. Nothing is uploaded — it all happens in your browser.</p>
+      <h1>Turn on Beta APIs in any Minecraft Bedrock or Education world.</h1>
+      <p class="lede">Drop in your <span class="mono">.mcworld</span> file and get the same world back with Beta APIs switched on — no settings menu to hunt through. Nothing is uploaded, it all happens in your browser.</p>
       <div class="hero-actions">
         <a class="btn-primary" href="#tool">Choose a world</a>
         <a class="btn-secondary" href="#how">How it works</a>
@@ -188,30 +294,65 @@ summary{padding:12px 0;font-size:13px;color:var(--ink-dim);cursor:pointer}
     </ol>
   </section>
 
-  <section class="section" id="faq">
-    <div class="section-head"><h2>Good to know</h2></div>
+  <section class="section" id="what">
+    <div class="section-head">
+      <h2>What are Beta APIs?</h2>
+      <div class="section-sub">A quick explanation before you switch them on.</div>
+    </div>
     <div class="about-layout">
       <div class="about-body">
-        <p><strong>Your world stays private.</strong> The file is opened, edited and re-packed locally in your browser. There is no server and no upload.</p>
-        <p><strong>Achievements turn off.</strong> Minecraft disables achievements in any world that has experiments enabled. That is a game rule, not something this site adds.</p>
-        <p><strong>Your add-on still needs a beta version.</strong> The world toggle only permits beta modules. The behavior pack's manifest must also depend on a beta version of @minecraft/server.</p>
-        <p><strong>Bedrock only.</strong> Java worlds don't have Beta APIs, and the site will tell you if it sees one.</p>
+        <p>Beta APIs are the experimental scripting modules in Minecraft Bedrock and Education Edition. Turning them on lets a behaviour pack use modules like <span class="mono">@minecraft/server</span> in their beta form, which is how a lot of modern scripted add-ons work.</p>
+        <p>Historically you had to recreate the world with the right experiments ticked, or dig through the world's files by hand. This enabler writes the same flags Minecraft's own settings write, so an existing world keeps its terrain, players and builds.</p>
+        <p>Use it when an add-on, tutorial or map says it "requires Beta APIs", or when you are following a Kaidaz18 install video that starts with "enable experiments". If you only want a picture to share, the <a href="https://kaidaz18yt.github.io/joincode-maker/">join code maker</a> is the other tool worth a look.</p>
       </div>
       <div class="about-card">
-        <div class="card-label">What gets changed</div>
-        <div class="focus-item"><span class="dot" style="background:var(--brand-red)"></span>Only level.dat inside the world</div>
-        <div class="focus-item"><span class="dot" style="background:var(--amber)"></span>The gametest flag under experiments</div>
-        <div class="focus-item"><span class="dot" style="background:var(--sage)"></span>Two bookkeeping flags Minecraft expects</div>
-        <div class="focus-item"><span class="dot" style="background:var(--accent)"></span>Every other byte is left as it was</div>
+        <div class="card-label">Good for</div>
+        <div class="focus-item"><span class="dot" style="background:var(--brand-red)"></span>Scripted add-ons that need beta modules</div>
+        <div class="focus-item"><span class="dot" style="background:var(--amber)"></span>GameTest and map-making</div>
+        <div class="focus-item"><span class="dot" style="background:var(--sage)"></span>Classroom worlds you don't want to rebuild</div>
       </div>
+    </div>
+  </section>
+
+  <section class="section" id="faq">
+    <div class="section-head">
+      <h2>Good to know</h2>
+      <div class="section-sub">The questions people ask before switching experiments on.</div>
+    </div>
+
+    <div class="faq">
+      <details open>
+        <summary>Is my world uploaded anywhere?</summary>
+        <p>No. The world file is opened, edited and re-packed locally in your browser. There is no server and no upload, so the world never leaves your device.</p>
+      </details>
+      <details>
+        <summary>Will enabling Beta APIs turn off achievements?</summary>
+        <p>Yes. Minecraft disables achievements in any world that has experiments enabled. That is a game rule, not something this site adds.</p>
+      </details>
+      <details>
+        <summary>Do I still need a beta version of my add-on?</summary>
+        <p>Yes. The world toggle only permits beta modules. The behaviour pack's manifest must also depend on a beta version of <span class="mono">@minecraft/server</span>.</p>
+      </details>
+      <details>
+        <summary>Does it work with Minecraft Java Edition worlds?</summary>
+        <p>No. Beta APIs are a Bedrock and Education Edition feature, and the tool will tell you if it sees a Java world.</p>
+      </details>
+      <details>
+        <summary>Does the original world file get changed?</summary>
+        <p>No. Only <span class="mono">level.dat</span> inside the downloaded copy is edited — the gametest flag plus the two bookkeeping flags Minecraft expects, and every other byte is left as it was. Your original <span class="mono">.mcworld</span> stays exactly as it was, and the new file is imported as a separate world.</p>
+      </details>
     </div>
   </section>
 </main>
 
 <footer class="page-wrap site-footer">
   <div class="footer-inner">
-    <span>Made by kaidaz18. Not affiliated with Mojang or Microsoft.</span>
-    <div class="footer-links"><a href="https://www.youtube.com/@kaidaz18">YouTube</a></div>
+    <span>Made by <a href="https://kaidaz18yt.github.io/">Kaidaz18</a>. Not affiliated with Mojang or Microsoft.</span>
+    <div class="footer-links">
+      <a href="https://kaidaz18yt.github.io/">All tools</a>
+      <a href="https://kaidaz18yt.github.io/joincode-maker/">Join Code Maker</a>
+      <a href="https://www.youtube.com/@kaidaz18">YouTube</a>
+    </div>
   </div>
 </footer>
 
