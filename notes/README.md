@@ -35,9 +35,14 @@ key** belongs in this repository. Never put an administrator key in the site.
   pagination indicator such as `hasMore` or `nextCursor`, Ledger refuses to
   treat that page as a complete workspace. A silently truncated plain array
   cannot be detected; pagination needs to be specified before relying on it.
-- Live subscriptions are used when the SDK exposes `subscribe(callback)` and
-  returns an unsubscribe function. A 30-second polling fallback and manual retry
-  are also used. The backend must authenticate and scope realtime events.
+- Ledger currently refreshes every 30 seconds while visible, on return to the
+  page or network, and when another tab in the same browser saves data. Those
+  cross-tab signals contain only a collection name and a unique marker, never
+  a token or document content. The SDK's realtime stream is temporarily disabled:
+  the observed endpoint rejects subscriptions and the SDK puts session tokens
+  in EventSource URLs. Restore server realtime only after a secure authenticated
+  transport and owner-scoped events are documented and verified. Changes from
+  another device may take up to 30 seconds to appear while the page is visible.
 - Allow the site origin through CORS, including `Authorization`, `x-api-key`,
   `Content-Type`, and the `GET`, `POST`, `PATCH`, `DELETE`, and `OPTIONS`
   methods. SDK and HTTPS certificate access are also required.
@@ -71,6 +76,31 @@ loaded because the new guide does not document an equivalent endpoint. A new
 authenticated AI endpoint and frontend integration are needed to restore it.
 `/notes/test/` can check the SDK, CORS/API reachability and browser storage,
 but it does **not** verify privacy rules or real account access.
+
+## iOS and SDK connectivity
+
+The home-screen app still needs to reach `https://kaidaz18.duckdns.org` for the
+SDK, authentication and data; it is not an offline app. The SDK is loaded on
+sign-in or session restoration, and a failed load can be retried without
+reloading the page. A failed SDK load does not discard a saved session.
+
+If the SDK does not load on an iPhone:
+
+1. From Ledger's sign-in screen, open **Run connection test** inside the
+   affected app. Check that it reports the home-screen context, then check the
+   SDK and API tests. Use **Back to Ledger** to return to sign-in.
+2. Open `https://kaidaz18.duckdns.org/sdk/bread-client.js` in Safari. It should
+   show JavaScript rather than an error or certificate warning. Do not bypass
+   HTTPS warnings; repair the backend's certificate or trust chain instead.
+3. Compare Safari with the home-screen app, and Wi-Fi with mobile data. Check
+   DNS, local-network reachability, blockers and HTTPS if the address fails.
+   Home-screen apps have separate website storage and may need a fresh sign-in.
+4. If only the home-screen app fails, force-close and reopen it. If necessary,
+   after saving unsynced work, remove the home-screen app and add it again from
+   the working Safari page. This may clear the app's local data and session.
+
+If the problem remains, note the iOS version and connection-test results. Do
+not share passwords, session tokens or private keys when reporting errors.
 
 ## Tests
 
