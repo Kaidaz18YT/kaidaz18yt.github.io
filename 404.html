@@ -50,7 +50,11 @@ body {
 a { color: var(--accent); text-decoration: none; transition: color 0.18s ease, background-color 0.18s ease, border-color 0.18s ease; }
 a:hover { text-decoration: underline; }
 .mono { font-family: 'IBM Plex Mono', monospace; }
-img { max-width: 100%; display: block; }
+img {
+  max-width: 100%;
+  height: auto;
+  display: block;
+}
 
 .wrap {
   max-width: 420px;
@@ -79,6 +83,9 @@ img { max-width: 100%; display: block; }
   position: relative;
   z-index: 1;
   width: 100%;
+  height: auto;
+  aspect-ratio: 1 / 1;
+  object-fit: contain;
   image-rendering: pixelated;
   filter: drop-shadow(0 12px 24px rgba(0,0,0,0.4));
 }
