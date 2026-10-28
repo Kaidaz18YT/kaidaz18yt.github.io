@@ -209,7 +209,11 @@ a:hover { text-decoration: underline; }
 button { font-family: inherit; cursor: pointer; }
 .mono { font-family: 'IBM Plex Mono', monospace; }
 
-img { max-width: 100%; display: block; }
+img {
+  max-width: 100%;
+  height: auto;        /* never let a width/height attribute stretch the picture */
+  display: block;
+}
 
 
 .page-wrap { max-width: 980px; margin: 0 auto; padding: 0 28px; }
@@ -316,6 +320,10 @@ img { max-width: 100%; display: block; }
   position: relative;
   z-index: 1;
   width: 100%;
+  height: auto;
+  max-height: 100%;
+  aspect-ratio: 1 / 1;
+  object-fit: contain;
   image-rendering: pixelated;
   filter: drop-shadow(0 12px 24px rgba(0,0,0,0.4));
 }
