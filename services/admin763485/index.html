@@ -1,0 +1,470 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1, viewport-fit=cover">
+<title>Applications — Admin</title>
+<meta name="robots" content="noindex, nofollow">
+<meta name="theme-color" content="#1C1B1A">
+<link rel="icon" type="image/png" sizes="192x192" href="https://kaidaz18yt.github.io/assets/head-192.png">
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+<link href="https://fonts.googleapis.com/css2?family=IBM+Plex+Sans:wght@400;500;600;700&family=IBM+Plex+Mono:wght@400;500&display=swap" rel="stylesheet">
+<style>
+:root {
+  --bg: #1C1B1A; --bg-raised: #242321; --bg-hover: #2C2B28;
+  --border: #38362f; --border-soft: #2c2b27;
+  --ink: #EDEAE3; --ink-dim: #A8A399; --ink-faint: #6f6b62;
+  --accent: #7C93CC; --accent-dim: #4A5D8A;
+  --amber: #C9A15C; --sage: #8FA184; --danger: #C97C6E;
+  --brand-red: #C1443A; --brand-red-dim: #8B322A; --brand-red-glow: rgba(193,68,58,0.18);
+  --radius: 3px;
+  color-scheme: dark;
+}
+* { box-sizing: border-box; }
+body { margin: 0; background: var(--bg); color: var(--ink); font-family: 'IBM Plex Sans', system-ui, sans-serif; font-size: 15px; line-height: 1.5; -webkit-font-smoothing: antialiased; padding-bottom: env(safe-area-inset-bottom, 0px); }
+a { color: var(--accent); }
+button { font-family: inherit; cursor: pointer; }
+.mono { font-family: 'IBM Plex Mono', monospace; }
+:focus-visible { outline: 2px solid var(--accent); outline-offset: 2px; }
+.wrap { max-width: 980px; margin: 0 auto; padding: 0 28px; }
+
+.topbar { border-bottom: 1px solid var(--border-soft); position: sticky; top: 0; z-index: 10; background: var(--bg); box-shadow: 0 4px 16px rgba(0,0,0,0.2); }
+.topbar .wrap { display: flex; align-items: center; justify-content: space-between; gap: 12px; padding-top: 14px; padding-bottom: 14px; }
+.brand { display: flex; align-items: center; gap: 10px; font-weight: 700; }
+.brand img { width: 26px; height: 26px; border-radius: 4px; image-rendering: pixelated; }
+.brand small { color: var(--ink-faint); font-weight: 400; font-size: 12.5px; }
+.who { font-size: 13px; color: var(--ink-faint); display: flex; gap: 10px; align-items: center; }
+
+.btn { display: inline-flex; align-items: center; justify-content: center; gap: 6px; font-size: 13.5px; font-weight: 500; padding: 9px 16px; border-radius: var(--radius); border: 1px solid var(--border); background: transparent; color: var(--ink); }
+.btn:hover { background: var(--bg-hover); }
+.btn.primary { background: var(--brand-red); border-color: var(--brand-red); color: #fff; }
+.btn.primary:hover { background: var(--brand-red-dim); }
+.btn.small { padding: 5px 10px; font-size: 12.5px; }
+.btn.danger { color: var(--danger); }
+.btn:disabled { opacity: .55; cursor: default; }
+.linkbtn { background: none; border: none; padding: 0; color: var(--accent); font-size: 13px; }
+
+input, select { font: inherit; font-size: 14px; color: var(--ink); background: var(--bg); border: 1px solid var(--border); border-radius: var(--radius); padding: 9px 12px; }
+input:focus, select:focus { outline: none; border-color: var(--accent); }
+
+/* sign in */
+.signin { max-width: 380px; margin: 72px auto; background: var(--bg-raised); border: 1px solid var(--border-soft); border-radius: var(--radius); padding: 26px; }
+.signin h1 { font-size: 20px; margin: 0 0 6px; }
+.signin p { color: var(--ink-dim); font-size: 13.5px; margin: 0 0 18px; }
+.signin input { width: 100%; margin-bottom: 10px; }
+.or { display: flex; align-items: center; gap: 10px; color: var(--ink-faint); font-size: 12px; margin: 16px 0; }
+.or::before, .or::after { content: ''; flex: 1; border-top: 1px solid var(--border-soft); }
+#mfa-row { display: none; }
+
+.msg { font-size: 13.5px; padding: 10px 14px; border-radius: var(--radius); margin: 14px 0 0; display: none; }
+.msg.show { display: block; }
+.msg.err { background: rgba(201,124,110,0.12); color: var(--danger); border: 1px solid rgba(201,124,110,0.3); }
+.msg.ok { background: rgba(143,161,132,0.12); color: var(--sage); border: 1px solid rgba(143,161,132,0.3); }
+
+/* dashboard */
+.head { padding: 32px 0 18px; display: flex; justify-content: space-between; align-items: flex-end; gap: 16px; flex-wrap: wrap; }
+.head h1 { font-size: 26px; margin: 0; letter-spacing: -0.01em; }
+.head .sub { color: var(--ink-faint); font-size: 13px; margin-top: 4px; }
+.live { display: inline-flex; align-items: center; gap: 6px; }
+.live::before { content: ''; width: 7px; height: 7px; border-radius: 50%; background: var(--ink-faint); }
+.live.on::before { background: var(--sage); }
+
+.tabs { display: flex; gap: 6px; flex-wrap: wrap; margin-bottom: 12px; }
+.tab { padding: 6px 12px; border-radius: 999px; border: 1px solid var(--border); background: transparent; color: var(--ink-dim); font-size: 13px; }
+.tab[aria-pressed="true"] { border-color: var(--brand-red); background: var(--brand-red-glow); color: var(--ink); }
+.tab .n { font-family: 'IBM Plex Mono', monospace; font-size: 11.5px; color: var(--ink-faint); margin-left: 4px; }
+.toolbar { display: flex; gap: 10px; margin-bottom: 18px; }
+.toolbar input { flex: 1; min-width: 0; }
+
+.card { background: var(--bg-raised); border: 1px solid var(--border-soft); border-left: 3px solid var(--border); border-radius: var(--radius); padding: 16px 18px; margin-bottom: 12px; }
+.card.s-new { border-left-color: var(--brand-red); }
+.card.s-contacted { border-left-color: var(--amber); }
+.card.s-paid, .card.s-in-progress { border-left-color: var(--accent); }
+.card.s-done { border-left-color: var(--sage); }
+.card.s-cancelled { opacity: .65; }
+.card-top { display: flex; justify-content: space-between; gap: 12px; flex-wrap: wrap; align-items: flex-start; }
+.discord { font-family: 'IBM Plex Mono', monospace; font-size: 16px; font-weight: 500; display: flex; gap: 8px; align-items: center; flex-wrap: wrap; }
+.service { color: var(--amber); font-size: 14px; margin-top: 2px; }
+.when { color: var(--ink-faint); font-size: 12.5px; margin-top: 2px; }
+.facts { display: grid; grid-template-columns: repeat(4, 1fr); gap: 8px 16px; margin: 14px 0 0; }
+.facts div { min-width: 0; }
+.facts dt { font-size: 11px; text-transform: uppercase; letter-spacing: .05em; color: var(--ink-faint); }
+.facts dd { margin: 2px 0 0; font-size: 14px; overflow-wrap: anywhere; }
+.block { margin-top: 12px; }
+.block dt { font-size: 11px; text-transform: uppercase; letter-spacing: .05em; color: var(--ink-faint); }
+.block dd { margin: 3px 0 0; font-size: 14px; color: var(--ink-dim); white-space: pre-wrap; overflow-wrap: anywhere; }
+.card-actions { display: flex; gap: 8px; align-items: center; flex-wrap: wrap; }
+.card-actions select { padding: 5px 8px; font-size: 13px; }
+.urgent { font-size: 11px; font-family: 'IBM Plex Mono', monospace; padding: 2px 8px; border-radius: 999px; background: var(--brand-red-glow); color: var(--brand-red); }
+
+.empty { text-align: center; color: var(--ink-faint); padding: 48px 16px; border: 1px dashed var(--border); border-radius: var(--radius); font-size: 14px; }
+.empty p { margin: 6px 0; }
+
+@media (max-width: 640px) {
+  .wrap { padding: 0 16px; }
+  .facts { grid-template-columns: 1fr 1fr; }
+  .signin { margin: 32px auto; padding: 20px; }
+  .who .email { display: none; }
+}
+</style>
+</head>
+<body>
+
+<div class="topbar">
+  <div class="wrap">
+    <a class="brand" href="https://kaidaz18yt.github.io/services/" style="color:inherit;text-decoration:none">
+      <img src="https://kaidaz18yt.github.io/assets/head-96.png" alt="" width="96" height="96">
+      Kaidaz18 <small>.admin</small>
+    </a>
+    <div class="who" id="who" hidden><span class="email" id="who-email"></span><button class="btn small" id="btn-logout">Sign out</button></div>
+  </div>
+</div>
+
+<!-- Signed out -->
+<div class="wrap" id="view-signin" hidden>
+  <div class="signin">
+    <h1>Admin sign-in</h1>
+    <p>Sign in with the account allowed in your BreadBackend rules.</p>
+    <div id="google-button"></div>
+    <div class="or">or email</div>
+    <input id="a-email" type="email" autocomplete="email" placeholder="Email">
+    <input id="a-pass" type="password" autocomplete="current-password" placeholder="Password">
+    <div id="mfa-row"><input id="a-mfa" inputmode="numeric" maxlength="6" placeholder="6-digit code"></div>
+    <button class="btn primary" id="btn-login" style="width:100%">Sign in</button>
+    <div class="msg" id="signin-msg" role="status"></div>
+  </div>
+</div>
+
+<!-- Signed in -->
+<main class="wrap" id="view-admin" hidden>
+  <div class="head">
+    <div>
+      <h1>Applications</h1>
+      <div class="sub"><span class="live" id="live">Connecting…</span></div>
+    </div>
+    <button class="btn" id="btn-refresh">Refresh</button>
+  </div>
+
+  <div class="tabs" id="tabs"></div>
+  <div class="toolbar">
+    <input id="search" type="search" placeholder="Search Discord name, host, mods…">
+  </div>
+  <div class="msg" id="admin-msg" role="status"></div>
+  <div id="list"></div>
+</main>
+
+<script src="https://kaidaz18.duckdns.org/sdk/bread-client.js"></script>
+<script src="https://accounts.google.com/gsi/client" async defer></script>
+<script>
+(function () {
+  const GOOGLE_CLIENT_ID = "579417516535-b98ibr9etu8brajjvo02u214mpu5js9q.apps.googleusercontent.com";
+  const COLLECTION = "applications";
+  const STATUSES = [
+    ["new", "New"], ["contacted", "Contacted"], ["paid", "Paid"],
+    ["in-progress", "In progress"], ["done", "Done"], ["cancelled", "Cancelled"],
+  ];
+  const STATUS_LABEL = Object.fromEntries(STATUSES);
+
+  const $ = (id) => document.getElementById(id);
+  let bread = null;
+  try {
+    bread = new BreadClient({
+      baseUrl: "https://kaidaz18.duckdns.org",
+      projectSlug: "kaidaz18-apply-for-services",
+      apiKey: "pk_live_gT8ON11aRHhNASkckSY4XGAp",
+    });
+  } catch (e) {}
+
+  let user = null;
+  let apps = [];
+  let filter = "open";
+  let unsubscribe = null;
+  let mfaToken = null;
+
+  function msg(el, text, kind) { el.textContent = text; el.className = "msg show " + (kind || "err"); }
+  function clear(el) { el.className = "msg"; el.textContent = ""; }
+  function errText(e, fb) {
+    if (e && e.status === 429) return "Too many requests. Wait a minute and try again.";
+    if (e && e.status === 403) return "Not allowed by your BreadBackend rules. Check the applications rules in the dashboard's Rules tab.";
+    return (e && (e.error || e.message)) || fb || "Something went wrong.";
+  }
+
+  // ---------- views ----------
+  function showSignedOut() {
+    user = null;
+    stopLive();
+    $("view-admin").hidden = true;
+    $("who").hidden = true;
+    $("view-signin").hidden = false;
+    renderGoogle();
+  }
+  function showSignedIn(u) {
+    user = u;
+    mfaToken = null;
+    $("mfa-row").style.display = "none";
+    $("view-signin").hidden = true;
+    $("view-admin").hidden = false;
+    $("who").hidden = false;
+    $("who-email").textContent = u.email;
+    load();
+    startLive();
+  }
+
+  // ---------- auth ----------
+  async function handleLogin(res) {
+    if (res && res.mfaRequired) {
+      mfaToken = res.mfaToken;
+      $("mfa-row").style.display = "block";
+      $("a-mfa").focus();
+      msg($("signin-msg"), "Enter the 6-digit code from your authenticator app.", "ok");
+      return;
+    }
+    showSignedIn(res.user);
+  }
+  $("btn-login").addEventListener("click", async () => {
+    const m = $("signin-msg"); clear(m);
+    if (!bread) { msg(m, "Couldn't reach the backend. Refresh and try again."); return; }
+    const btn = $("btn-login"); btn.disabled = true;
+    try {
+      if (mfaToken) {
+        const code = $("a-mfa").value.trim();
+        if (!/^\d{6}$/.test(code)) { msg(m, "Enter the 6-digit code."); return; }
+        const r = await bread.auth.mfa.verify(mfaToken, code);
+        showSignedIn(r.user);
+        return;
+      }
+      const email = $("a-email").value.trim(), pass = $("a-pass").value;
+      if (!email || !pass) { msg(m, "Enter your email and password."); return; }
+      await handleLogin(await bread.auth.login(email, pass));
+    } catch (e) { msg(m, errText(e, "Couldn't sign in.")); }
+    finally { btn.disabled = false; }
+  });
+  $("a-pass").addEventListener("keydown", (e) => { if (e.key === "Enter") $("btn-login").click(); });
+  $("a-mfa").addEventListener("keydown", (e) => { if (e.key === "Enter") $("btn-login").click(); });
+
+  $("btn-logout").addEventListener("click", async () => {
+    try { await bread.auth.logout(); } catch (e) {}
+    apps = [];
+    $("list").textContent = "";
+    showSignedOut();
+  });
+
+  let googleRendered = false;
+  function renderGoogle() {
+    if (googleRendered) return;
+    if (!window.google || !google.accounts || !google.accounts.id) { setTimeout(renderGoogle, 300); return; }
+    googleRendered = true;
+    google.accounts.id.initialize({
+      client_id: GOOGLE_CLIENT_ID,
+      callback: async (response) => {
+        clear($("signin-msg"));
+        try { await handleLogin(await bread.auth.signInWithGoogle(response.credential)); }
+        catch (e) { msg($("signin-msg"), errText(e, "Google sign-in failed.")); }
+      },
+    });
+    google.accounts.id.renderButton($("google-button"), { theme: "filled_black", size: "large", text: "signin_with", width: 326 });
+  }
+
+  // ---------- data ----------
+  async function load() {
+    const m = $("admin-msg"); clear(m);
+    try {
+      const all = [];
+      for (let offset = 0; offset < 5000; offset += 500) {
+        const page = await bread.collection(COLLECTION).get({ limit: 500, offset, orderBy: "createdAt", order: "desc" });
+        all.push(...page);
+        if (page.length < 500) break;
+      }
+      apps = all;
+      render();
+    } catch (e) {
+      if (e && e.status === 401) { showSignedOut(); return; }
+      msg(m, errText(e, "Couldn't load applications."));
+    }
+  }
+  $("btn-refresh").addEventListener("click", load);
+
+  function startLive() {
+    stopLive();
+    try {
+      unsubscribe = bread.collection(COLLECTION).subscribe((ev) => {
+        if (ev.action === "delete") {
+          apps = apps.filter((a) => a.id !== ev.docId);
+        } else if (ev.doc) {
+          const doc = Object.assign({ id: ev.docId }, ev.doc);
+          const i = apps.findIndex((a) => a.id === ev.docId);
+          if (i >= 0) apps[i] = doc; else apps.unshift(doc);
+          if (ev.action === "create") notifyNew();
+        }
+        render();
+      });
+      $("live").textContent = "Live: new applications appear automatically";
+      $("live").classList.add("on");
+    } catch (e) {
+      $("live").textContent = "Live updates off. Use Refresh.";
+    }
+  }
+  function stopLive() {
+    if (unsubscribe) { try { unsubscribe(); } catch (e) {} unsubscribe = null; }
+    $("live").classList.remove("on");
+  }
+  let unseen = 0;
+  function notifyNew() {
+    unseen++;
+    document.title = "(" + unseen + ") New application — Admin";
+    const reset = () => { unseen = 0; document.title = "Applications — Admin"; window.removeEventListener("focus", reset); };
+    if (document.hasFocus()) setTimeout(reset, 4000); else window.addEventListener("focus", reset);
+  }
+
+  async function setStatus(app, status, selectEl) {
+    const m = $("admin-msg"); clear(m);
+    const prev = app.status || "new";
+    selectEl.disabled = true;
+    try {
+      const updated = await bread.collection(COLLECTION).update(app.id, { status });
+      Object.assign(app, updated, { status });
+      render();
+    } catch (e) {
+      selectEl.value = prev;
+      msg(m, errText(e, "Couldn't change the status."));
+    } finally { selectEl.disabled = false; }
+  }
+
+  async function remove(app) {
+    if (!confirm("Delete the application from " + (app.discord || "this person") + "? This can't be undone.")) return;
+    const m = $("admin-msg"); clear(m);
+    try {
+      await bread.collection(COLLECTION).delete(app.id);
+      apps = apps.filter((a) => a.id !== app.id);
+      render();
+    } catch (e) { msg(m, errText(e, "Couldn't delete it.")); }
+  }
+
+  // ---------- render ----------
+  function el(tag, cls, text) {
+    const e = document.createElement(tag);
+    if (cls) e.className = cls;
+    if (text != null) e.textContent = text;
+    return e;
+  }
+  function isOpen(a) { const s = a.status || "new"; return s !== "done" && s !== "cancelled"; }
+  function matchesFilter(a) {
+    if (filter === "all") return true;
+    if (filter === "open") return isOpen(a);
+    return (a.status || "new") === filter;
+  }
+  function matchesSearch(a, q) {
+    if (!q) return true;
+    return [a.discord, a.service, a.serverType, a.mcVersion, a.host, a.wants, a.notes, a.neededBy]
+      .some((v) => String(v || "").toLowerCase().includes(q));
+  }
+  function timeAgo(iso) {
+    const d = new Date(iso); if (isNaN(d)) return "";
+    const s = (Date.now() - d) / 1000;
+    if (s < 60) return "just now";
+    if (s < 3600) return Math.floor(s / 60) + " min ago";
+    if (s < 86400) return Math.floor(s / 3600) + " h ago";
+    if (s < 86400 * 7) return Math.floor(s / 86400) + " d ago";
+    return d.toLocaleDateString();
+  }
+
+  function renderTabs() {
+    const tabs = $("tabs"); tabs.textContent = "";
+    const counts = { open: apps.filter(isOpen).length, all: apps.length };
+    for (const [k] of STATUSES) counts[k] = apps.filter((a) => (a.status || "new") === k).length;
+    const list = [["open", "Open"]].concat(STATUSES, [["all", "All"]]);
+    for (const [k, label] of list) {
+      const b = el("button", "tab", label);
+      b.type = "button";
+      b.setAttribute("aria-pressed", String(filter === k));
+      b.appendChild(el("span", "n", String(counts[k] || 0)));
+      b.onclick = () => { filter = k; render(); };
+      tabs.appendChild(b);
+    }
+  }
+
+  function card(a) {
+    const status = a.status || "new";
+    const c = el("article", "card s-" + status);
+
+    const top = el("div", "card-top");
+    const left = el("div");
+    const name = el("div", "discord");
+    name.appendChild(el("span", null, a.discord || "(no Discord name)"));
+    if (a.neededBy === "ASAP" && isOpen(a)) name.appendChild(el("span", "urgent", "ASAP"));
+    left.appendChild(name);
+    left.appendChild(el("div", "service", a.service || ""));
+    const when = el("div", "when", "Sent " + timeAgo(a.createdAt));
+    when.title = new Date(a.createdAt).toLocaleString();
+    left.appendChild(when);
+
+    const actions = el("div", "card-actions");
+    const copy = el("button", "btn small", "Copy Discord");
+    copy.type = "button";
+    copy.onclick = async () => {
+      try { await navigator.clipboard.writeText(a.discord || ""); copy.textContent = "Copied"; }
+      catch (e) { copy.textContent = "Copy failed"; }
+      setTimeout(() => (copy.textContent = "Copy Discord"), 1500);
+    };
+    const sel = el("select");
+    sel.setAttribute("aria-label", "Status");
+    for (const [k, label] of STATUSES) {
+      const o = el("option", null, label); o.value = k; if (k === status) o.selected = true; sel.appendChild(o);
+    }
+    if (!STATUS_LABEL[status]) { const o = el("option", null, status); o.value = status; o.selected = true; sel.appendChild(o); }
+    sel.onchange = () => setStatus(a, sel.value, sel);
+    const del = el("button", "btn small danger", "Delete");
+    del.type = "button";
+    del.onclick = () => remove(a);
+    actions.append(copy, sel, del);
+    top.append(left, actions);
+    c.appendChild(top);
+
+    const facts = el("dl", "facts");
+    for (const [label, v] of [["Server type", a.serverType], ["Version", a.mcVersion], ["Host", a.host], ["Needed by", a.neededBy]]) {
+      const d = el("div");
+      d.append(el("dt", null, label), el("dd", null, v || "—"));
+      facts.appendChild(d);
+    }
+    c.appendChild(facts);
+
+    for (const [label, v] of [["Wants", a.wants], ["Anything else", a.notes]]) {
+      if (!v) continue;
+      const b = el("dl", "block");
+      b.append(el("dt", null, label), el("dd", null, v));
+      c.appendChild(b);
+    }
+    return c;
+  }
+
+  function render() {
+    renderTabs();
+    const list = $("list"); list.textContent = "";
+    const q = $("search").value.trim().toLowerCase();
+    const shown = apps.filter((a) => matchesFilter(a) && matchesSearch(a, q));
+    if (!apps.length) {
+      const e = el("div", "empty");
+      e.append(el("p", null, "No applications yet."),
+        el("p", null, "If you know people have applied, your rules probably don't let this account read them yet. Paste the admin rules into the dashboard's Rules tab and make sure this email is verified."));
+      list.appendChild(e);
+      return;
+    }
+    if (!shown.length) { list.appendChild(el("div", "empty", "Nothing matches.")); return; }
+    for (const a of shown) list.appendChild(card(a));
+  }
+  $("search").addEventListener("input", render);
+
+  // ---------- start ----------
+  if (!bread) {
+    $("view-signin").hidden = false;
+    msg($("signin-msg"), "Couldn't load the backend. Refresh and try again.");
+  } else if (bread.auth.isSignedIn()) {
+    bread.auth.me().then((r) => showSignedIn(r.user)).catch(showSignedOut);
+  } else {
+    showSignedOut();
+  }
+})();
+</script>
+</body>
+</html>
