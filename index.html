@@ -501,6 +501,35 @@ img {
 .addon-meta .dot { width: 6px; height: 6px; border-radius: 50%; flex-shrink: 0; }
 .addon-cta { flex-shrink: 0; margin-top: 2px; }
 
+/*Server services*/
+.hero-callout {
+  display: inline-flex; align-items: center; gap: 10px;
+  margin: 0 0 18px; padding: 7px 14px 7px 7px;
+  border: 1px solid var(--brand-red-dim); border-radius: 999px;
+  background: var(--brand-red-glow); color: var(--ink); font-size: 13.5px;
+}
+.hero-callout:hover { text-decoration: none; border-color: var(--brand-red); }
+.hero-callout-tag { flex-shrink: 0; font-size: 11px; background: var(--brand-red); color: #fff; padding: 2px 8px; border-radius: 999px; }
+.svc-grid { display: grid; grid-template-columns: repeat(4, 1fr); gap: 14px; }
+.svc-card { background: var(--bg-raised); border: 1px solid var(--border-soft); border-radius: var(--radius); padding: 18px; }
+.svc-featured { border-color: var(--brand-red-dim); box-shadow: 0 0 0 1px var(--brand-red-glow); }
+.svc-top { display: flex; justify-content: space-between; align-items: baseline; gap: 8px; margin-bottom: 8px; flex-wrap: wrap; }
+.svc-name { font-weight: 600; font-size: 14.5px; }
+.svc-price { color: var(--amber); font-size: 16px; white-space: nowrap; }
+.svc-desc { font-size: 13px; color: var(--ink-dim); }
+.svc-cta { display: flex; align-items: center; gap: 16px; flex-wrap: wrap; margin-top: 22px; }
+.svc-note { font-size: 13px; color: var(--ink-faint); }
+@media (max-width: 860px) { .svc-grid { grid-template-columns: 1fr 1fr; } }
+@media (max-width: 560px) {
+  .topbar-inner { gap: 8px; }
+  .brand-handle { display: none; }
+  .topnav { min-width: 0; overflow-x: auto; scrollbar-width: none; }
+  .topnav::-webkit-scrollbar { display: none; }
+  .topnav a { padding: 6px 7px; white-space: nowrap; }
+  .hero-callout { border-radius: 14px; }
+}
+@media (max-width: 480px) { .svc-grid { grid-template-columns: 1fr; } }
+
 /*Tools grid*/
 .tools-grid {
   display: grid;
@@ -651,7 +680,7 @@ img {
   from { opacity: 0; transform: translateY(10px); }
   to { opacity: 1; transform: translateY(0); }
 }
-.hero-eyebrow, .hero h1, .hero p.lede, .hero-actions, .hero-stats {
+.hero-eyebrow, .hero h1, .hero p.lede, .hero-callout, .hero-actions, .hero-stats {
   animation: rise-in 0.5s ease both;
 }
 .hero h1 { animation-delay: 0.05s; }
@@ -673,10 +702,10 @@ img {
       Kaidaz18 <span class="brand-handle">.creator</span>
     </a>
     <nav class="topnav">
+      <a href="#services">Server setup</a>
       <a href="#videos">Videos</a>
       <a href="#addons">Add-ons</a>
       <a href="#tools">Tools</a>
-      <a href="https://kaidaz18yt.github.io/services/">Server setup</a>
       <a href="#about">About</a>
     </nav>
   </div>
@@ -689,6 +718,7 @@ img {
       <div class="hero-eyebrow mono">MINECRAFT BEDROCK · EDUCATION EDITION</div>
       <h1>Minecraft Bedrock &amp; Education Edition add-ons, tools and tutorials.</h1>
       <p class="lede">I build small, reliable behaviour packs for Minecraft Bedrock and Education Edition — the Entity Counter, World Logger and Crosshair Fix — and free browser tools like the <a href="#tools">join code maker</a>. Every add-on comes with an install video.</p>
+      <a class="hero-callout" href="#services"><span class="hero-callout-tag mono">NEW</span> I now set up and fix Minecraft servers, from $10 <span aria-hidden="true">→</span></a>
       <div class="hero-actions">
         <a class="btn-primary" href="https://youtube.com/@Kaidaz18" target="_blank" rel="noopener">Watch on YouTube</a>
         <a class="btn-secondary" href="#addons">Browse add-ons</a>
@@ -715,6 +745,40 @@ img {
         <div class="num mono">2</div>
         <div class="label">Free web tools</div>
       </div>
+    </div>
+  </section>
+
+  <section class="section" id="services">
+    <div class="section-head">
+      <div>
+        <h2>Minecraft server setup &amp; fixes</h2>
+        <div class="section-sub">Paper, Fabric and Forge servers set up or fixed for you. I reply on Discord within 24 hours.</div>
+      </div>
+      <a class="section-link" href="https://kaidaz18yt.github.io/services/">Full details, rules &amp; FAQ →</a>
+    </div>
+
+    <div class="svc-grid">
+      <div class="svc-card">
+        <div class="svc-top"><span class="svc-name">Basic setup</span><span class="svc-price mono">$15</span></div>
+        <div class="svc-desc">Paper, Fabric or Forge installed, world and server settings done, plus up to 3 plugins or mods.</div>
+      </div>
+      <div class="svc-card svc-featured">
+        <div class="svc-top"><span class="svc-name">Full setup</span><span class="svc-price mono">$20–$40</span></div>
+        <div class="svc-desc">Everything in Basic, plus ranks and permissions, tuned configs and a protected spawn.</div>
+      </div>
+      <div class="svc-card">
+        <div class="svc-top"><span class="svc-name">Server fix</span><span class="svc-price mono">$10</span></div>
+        <div class="svc-desc">Server won't start or keeps crashing? I read the logs, find the cause and fix it.</div>
+      </div>
+      <div class="svc-card">
+        <div class="svc-top"><span class="svc-name">Extras</span><span class="svc-price mono">$5–$10</span></div>
+        <div class="svc-desc">Add a mod or plugin, update to a new version, or make small config changes.</div>
+      </div>
+    </div>
+
+    <div class="svc-cta">
+      <a class="btn-primary" href="https://kaidaz18yt.github.io/services/#apply">Apply for a server setup</a>
+      <span class="svc-note">Prices in AUD, paid by PayID. I never need your hosting password.</span>
     </div>
   </section>
 
