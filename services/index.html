@@ -1,0 +1,726 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1, viewport-fit=cover">
+<title>Minecraft Server Setup &amp; Fixes — Kaidaz18</title>
+<meta name="description" content="Minecraft Java server setup and fixes for Paper, Fabric and Forge. Plugins, mods, permissions and spawn set up for you, from $10. Apply in two minutes and hear back on Discord within 24 hours.">
+<meta name="author" content="Kaidaz18">
+<meta name="robots" content="index, follow">
+<meta name="theme-color" content="#1C1B1A">
+<link rel="canonical" href="https://kaidaz18yt.github.io/services/">
+<link rel="icon" type="image/png" sizes="192x192" href="https://kaidaz18yt.github.io/assets/head-192.png">
+<link rel="icon" type="image/x-icon" href="https://kaidaz18yt.github.io/favicon.ico">
+<meta property="og:type" content="website">
+<meta property="og:site_name" content="Kaidaz18">
+<meta property="og:url" content="https://kaidaz18yt.github.io/services/">
+<meta property="og:title" content="Minecraft Server Setup &amp; Fixes — Kaidaz18">
+<meta property="og:description" content="Paper, Fabric and Forge servers set up or fixed for you, from $10. Apply in two minutes.">
+<meta property="og:image" content="https://kaidaz18yt.github.io/media/meta-image.jpg">
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+<link href="https://fonts.googleapis.com/css2?family=IBM+Plex+Sans:wght@400;500;600;700&family=IBM+Plex+Mono:wght@400;500&display=swap" rel="stylesheet">
+<style>
+:root {
+  --bg: #1C1B1A; --bg-raised: #242321; --bg-hover: #2C2B28;
+  --border: #38362f; --border-soft: #2c2b27;
+  --ink: #EDEAE3; --ink-dim: #A8A399; --ink-faint: #6f6b62;
+  --accent: #7C93CC; --accent-dim: #4A5D8A;
+  --amber: #C9A15C; --sage: #8FA184; --danger: #C97C6E;
+  --brand-red: #C1443A; --brand-red-dim: #8B322A; --brand-red-glow: rgba(193,68,58,0.18);
+  --radius: 3px;
+  color-scheme: dark;
+}
+* { box-sizing: border-box; }
+html { scroll-padding-top: 72px; scroll-behavior: smooth; }
+body {
+  margin: 0; background: var(--bg); color: var(--ink);
+  font-family: 'IBM Plex Sans', system-ui, sans-serif; font-size: 15px; line-height: 1.55;
+  -webkit-font-smoothing: antialiased;
+  padding-bottom: env(safe-area-inset-bottom, 0px);
+}
+::selection { background: var(--accent-dim); color: #fff; }
+a { color: var(--accent); text-decoration: none; }
+a:hover { text-decoration: underline; }
+button { font-family: inherit; cursor: pointer; }
+img { max-width: 100%; height: auto; display: block; }
+.mono { font-family: 'IBM Plex Mono', monospace; }
+:focus-visible { outline: 2px solid var(--accent); outline-offset: 2px; }
+
+.page-wrap { max-width: 980px; margin: 0 auto; padding: 0 28px; }
+
+/* top bar */
+.topbar { border-bottom: 1px solid var(--border-soft); background: var(--bg); position: sticky; top: 0; z-index: 30; box-shadow: 0 4px 16px rgba(0,0,0,0.2); }
+.topbar-inner { max-width: 980px; margin: 0 auto; padding: 16px 28px; display: flex; align-items: center; justify-content: space-between; gap: 16px; }
+.brand { display: flex; align-items: center; gap: 10px; font-weight: 700; color: var(--ink); }
+.brand:hover { text-decoration: none; opacity: 0.85; }
+.brand-icon { width: 26px; height: 26px; border-radius: 4px; image-rendering: pixelated; box-shadow: 0 0 0 1px var(--border-soft); }
+.brand-handle { color: var(--ink-faint); font-weight: 400; font-size: 12.5px; }
+.topnav { display: flex; gap: 4px; }
+.topnav a { color: var(--ink-dim); font-size: 13px; padding: 7px 12px; border-radius: var(--radius); }
+.topnav a:hover { color: var(--ink); background: var(--bg-hover); text-decoration: none; }
+
+/* hero */
+.hero { padding: 64px 0 48px; border-bottom: 1px solid var(--border-soft); }
+.eyebrow { font-family: 'IBM Plex Mono', monospace; font-size: 12px; color: var(--brand-red); margin-bottom: 14px; }
+.hero h1 { font-size: 40px; font-weight: 600; letter-spacing: -0.02em; margin: 0 0 14px; }
+.hero .lede { font-size: 16px; color: var(--ink-dim); max-width: 600px; margin: 0 0 26px; }
+.actions { display: flex; gap: 10px; flex-wrap: wrap; }
+.btn-primary, .btn-secondary {
+  display: inline-flex; align-items: center; justify-content: center; gap: 8px;
+  font-size: 14px; font-weight: 500; padding: 10px 18px; border-radius: var(--radius);
+  border: 1px solid transparent; transition: background-color .18s, border-color .18s, opacity .18s;
+}
+.btn-primary { background: var(--brand-red); color: #fff; }
+.btn-primary:hover { background: var(--brand-red-dim); text-decoration: none; }
+.btn-primary:disabled { opacity: .55; cursor: default; }
+.btn-secondary { background: transparent; color: var(--ink); border-color: var(--border); }
+.btn-secondary:hover { background: var(--bg-hover); text-decoration: none; }
+
+/* sections */
+.section { padding: 56px 0; border-bottom: 1px solid var(--border-soft); }
+.section:last-of-type { border-bottom: none; }
+.section h2 { font-size: 24px; font-weight: 600; letter-spacing: -0.01em; margin: 0 0 6px; }
+.section .sub { color: var(--ink-dim); margin: 0 0 26px; max-width: 620px; }
+
+/* pricing */
+.price-grid { display: grid; grid-template-columns: repeat(2, 1fr); gap: 14px; }
+.price-card { background: var(--bg-raised); border: 1px solid var(--border-soft); border-radius: var(--radius); padding: 20px 22px; display: flex; flex-direction: column; }
+.price-card.featured { border-color: var(--brand-red-dim); box-shadow: 0 0 0 1px var(--brand-red-glow); }
+.price-top { display: flex; justify-content: space-between; align-items: baseline; gap: 12px; margin-bottom: 6px; }
+.price-name { font-weight: 600; font-size: 16px; }
+.price { font-family: 'IBM Plex Mono', monospace; font-size: 20px; color: var(--amber); white-space: nowrap; }
+.price-note { font-size: 12.5px; color: var(--ink-faint); margin: 0 0 12px; }
+.price-card ul { margin: 0; padding-left: 18px; color: var(--ink-dim); font-size: 14px; }
+.price-card li { margin: 4px 0; }
+.price-foot { margin-top: 16px; font-size: 13px; color: var(--ink-faint); }
+
+/* proof */
+.shots { display: grid; grid-template-columns: repeat(2, 1fr); gap: 14px; }
+.shot { margin: 0; background: var(--bg-raised); border: 1px solid var(--border-soft); border-radius: var(--radius); overflow: hidden; }
+.shot .frame { aspect-ratio: 16 / 9; display: flex; align-items: center; justify-content: center; background: repeating-linear-gradient(45deg, #222120 0 12px, #262523 12px 24px); color: var(--ink-faint); font-size: 13px; }
+.shot img { width: 100%; aspect-ratio: 16 / 9; object-fit: cover; }
+.shot figcaption { padding: 10px 14px; font-size: 13px; color: var(--ink-dim); }
+.reviews { margin-top: 18px; padding: 16px 20px; border: 1px dashed var(--border); border-radius: var(--radius); color: var(--ink-faint); font-size: 14px; }
+
+/* steps */
+.steps { list-style: none; margin: 0; padding: 0; display: grid; grid-template-columns: repeat(5, 1fr); gap: 12px; counter-reset: s; }
+.steps li { background: var(--bg-raised); border: 1px solid var(--border-soft); border-radius: var(--radius); padding: 16px; counter-increment: s; }
+.steps li::before { content: counter(s); display: inline-flex; width: 26px; height: 26px; align-items: center; justify-content: center; border-radius: 50%; background: var(--brand-red-glow); color: var(--brand-red); font-family: 'IBM Plex Mono', monospace; font-size: 13px; margin-bottom: 10px; }
+.steps strong { display: block; font-weight: 600; margin-bottom: 4px; }
+.steps span { color: var(--ink-dim); font-size: 13px; }
+
+/* form */
+.form-card { background: var(--bg-raised); border: 1px solid var(--border-soft); border-radius: var(--radius); padding: 26px; }
+.grid2 { display: grid; grid-template-columns: 1fr 1fr; gap: 16px 18px; }
+.field { display: flex; flex-direction: column; gap: 6px; }
+.field.full { grid-column: 1 / -1; }
+label { font-size: 13px; font-weight: 500; }
+label .opt { color: var(--ink-faint); font-weight: 400; }
+.hint { font-size: 12px; color: var(--ink-faint); }
+input, select, textarea {
+  font: inherit; font-size: 14px; color: var(--ink); background: var(--bg); border: 1px solid var(--border);
+  border-radius: var(--radius); padding: 10px 12px; width: 100%;
+}
+textarea { min-height: 88px; resize: vertical; }
+input:focus, select:focus, textarea:focus { outline: none; border-color: var(--accent); }
+.chips { display: flex; flex-wrap: wrap; gap: 8px; }
+.chips input { position: absolute; opacity: 0; width: 1px; height: 1px; }
+.chips label { padding: 8px 14px; border: 1px solid var(--border); border-radius: 999px; font-weight: 400; color: var(--ink-dim); cursor: pointer; }
+.chips input:checked + label { border-color: var(--brand-red); color: var(--ink); background: var(--brand-red-glow); }
+.chips input:focus-visible + label { outline: 2px solid var(--accent); outline-offset: 2px; }
+.privacy { margin: 18px 0 0; font-size: 12.5px; color: var(--ink-faint); }
+.form-actions { margin-top: 20px; display: flex; gap: 12px; align-items: center; flex-wrap: wrap; }
+.msg { font-size: 13.5px; padding: 10px 14px; border-radius: var(--radius); margin-top: 16px; display: none; }
+.msg.show { display: block; }
+.msg.err { background: rgba(201,124,110,0.12); color: var(--danger); border: 1px solid rgba(201,124,110,0.3); }
+.msg.ok { background: rgba(143,161,132,0.12); color: var(--sage); border: 1px solid rgba(143,161,132,0.3); }
+
+/* auth step */
+.auth-box { margin-top: 22px; padding-top: 22px; border-top: 1px solid var(--border-soft); display: none; }
+.auth-box.show { display: block; }
+.auth-box h3 { margin: 0 0 4px; font-size: 16px; font-weight: 600; }
+.auth-box p { margin: 0 0 16px; color: var(--ink-dim); font-size: 13.5px; }
+.auth-row { display: grid; grid-template-columns: 1fr 1fr; gap: 12px; max-width: 520px; }
+.auth-links { display: flex; gap: 16px; flex-wrap: wrap; margin-top: 10px; font-size: 13px; }
+.linkbtn { background: none; border: none; padding: 0; color: var(--accent); font-size: 13px; }
+.linkbtn:hover { text-decoration: underline; }
+.or { display: flex; align-items: center; gap: 10px; color: var(--ink-faint); font-size: 12px; margin: 16px 0; max-width: 520px; }
+.or::before, .or::after { content: ''; flex: 1; border-top: 1px solid var(--border-soft); }
+#mfa-row { display: none; margin-top: 12px; max-width: 260px; }
+.signed-in { font-size: 13px; color: var(--ink-faint); margin-top: 14px; }
+
+/* my applications */
+.mine { margin-top: 18px; display: none; }
+.mine.show { display: block; }
+.mine h3 { font-size: 15px; margin: 0 0 10px; }
+.app-row { display: flex; justify-content: space-between; gap: 12px; padding: 10px 14px; border: 1px solid var(--border-soft); border-radius: var(--radius); margin-bottom: 8px; font-size: 13.5px; background: var(--bg); }
+.app-row .meta { color: var(--ink-faint); }
+.badge { font-family: 'IBM Plex Mono', monospace; font-size: 11.5px; padding: 2px 8px; border-radius: 999px; background: var(--bg-hover); color: var(--ink-dim); white-space: nowrap; align-self: center; }
+
+/* rules */
+.rules-grid { display: grid; grid-template-columns: repeat(3, 1fr); gap: 14px; }
+.rule { background: var(--bg-raised); border: 1px solid var(--border-soft); border-radius: var(--radius); padding: 18px 20px; }
+.rule h3 { font-size: 15px; margin: 0 0 8px; }
+.rule p, .rule ul { color: var(--ink-dim); font-size: 14px; margin: 0; }
+.rule ul { padding-left: 18px; }
+.rule li { margin: 4px 0; }
+
+/* faq */
+.faq-item { border: 1px solid var(--border-soft); border-radius: var(--radius); background: var(--bg-raised); margin-bottom: 10px; }
+.faq-item summary { padding: 14px 18px; cursor: pointer; font-weight: 500; list-style: none; }
+.faq-item summary::-webkit-details-marker { display: none; }
+.faq-item summary::after { content: '+'; float: right; color: var(--ink-faint); font-family: 'IBM Plex Mono', monospace; }
+.faq-item[open] summary::after { content: '–'; }
+.faq-item p { margin: 0; padding: 0 18px 16px; color: var(--ink-dim); font-size: 14px; }
+
+/* contact */
+.contact-card { display: flex; align-items: center; justify-content: space-between; gap: 18px; flex-wrap: wrap; background: var(--bg-raised); border: 1px solid var(--border-soft); border-radius: var(--radius); padding: 22px; }
+.discord-name { font-family: 'IBM Plex Mono', monospace; font-size: 18px; }
+
+.site-footer { padding: 32px 0 40px; font-size: 12.5px; color: var(--ink-faint); }
+.footer-inner { display: flex; justify-content: space-between; gap: 16px; flex-wrap: wrap; }
+.footer-inner a { color: var(--ink-faint); }
+
+@media (max-width: 860px) {
+  .steps { grid-template-columns: 1fr 1fr; }
+  .rules-grid { grid-template-columns: 1fr; }
+}
+@media (max-width: 640px) {
+  .page-wrap { padding: 0 16px; }
+  .topbar-inner { padding: 14px 16px; }
+  .topnav a { padding: 6px 8px; font-size: 12.5px; }
+  .topnav .hide-sm { display: none; }
+  .hero { padding: 40px 0 32px; }
+  .hero h1 { font-size: 30px; }
+  .section { padding: 40px 0; }
+  .price-grid, .shots, .grid2, .auth-row { grid-template-columns: 1fr; }
+  .steps { grid-template-columns: 1fr; }
+  .form-card { padding: 18px; }
+}
+@media (prefers-reduced-motion: reduce) { * { transition: none !important; scroll-behavior: auto !important; } }
+</style>
+</head>
+<body>
+
+<div class="topbar">
+  <div class="topbar-inner">
+    <a class="brand" href="https://kaidaz18yt.github.io/">
+      <img class="brand-icon" src="https://kaidaz18yt.github.io/assets/head-96.png" alt="" width="96" height="96">
+      Kaidaz18 <span class="brand-handle">.servers</span>
+    </a>
+    <nav class="topnav">
+      <a href="#pricing">Prices</a>
+      <a href="#how" class="hide-sm">How it works</a>
+      <a href="#faq" class="hide-sm">FAQ</a>
+      <a href="#apply">Apply</a>
+    </nav>
+  </div>
+</div>
+
+<main class="page-wrap">
+
+  <!-- 1. Heading + pitch -->
+  <section class="hero">
+    <div class="eyebrow">PAPER · FABRIC · FORGE</div>
+    <h1>Minecraft Server Setup &amp; Fixes</h1>
+    <p class="lede">I set up and fix Minecraft Java servers (plugins, mods, permissions and spawn) for friend groups and small communities who'd rather play than spend a weekend reading config files.</p>
+    <div class="actions">
+      <a class="btn-primary" href="#apply">Apply now</a>
+      <a class="btn-secondary" href="#pricing">See prices</a>
+    </div>
+  </section>
+
+  <!-- 2. Services and prices -->
+  <section class="section" id="pricing">
+    <h2>Services and prices</h2>
+    <p class="sub">Prices are in AUD. If your job doesn't fit a box, apply anyway and describe it. I'll give you a price on Discord before you pay anything.</p>
+    <div class="price-grid">
+      <div class="price-card">
+        <div class="price-top"><span class="price-name">Basic setup</span><span class="price">$15</span></div>
+        <p class="price-note">A clean, working server you can join straight away.</p>
+        <ul>
+          <li>Install Paper, Fabric or Forge on your host</li>
+          <li>Set the version, world, difficulty and gamemode</li>
+          <li>Basic server.properties (MOTD, whitelist, player slots)</li>
+          <li>Up to 3 plugins or mods you choose</li>
+        </ul>
+      </div>
+      <div class="price-card featured">
+        <div class="price-top"><span class="price-name">Full setup</span><span class="price">$20–$40</span></div>
+        <p class="price-note">Price depends on how much you want. I can sometimes go cheaper for small servers.</p>
+        <ul>
+          <li>Everything in Basic setup</li>
+          <li>Permissions and ranks (LuckPerms), owner/admin/member groups</li>
+          <li>Plugin and mod configs tuned for your server</li>
+          <li>Spawn area set up, protected and with a set spawn point</li>
+          <li>Essentials-style commands (homes, tpa, warps) if you want them</li>
+        </ul>
+      </div>
+      <div class="price-card">
+        <div class="price-top"><span class="price-name">Server fix</span><span class="price">$10</span></div>
+        <p class="price-note">For a server that won't start, crashes or acts weird.</p>
+        <ul>
+          <li>Read the logs and find the cause</li>
+          <li>Fix crashes, broken or clashing plugins/mods, and version mismatches</li>
+          <li>A short note on what was wrong so you know for next time</li>
+        </ul>
+      </div>
+      <div class="price-card">
+        <div class="price-top"><span class="price-name">Extras</span><span class="price">$5–$10</span></div>
+        <p class="price-note">Small jobs on a server that's already running.</p>
+        <ul>
+          <li>Add a mod or plugin and set it up: $5</li>
+          <li>Update the server to a new Minecraft version: $10</li>
+          <li>Small config changes, a new rank or a world reset: $5</li>
+        </ul>
+      </div>
+    </div>
+    <p class="price-foot">Not included: the hosting itself (you pay your host directly), paid/premium plugins, and building custom maps.</p>
+  </section>
+
+  <!-- 3. Proof: screenshots and reviews will go here later -->
+
+  <!-- 4. How it works -->
+  <section class="section" id="how">
+    <h2>How it works</h2>
+    <p class="sub">Most jobs are done within a couple of days of paying.</p>
+    <ol class="steps">
+      <li><strong>Fill in the form</strong><span>About two minutes. No real name or passwords.</span></li>
+      <li><strong>I reply on Discord</strong><span>Within 24 hours, with a price and any questions.</span></li>
+      <li><strong>You pay</strong><span>By PayID: all upfront, or half now and half after.</span></li>
+      <li><strong>I set it up</strong><span>Using a sub-user account on your host.</span></li>
+      <li><strong>You check it</strong><span>Join, test it, and ask for small changes.</span></li>
+    </ol>
+  </section>
+
+  <!-- 5. Application form -->
+  <section class="section" id="apply">
+    <h2>Apply</h2>
+    <p class="sub">Short on purpose. If you're not sure about something, pick "Not sure" and we'll work it out on Discord.</p>
+
+    <form class="form-card" id="apply-form" novalidate>
+      <div class="grid2">
+        <div class="field">
+          <label for="f-discord">Discord username</label>
+          <input id="f-discord" name="discord" autocomplete="off" maxlength="40" placeholder="e.g. steve_builds" required>
+          <span class="hint">This is how I'll contact you. Make sure friend requests are on.</span>
+        </div>
+        <div class="field">
+          <label for="f-service">Service</label>
+          <select id="f-service" name="service" required>
+            <option value="">Choose one…</option>
+            <option>Basic setup ($15)</option>
+            <option>Full setup ($20–$40)</option>
+            <option>Server fix ($10)</option>
+            <option>Extras: add a mod/plugin or update ($5–$10)</option>
+            <option>Something else</option>
+          </select>
+        </div>
+        <div class="field full">
+          <label id="l-type">Server type</label>
+          <div class="chips" role="radiogroup" aria-labelledby="l-type">
+            <input type="radio" name="serverType" id="t-paper" value="Paper"><label for="t-paper">Paper (plugins)</label>
+            <input type="radio" name="serverType" id="t-fabric" value="Fabric"><label for="t-fabric">Fabric</label>
+            <input type="radio" name="serverType" id="t-forge" value="Forge"><label for="t-forge">Forge</label>
+            <input type="radio" name="serverType" id="t-unsure" value="Not sure" checked><label for="t-unsure">Not sure</label>
+          </div>
+        </div>
+        <div class="field">
+          <label for="f-version">Minecraft version</label>
+          <input id="f-version" name="mcVersion" maxlength="30" placeholder="e.g. 1.21.4, or latest">
+        </div>
+        <div class="field">
+          <label for="f-host">Host</label>
+          <input id="f-host" name="host" list="hosts" maxlength="60" placeholder="e.g. Apex, Shockbyte, own PC">
+          <datalist id="hosts">
+            <option value="Apex Hosting"><option value="Shockbyte"><option value="BisectHosting">
+            <option value="PebbleHost"><option value="Aternos"><option value="My own PC"><option value="Don't have one yet">
+          </datalist>
+        </div>
+        <div class="field full">
+          <label for="f-wants">Mods, plugins or features you want</label>
+          <textarea id="f-wants" name="wants" maxlength="2000" placeholder="e.g. LuckPerms ranks, claims, a protected spawn, Create mod… or describe what's broken"></textarea>
+        </div>
+        <div class="field">
+          <label for="f-by">When do you need it by?</label>
+          <select id="f-by" name="neededBy">
+            <option>No rush</option>
+            <option>Within a week</option>
+            <option>In the next 2–3 days</option>
+            <option>ASAP</option>
+          </select>
+        </div>
+        <div class="field full">
+          <label for="f-notes">Anything else <span class="opt">(optional)</span></label>
+          <textarea id="f-notes" name="notes" maxlength="2000" style="min-height:64px"></textarea>
+        </div>
+      </div>
+
+      <p class="privacy">I'll never ask for your real name, address, phone number or hosting password. Access is sorted on Discord with a sub-user account you create.</p>
+
+      <!-- Sign-in step: shown when needed. Required to stop spam; it also lets you see your applications later. -->
+      <div class="auth-box" id="auth-box">
+        <h3>One last step: confirm you're a real person</h3>
+        <p>Sign in so I can stop spam bots and so you can see the status of your application here later. Your answers above are kept.</p>
+        <div id="google-button"></div>
+        <div class="or">or use email</div>
+        <div class="auth-row">
+          <input id="a-email" type="email" autocomplete="email" placeholder="Email">
+          <input id="a-pass" type="password" autocomplete="current-password" placeholder="Password (8+ characters)">
+        </div>
+        <div id="mfa-row"><input id="a-mfa" inputmode="numeric" maxlength="6" placeholder="6-digit code from your app"></div>
+        <div class="form-actions">
+          <button type="button" class="btn-primary" id="btn-email">Sign in &amp; send</button>
+          <button type="button" class="btn-secondary" id="btn-signup">New here? Create account &amp; send</button>
+        </div>
+        <div class="auth-links"><button type="button" class="linkbtn" id="btn-forgot">Forgot password?</button></div>
+      </div>
+
+      <div class="form-actions" id="main-actions">
+        <button type="submit" class="btn-primary" id="btn-submit">Send application</button>
+      </div>
+      <div class="msg" id="msg" role="status" aria-live="polite"></div>
+      <div class="signed-in" id="signed-in" hidden></div>
+
+      <div class="mine" id="mine">
+        <h3>Your applications</h3>
+        <div id="mine-list"></div>
+      </div>
+    </form>
+  </section>
+
+  <!-- 6. Payment and rules -->
+  <section class="section" id="rules">
+    <h2>Payment and rules</h2>
+    <p class="sub">The short version: you know the price before you pay, and you get one round of small changes free.</p>
+    <div class="rules-grid">
+      <div class="rule">
+        <h3>Payment</h3>
+        <ul>
+          <li>By PayID only (I send the details on Discord).</li>
+          <li>Pay it all upfront, or half before I start and half when it's done.</li>
+          <li>The price is agreed on Discord before you pay.</li>
+        </ul>
+      </div>
+      <div class="rule">
+        <h3>Changes and cancelling</h3>
+        <ul>
+          <li>1 round of small changes is included (a rank colour, a plugin setting, moving spawn).</li>
+          <li>Big changes after the job is done are priced as a new job.</li>
+          <li>Cancel before I start: full refund. Cancel after I've started: the first half isn't refunded.</li>
+        </ul>
+      </div>
+      <div class="rule">
+        <h3>How long it takes</h3>
+        <ul>
+          <li>Fixes and extras: usually same or next day.</li>
+          <li>Basic setup: 1–2 days.</li>
+          <li>Full setup: 2–4 days, depending on how much you want.</li>
+        </ul>
+      </div>
+    </div>
+  </section>
+
+  <!-- 7. FAQ -->
+  <section class="section" id="faq">
+    <h2>FAQ</h2>
+    <p class="sub">&nbsp;</p>
+    <details class="faq-item">
+      <summary>Do you need my hosting password?</summary>
+      <p>No, never. Most hosts (Apex, Shockbyte, BisectHosting, PebbleHost…) let you add a sub-user. You add me as one, and I only get access to the server panel, not your billing or account. You can remove me when we're done. I'll walk you through it on Discord.</p>
+    </details>
+    <details class="faq-item">
+      <summary>What if it breaks later?</summary>
+      <p>If something I set up breaks within a few days because of something I did, I'll fix it free. After that, or if it broke because of a new plugin, mod or update, it's a normal $10 fix.</p>
+    </details>
+    <details class="faq-item">
+      <summary>I don't know if I need Paper, Fabric or Forge.</summary>
+      <p>Pick "Not sure". Roughly: Paper is for plugins (ranks, claims, economy) and players join with normal Minecraft. Fabric and Forge are for mods, and every player needs the same mods installed. Tell me what you want and I'll recommend one.</p>
+    </details>
+    <details class="faq-item">
+      <summary>Can you set up a server on my own PC?</summary>
+      <p>Yes, but I can't log in to your computer. I'll send you the files and step-by-step instructions on Discord, and help you over call or chat if you get stuck.</p>
+    </details>
+  </section>
+
+  <!-- 8. Contact -->
+  <section class="section" id="contact">
+    <h2>Contact</h2>
+    <p class="sub">Questions before you apply? Message me on Discord.</p>
+    <div class="contact-card">
+      <div>
+        <div class="hint">Discord</div>
+        <div class="discord-name">Kaidaz18</div>
+      </div>
+      <a class="btn-primary" href="#apply">Apply now</a>
+    </div>
+  </section>
+
+</main>
+
+<footer class="site-footer">
+  <div class="page-wrap footer-inner">
+    <div>© 2026 Kaidaz18</div>
+    <div><a href="https://kaidaz18yt.github.io/">Home</a> · <a href="https://youtube.com/@Kaidaz18" target="_blank" rel="noopener">YouTube</a></div>
+  </div>
+</footer>
+
+<script src="https://kaidaz18.duckdns.org/sdk/bread-client.js"></script>
+<script src="https://accounts.google.com/gsi/client" async defer></script>
+<script>
+(function () {
+  const GOOGLE_CLIENT_ID = "579417516535-b98ibr9etu8brajjvo02u214mpu5js9q.apps.googleusercontent.com";
+  const COLLECTION = "applications";
+  const DRAFT_KEY = "kz_services_draft";
+
+  const $ = (id) => document.getElementById(id);
+  const form = $("apply-form");
+  const msgEl = $("msg");
+  const authBox = $("auth-box");
+  const submitBtn = $("btn-submit");
+
+  let bread = null;
+  try {
+    bread = new BreadClient({
+      baseUrl: "https://kaidaz18.duckdns.org",
+      projectSlug: "kaidaz18-apply-for-services",
+      apiKey: "pk_live_gT8ON11aRHhNASkckSY4XGAp",
+    });
+  } catch (e) { /* SDK failed to load: handled on submit */ }
+
+  let currentUser = null;
+  let pendingMfaToken = null;
+  let pendingSubmit = false;
+
+  function show(text, kind) {
+    msgEl.textContent = text;
+    msgEl.className = "msg show " + (kind || "err");
+  }
+  function clearMsg() { msgEl.className = "msg"; msgEl.textContent = ""; }
+  function errText(e, fallback) {
+    if (e && e.status === 429) return "Too many tries. Please wait a few minutes and try again.";
+    return (e && (e.error || e.message)) || fallback || "Something went wrong. Please try again.";
+  }
+
+  // ---- form data ----
+  function readForm() {
+    const fd = new FormData(form);
+    const v = (k) => String(fd.get(k) || "").trim();
+    return {
+      discord: v("discord"),
+      service: v("service"),
+      serverType: v("serverType") || "Not sure",
+      mcVersion: v("mcVersion"),
+      host: v("host"),
+      wants: v("wants"),
+      neededBy: v("neededBy"),
+      notes: v("notes"),
+    };
+  }
+  function fillForm(d) {
+    if (!d) return;
+    for (const [k, val] of Object.entries(d)) {
+      if (k === "serverType") {
+        const r = form.querySelector('input[name="serverType"][value="' + CSS.escape(val) + '"]');
+        if (r) r.checked = true;
+      } else if (form.elements[k]) {
+        form.elements[k].value = val;
+      }
+    }
+  }
+  function saveDraft() { try { sessionStorage.setItem(DRAFT_KEY, JSON.stringify(readForm())); } catch (e) {} }
+  function loadDraft() { try { fillForm(JSON.parse(sessionStorage.getItem(DRAFT_KEY) || "null")); } catch (e) {} }
+  function clearDraft() { try { sessionStorage.removeItem(DRAFT_KEY); } catch (e) {} }
+
+  function validate(d) {
+    if (!d.discord || d.discord.length < 2) return ["f-discord", "Add your Discord username so I can contact you."];
+    if (!d.service) return ["f-service", "Choose which service you want."];
+    if (!d.wants && d.service !== "Something else") return ["f-wants", "Tell me briefly what you want (or what's broken)."];
+    return null;
+  }
+
+  // ---- submit ----
+  async function sendApplication() {
+    const d = readForm();
+    submitBtn.disabled = true;
+    try {
+      await bread.collection(COLLECTION).create(Object.assign({}, d, {
+        status: "new",
+      }));
+      clearDraft();
+      form.reset();
+      authBox.classList.remove("show");
+      show("Application sent! I'll message " + d.discord + " on Discord within 24 hours. Make sure you accept friend requests.", "ok");
+      try { bread.analytics.logEvent("application_sent", { service: d.service, serverType: d.serverType }); } catch (e) {}
+      loadMine();
+    } catch (e) {
+      if (e && e.status === 401) {
+        currentUser = null;
+        askToSignIn();
+      } else {
+        show(errText(e, "Couldn't send your application. Please try again, or message me on Discord."));
+      }
+    } finally {
+      submitBtn.disabled = false;
+    }
+  }
+
+  function askToSignIn() {
+    pendingSubmit = true;
+    saveDraft();
+    authBox.classList.add("show");
+    clearMsg();
+    renderGoogle();
+    authBox.scrollIntoView({ behavior: "smooth", block: "center" });
+  }
+
+  form.addEventListener("submit", async (ev) => {
+    ev.preventDefault();
+    clearMsg();
+    if (!bread) { show("The application form couldn't load. Please refresh, or message me on Discord."); return; }
+    const d = readForm();
+    const bad = validate(d);
+    if (bad) { show(bad[1]); $(bad[0]).focus(); return; }
+    if (!currentUser) { askToSignIn(); return; }
+    await sendApplication();
+  });
+  form.addEventListener("input", saveDraft);
+
+  // ---- auth ----
+  async function afterSignIn(user) {
+    currentUser = user;
+    pendingMfaToken = null;
+    $("mfa-row").style.display = "none";
+    updateSignedIn();
+    if (pendingSubmit) {
+      pendingSubmit = false;
+      const bad = validate(readForm());
+      if (bad) { authBox.classList.remove("show"); show(bad[1]); return; }
+      await sendApplication();
+    } else {
+      loadMine();
+    }
+  }
+
+  async function handleLoginResult(res) {
+    if (res && res.mfaRequired) {
+      pendingMfaToken = res.mfaToken;
+      $("mfa-row").style.display = "block";
+      $("a-mfa").focus();
+      show("Enter the 6-digit code from your authenticator app, then press Sign in & send.", "ok");
+      return;
+    }
+    await afterSignIn(res.user);
+  }
+
+  $("btn-email").addEventListener("click", async () => {
+    clearMsg();
+    const btn = $("btn-email");
+    btn.disabled = true;
+    try {
+      if (pendingMfaToken) {
+        const code = $("a-mfa").value.trim();
+        if (!/^\d{6}$/.test(code)) { show("Enter the 6-digit code."); return; }
+        const res = await bread.auth.mfa.verify(pendingMfaToken, code);
+        await afterSignIn(res.user);
+        return;
+      }
+      const email = $("a-email").value.trim(), pass = $("a-pass").value;
+      if (!email || !pass) { show("Enter your email and password."); return; }
+      await handleLoginResult(await bread.auth.login(email, pass));
+    } catch (e) {
+      show(errText(e, "Couldn't sign in."));
+    } finally { btn.disabled = false; }
+  });
+
+  $("btn-signup").addEventListener("click", async () => {
+    clearMsg();
+    const email = $("a-email").value.trim(), pass = $("a-pass").value;
+    if (!email) { show("Enter an email."); return; }
+    if (pass.length < 8) { show("Pick a password with at least 8 characters."); return; }
+    const btn = $("btn-signup");
+    btn.disabled = true;
+    try {
+      const res = await bread.auth.signup(email, pass);
+      await afterSignIn(res.user);
+    } catch (e) {
+      show(e && e.status === 409 ? "That email already has an account. Use Sign in & send instead." : errText(e, "Couldn't create the account."));
+    } finally { btn.disabled = false; }
+  });
+
+  $("btn-forgot").addEventListener("click", async () => {
+    const email = $("a-email").value.trim();
+    if (!email) { show("Type your email above first, then press Forgot password."); return; }
+    try {
+      await bread.auth.forgotPassword(email);
+      show("If that email has an account, a reset link is on its way. Your answers here are saved.", "ok");
+    } catch (e) { show(errText(e)); }
+  });
+
+  let googleRendered = false;
+  function renderGoogle() {
+    if (googleRendered) return;
+    if (!window.google || !google.accounts || !google.accounts.id) { setTimeout(renderGoogle, 300); return; }
+    googleRendered = true;
+    google.accounts.id.initialize({
+      client_id: GOOGLE_CLIENT_ID,
+      callback: async (response) => {
+        clearMsg();
+        try {
+          await handleLoginResult(await bread.auth.signInWithGoogle(response.credential));
+        } catch (e) { show(errText(e, "Google sign-in failed.")); }
+      },
+    });
+    google.accounts.id.renderButton($("google-button"), { theme: "filled_black", size: "large", text: "continue_with" });
+  }
+
+  function updateSignedIn() {
+    const el = $("signed-in");
+    if (!currentUser) { el.hidden = true; el.textContent = ""; return; }
+    el.hidden = false;
+    el.textContent = "Signed in as " + currentUser.email + ". ";
+    const out = document.createElement("button");
+    out.type = "button"; out.className = "linkbtn"; out.textContent = "Sign out";
+    out.onclick = async () => {
+      try { await bread.auth.logout(); } catch (e) {}
+      currentUser = null;
+      updateSignedIn();
+      $("mine").classList.remove("show");
+    };
+    el.appendChild(out);
+  }
+
+  // ---- "your applications" (rules let each user read only their own) ----
+  async function loadMine() {
+    if (!currentUser) return;
+    try {
+      const docs = await bread.collection(COLLECTION).get({ limit: 20, orderBy: "createdAt", order: "desc" });
+      const list = $("mine-list");
+      list.textContent = "";
+      if (!docs || !docs.length) { $("mine").classList.remove("show"); return; }
+      for (const d of docs) {
+        const row = document.createElement("div"); row.className = "app-row";
+        const left = document.createElement("div");
+        const t = document.createElement("div"); t.textContent = d.service || "Application";
+        const m = document.createElement("div"); m.className = "meta";
+        m.textContent = (d.serverType || "") + (d.mcVersion ? " · " + d.mcVersion : "") + " · sent " + new Date(d.createdAt).toLocaleDateString();
+        left.append(t, m);
+        const b = document.createElement("span"); b.className = "badge"; b.textContent = d.status || "new";
+        row.append(left, b);
+        list.appendChild(row);
+      }
+      $("mine").classList.add("show");
+    } catch (e) { /* not critical */ }
+  }
+
+  // ---- restore session ----
+  loadDraft();
+  if (bread && bread.auth.isSignedIn()) {
+    bread.auth.me().then((r) => { currentUser = r.user; updateSignedIn(); loadMine(); })
+      .catch(() => { currentUser = null; updateSignedIn(); });
+  }
+})();
+</script>
+</body>
+</html>
