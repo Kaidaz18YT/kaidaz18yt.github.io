@@ -4,7 +4,7 @@
 <meta charset="UTF-8">
 <meta name="viewport" content="width=device-width, initial-scale=1, viewport-fit=cover">
 <title>Server Setup — Minecraft Server Setup &amp; Fixes | Kaidaz18</title>
-<meta name="description" content="Minecraft Java server setup and fixes for Paper, Fabric and Forge. Plugins, mods, permissions and spawn set up for you, from $10. Apply in two minutes and hear back on Discord within 24 hours.">
+<meta name="description" content="Minecraft Java server setup and fixes for Paper, Fabric and Forge, plus custom Bedrock, Java and Education Edition addons, scripts and mods. From $10. Apply in two minutes and hear back on Discord within 24 hours.">
 <meta name="author" content="Kaidaz18">
 <meta name="robots" content="index, follow">
 <meta name="theme-color" content="#1C1B1A">
@@ -25,7 +25,7 @@
 <meta property="og:site_name" content="Kaidaz18">
 <meta property="og:url" content="https://kaidaz18yt.github.io/services/">
 <meta property="og:title" content="Server Setup — Minecraft Server Setup &amp; Fixes | Kaidaz18">
-<meta property="og:description" content="Paper, Fabric and Forge servers set up or fixed for you, from $10. Apply in two minutes.">
+<meta property="og:description" content="Paper, Fabric and Forge servers set up or fixed, plus custom Bedrock, Java and Education Edition addons and mods. From $10.">
 <meta property="og:image" content="https://kaidaz18yt.github.io/media/meta-image.jpg">
 <link rel="preconnect" href="https://fonts.googleapis.com">
 <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
@@ -221,6 +221,7 @@ input:focus, select:focus, textarea:focus { outline: none; border-color: var(--a
     </a>
     <nav class="topnav">
       <a href="#pricing">Prices</a>
+      <a href="#addons" class="hide-sm">Addons &amp; mods</a>
       <a href="#how" class="hide-sm">How it works</a>
       <a href="#faq" class="hide-sm">FAQ</a>
       <a href="#apply">Apply</a>
@@ -289,6 +290,52 @@ input:focus, select:focus, textarea:focus { outline: none; border-color: var(--a
     <p class="price-foot">Not included: the hosting itself (you pay your host directly), paid/premium plugins, and building custom maps.</p>
   </section>
 
+  <!-- 2b. Custom addons, scripts and mods -->
+  <section class="section" id="addons">
+    <h2>Custom addons, scripts &amp; mods</h2>
+    <p class="sub">Something made just for you: a Bedrock or Education Edition addon with scripting, a Java plugin, or a Fabric/Forge mod. Prices are in AUD and depend on how big the idea is. I'll give you a fixed price on Discord before you pay.</p>
+    <div class="price-grid">
+      <div class="price-card">
+        <div class="price-top"><span class="price-name">Small addon or script</span><span class="price">$15–$30</span></div>
+        <p class="price-note">One simple feature, done well.</p>
+        <ul>
+          <li>Bedrock or Education Edition behaviour pack with Script API (JavaScript)</li>
+          <li>A custom command, item, block or simple game mechanic</li>
+          <li>Examples: a /spawn command, a custom sword with an ability, a welcome message, a timer or scoreboard</li>
+        </ul>
+      </div>
+      <div class="price-card">
+        <div class="price-top"><span class="price-name">Java plugin or mod</span><span class="price">$25–$50</span></div>
+        <p class="price-note">A custom feature for a Java server or modpack.</p>
+        <ul>
+          <li>Paper/Spigot plugin, or a Fabric or Forge mod</li>
+          <li>Custom commands, events, items and config files you can edit</li>
+          <li>Examples: a minigame rule, custom crafting, a simple economy or kit system</li>
+        </ul>
+      </div>
+      <div class="price-card featured">
+        <div class="price-top"><span class="price-name">Large addon or mod</span><span class="price">$50–$120</span></div>
+        <p class="price-note">Bigger projects with several features. Quoted after we talk.</p>
+        <ul>
+          <li>Custom mobs, items and blocks with textures and models</li>
+          <li>Bedrock forms/menus, minigames, quests or custom systems</li>
+          <li>Multi-feature Java mods or plugins</li>
+          <li>Split into milestones so you can test as it's built</li>
+        </ul>
+      </div>
+      <div class="price-card">
+        <div class="price-top"><span class="price-name">Addon or mod changes</span><span class="price">$10–$20</span></div>
+        <p class="price-note">Changes to something that already exists.</p>
+        <ul>
+          <li>Fix a broken addon, script, plugin or mod</li>
+          <li>Update it to a new Minecraft version</li>
+          <li>Add a small feature to a project I made for you</li>
+        </ul>
+      </div>
+    </div>
+    <p class="price-foot">You get the finished files (.mcaddon / .mcpack / .mcworld for Bedrock and Education Edition, .jar for Java) and can use them on your own worlds and servers. Education Edition addons are delivered as a world or template, and some scripting features depend on what Education Edition currently supports. Not included: recreating paid Marketplace content or other people's mods.</p>
+  </section>
+
   <!-- 3. Proof: screenshots and reviews will go here later -->
 
   <!-- 4. How it works -->
@@ -324,15 +371,21 @@ input:focus, select:focus, textarea:focus { outline: none; border-color: var(--a
             <option>Full setup ($20–$40)</option>
             <option>Server fix ($10)</option>
             <option>Extras: add a mod/plugin or update ($5–$10)</option>
+            <option>Small addon or script ($15–$30)</option>
+            <option>Java plugin or mod ($25–$50)</option>
+            <option>Large addon or mod ($50–$120)</option>
+            <option>Addon or mod changes ($10–$20)</option>
             <option>Something else</option>
           </select>
         </div>
         <div class="field full">
-          <label id="l-type">Server type</label>
+          <label id="l-type">Server type / edition</label>
           <div class="chips" role="radiogroup" aria-labelledby="l-type">
             <input type="radio" name="serverType" id="t-paper" value="Paper"><label for="t-paper">Paper (plugins)</label>
             <input type="radio" name="serverType" id="t-fabric" value="Fabric"><label for="t-fabric">Fabric</label>
             <input type="radio" name="serverType" id="t-forge" value="Forge"><label for="t-forge">Forge</label>
+            <input type="radio" name="serverType" id="t-bedrock" value="Bedrock"><label for="t-bedrock">Bedrock</label>
+            <input type="radio" name="serverType" id="t-edu" value="Education Edition"><label for="t-edu">Education Edition</label>
             <input type="radio" name="serverType" id="t-unsure" value="Not sure" checked><label for="t-unsure">Not sure</label>
           </div>
         </div>
@@ -350,7 +403,7 @@ input:focus, select:focus, textarea:focus { outline: none; border-color: var(--a
         </div>
         <div class="field full">
           <label for="f-wants">Mods, plugins or features you want</label>
-          <textarea id="f-wants" name="wants" maxlength="2000" placeholder="e.g. LuckPerms ranks, claims, a protected spawn, Create mod… or describe what's broken"></textarea>
+          <textarea id="f-wants" name="wants" maxlength="2000" placeholder="e.g. LuckPerms ranks, claims, a protected spawn, Create mod… describe the addon or mod you want made, or what's broken"></textarea>
         </div>
         <div class="field">
           <label for="f-by">When do you need it by?</label>
@@ -427,6 +480,7 @@ input:focus, select:focus, textarea:focus { outline: none; border-color: var(--a
           <li>Fixes and extras: usually same or next day.</li>
           <li>Basic setup: 1–2 days.</li>
           <li>Full setup: 2–4 days, depending on how much you want.</li>
+          <li>Small addons and scripts: 2–4 days. Bigger addons and mods: 1–3 weeks.</li>
         </ul>
       </div>
     </div>
@@ -447,6 +501,10 @@ input:focus, select:focus, textarea:focus { outline: none; border-color: var(--a
     <details class="faq-item">
       <summary>I don't know if I need Paper, Fabric or Forge.</summary>
       <p>Pick "Not sure". Roughly: Paper is for plugins (ranks, claims, economy) and players join with normal Minecraft. Fabric and Forge are for mods, and every player needs the same mods installed. Tell me what you want and I'll recommend one.</p>
+    </details>
+    <details class="faq-item">
+      <summary>Which editions can you make addons and mods for?</summary>
+      <p>Bedrock (Windows, mobile, console and Bedrock servers) using behaviour packs, resource packs and the Script API; Education Edition using the same kind of addon, delivered as a world or template; and Java Edition as Paper/Spigot plugins or Fabric/Forge mods. Tell me your Minecraft version so I build for the right one.</p>
     </details>
     <details class="faq-item">
       <summary>Can you set up a server on my own PC?</summary>
